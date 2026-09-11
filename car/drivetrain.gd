@@ -5,8 +5,6 @@ extends RefCounted
 ## state, then reads back drive_torque, brake_input, gear and rpm.
 
 const RPM_PER_RAD_PER_SEC := 60.0 / TAU
-## Below this speed (m/s) the brake pedal selects reverse and gas selects drive.
-const DIRECTION_CHANGE_SPEED := 1.0
 
 var stats: CarStats
 ## -1 = reverse, 1..N = forward gears.
@@ -130,7 +128,7 @@ static func split_brake(total: float, front_bias: float) -> PackedFloat32Array:
 
 
 func _choose_direction(throttle: float, brake: float, forward_speed: float) -> void:
-	if absf(forward_speed) > DIRECTION_CHANGE_SPEED:
+	if absf(forward_speed) > stats.direction_change_speed:
 		return
 	if gear > 0 and brake > 0.0 and throttle == 0.0:
 		gear = -1

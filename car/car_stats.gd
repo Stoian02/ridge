@@ -89,6 +89,8 @@ enum DriveType { FWD, RWD, AWD }
 @export var abs_enabled: bool = true
 ## Below this speed (m/s) with no pedal pressed, the brakes hold the car.
 @export var auto_hold_speed: float = 0.5
+## Below this speed (m/s) the brake pedal selects reverse and gas selects drive.
+@export var direction_change_speed: float = 1.0
 
 @export_group("Assists")
 ## Traction control: trims engine torque while the driven wheels spin. Touch

@@ -117,6 +117,12 @@ func test_brake_at_speed_does_not_select_reverse() -> void:
 	assert_almost_eq(drivetrain.brake_input, 1.0, 0.0001)
 
 
+func test_direction_change_speed_comes_from_stats() -> void:
+	stats.direction_change_speed = 3.0
+	drivetrain.update(0.01, 0.0, 1.0, 0.0, 2.0, 0.0)  # braking at 2 m/s
+	assert_eq(drivetrain.gear, -1, "below the car's direction-change speed, brake selects reverse")
+
+
 func test_auto_hold_when_stopped_without_pedals() -> void:
 	drivetrain.update(0.01, 0.0, 0.0, 0.0, 0.1, 0.0)
 	assert_almost_eq(drivetrain.brake_input, 1.0, 0.0001)
