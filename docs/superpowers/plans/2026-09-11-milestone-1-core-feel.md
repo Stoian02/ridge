@@ -27,7 +27,7 @@
 
 ## Verified Before Writing
 
-Every code block in Tasks 1–18 was built and run in a throwaway copy of this project on this machine (Godot 4.7.2). The result was **133 passing tests** and a rendered Test Ground. The measured behaviour, which the "Expected" lines below refer to (differences of ±5% are fine):
+Every code block in Tasks 1–19 was built and run in a throwaway copy of this project on this machine (Godot 4.7.2). The result was **139 passing tests** and a rendered Test Ground. The measured behaviour, which the "Expected" lines below refer to (differences of ±5% are fine):
 
 | Check | Measured |
 |---|---|
@@ -41,7 +41,7 @@ Two problems found and fixed during that run are already reflected in this plan:
 - **Gearbox hunting.** Shifting on wheel spin made wheelspin trigger 1↔2 shift loops. The gearbox now shifts on road speed.
 - **Runaway wheelspin.** The touch pedals are on/off, so full throttle meant runaway wheelspin. Traction control was added (a `CarStats` flag, on by default).
 
-Tasks 19–21 need the export templates, the phone and the user, so they could not be pre-run.
+Tasks 20–22 need the export templates, the phone and the user, so they could not be pre-run.
 
 ## Additions and Deferrals Relative to the Spec
 
@@ -2198,7 +2198,7 @@ git commit -m "Add raycast wheel: contact, suspension and tire forces"
     - Fields: `input: CarInput`, `wheels: Array[Wheel]` (`[FL, FR, RL, RR]`), `steering`, `drivetrain`, `air_control`.
     - Methods: `forward_speed() -> float` (m/s), `reset_to(target: Transform3D)`, `get_telemetry() -> Dictionary` (keys exactly as in `TelemetrySample.make()`).
   - `ScenarioHelper.ticks(seconds) -> int`, `make_flat_ground(surface, center := Vector3.ZERO, size := 600.0) -> StaticBody3D`, `spawn_car(test: GutTest, at: Vector3) -> Car`, `is_upright(car) -> bool`.
-  - `FeelBaseline` constants (wide ranges until the Task 21 sign-off).
+  - `FeelBaseline` constants (wide ranges until the Task 22 sign-off).
   - `TelemetrySample.make() -> Dictionary`, the documented telemetry shape.
 
 - [ ] **Step 1: Write the scenario helpers and the telemetry sample**
@@ -4422,7 +4422,782 @@ git commit -m "Add rough asphalt and rutted mud strips to the Test Ground"
 
 ---
 
-### Task 19: Android debug build on the Xiaomi 13
+### Task 19: Handling pass — sliding tires, ABS, steering assist, rotation
+
+Raised by the user after driving the preview (2026-09-12): "the car feels a bit understeery", and "when I start to brake and turn, I go forward and very slightly to the other direction of the turning". A later message added that "a bit of oversteer would not be a problem" if the physics is good.
+
+Measured before this task (scratch copy, `tests/diag`):
+- Braking from 60 km/h at full lock: the car rotated ~1°/s into the turn, then **+3.2°/s away from it** below 35 km/h. Front wheels locked solid (slip ratio −1.00) despite ABS.
+- Steady 50 km/h turn at full lock: front tires at **19.3°** of slip, rears at 4.4° — the front was being steered far past the angle where a tire grips best (8°), so it ploughed.
+
+Four changes, each independently measured:
+
+1. **Sliding tires push against the skid** (`car/tire_model.gd`). The force direction came from the normalised slip vector; for a locked, steered wheel that points slightly out of the turn. Past the grip peak the direction now blends to the contact patch's actual skid direction, which is what real friction does.
+2. **ABS holds the brake at what the road can take** (`car/wheel.gd`), instead of cutting it to 30% once slipping. Wheels keep turning near peak grip, so the car still steers while braking.
+3. **The steering assist allows only the useful angle** (`car/steering.gd`). Instead of a straight line from 32° to 8°, the limit is now the angle that turns the car on its tightest grip-limited arc plus a share of the tire's best slip angle. `min_steer_deg` and `steer_limit_speed` are replaced by `steer_assist_slip`.
+4. **The car is set up to rotate**: rear-biased anti-roll, less front brake bias, less front drive torque, looser traction control, and rear tires at 96% of front grip (`rear_grip_bias`).
+
+Measured after (all in `./run_tests.sh all` output):
+
+| Check | Before | After |
+|---|---|---|
+| Steady 50 km/h turn | 25.7°/s | **31.9°/s** |
+| Same turn on mud | 15.5°/s | **26.8°/s** |
+| Braking in a turn | ~1°/s, then wrong way | **25.2°/s into the turn, never wrong way** |
+| Worst wheel slip braking (−1 = locked) | −1.00 | **−0.67** |
+| 0–100 km/h | 7.7 s | 8.1 s |
+| Braking 100–0 | 36.6 m | 35.8 m |
+
+**Files:**
+- Modify: `car/tire_model.gd`, `car/wheel.gd`, `car/steering.gd`, `car/car_stats.gd`, `car/rally_car.tres`, `tests/unit/test_tire_model.gd`, `tests/unit/test_steering.gd`, `tests/unit/test_drivetrain.gd`
+- Create: `tests/scenarios/test_brake_in_turn.gd`
+
+**Interfaces:**
+- Changed: `TireModel.contact_force(...)` gains a final optional `slip_velocity := Vector2.ZERO` argument (x = tread speed − ground speed along the heading, y = sideways speed). Existing callers that pass nothing keep the old behaviour.
+- Changed: `Steering.max_angle_for_speed(speed, car_stats)` now derives the limit from `wheelbase`, `tire_grip`, `peak_slip_angle_deg`, `steer_assist_slip` and `max_steer_deg`. `min_steer_deg` and `steer_limit_speed` are gone from `CarStats`.
+- Changed: `Wheel._apply_brakes(delta, road_force)` takes the tire's longitudinal force; rear wheels multiply friction by `stats.rear_grip_bias`.
+- New `CarStats` fields: `abs_target_slip` (0.15), `rear_grip_bias` (0.96), `steer_assist_slip` (0.75). Retuned: `anti_roll_front` 5000, `anti_roll_rear` 8000, `front_torque_split` 0.35, `brake_front_bias` 0.6, `traction_slip_target` 0.3.
+
+- [ ] **Step 1: Write the failing scenario test**
+
+`tests/scenarios/test_brake_in_turn.gd`:
+
+```gdscript
+extends GutTest
+## Braking hard while steering must still turn the car the way the wheels point.
+## A locked or badly modelled tire pushes the nose out of the turn instead.
+
+const ASPHALT := preload("res://surfaces/asphalt.tres")
+
+
+func test_braking_while_steering_turns_into_the_corner() -> void:
+	add_child_autofree(ScenarioHelper.make_flat_ground(ASPHALT))
+	var car := ScenarioHelper.spawn_car(self, Vector3(0.0, 1.0, 0.0))
+	await wait_physics_frames(ScenarioHelper.ticks(1.0))
+
+	car.input.virtual_throttle = 1.0
+	var ticks := 0
+	while car.forward_speed() * 3.6 < 60.0 and ticks < ScenarioHelper.ticks(15.0):
+		await get_tree().physics_frame
+		ticks += 1
+
+	car.input.virtual_throttle = 0.0
+	car.input.virtual_brake = 1.0
+	car.input.virtual_steer = 1.0  # full right
+	var worst_wrong_way := 0.0
+	var total_yaw := 0.0
+	var samples := ScenarioHelper.ticks(1.5)
+	for i in samples:
+		await get_tree().physics_frame
+		# Yaw about +Y is to the left, so steering right should give negative yaw.
+		var yaw_rate := rad_to_deg(car.angular_velocity.y)
+		worst_wrong_way = maxf(worst_wrong_way, yaw_rate)
+		total_yaw += yaw_rate / samples
+	gut.p("brake-in-turn: average yaw %+.1f deg/s, worst wrong-way yaw %+.1f deg/s (+ = away from the turn)"
+			% [total_yaw, worst_wrong_way])
+	assert_lt(total_yaw, -3.0, "the car turns into the corner while braking")
+	assert_lt(worst_wrong_way, 2.0, "it never swings noticeably the other way")
+	assert_true(ScenarioHelper.is_upright(car))
+
+
+func test_abs_keeps_the_wheels_turning_under_full_braking() -> void:
+	add_child_autofree(ScenarioHelper.make_flat_ground(ASPHALT))
+	var car := ScenarioHelper.spawn_car(self, Vector3(0.0, 1.0, 0.0))
+	await wait_physics_frames(ScenarioHelper.ticks(1.0))
+
+	car.input.virtual_throttle = 1.0
+	var ticks := 0
+	while car.forward_speed() * 3.6 < 80.0 and ticks < ScenarioHelper.ticks(15.0):
+		await get_tree().physics_frame
+		ticks += 1
+
+	car.input.virtual_throttle = 0.0
+	car.input.virtual_brake = 1.0
+	var worst_slip := 0.0
+	for i in ScenarioHelper.ticks(1.0):
+		await get_tree().physics_frame
+		for wheel in car.wheels:
+			worst_slip = minf(worst_slip, wheel.slip_ratio)
+	gut.p("straight-line braking: worst slip ratio %.2f (-1 = locked)" % worst_slip)
+	assert_gt(worst_slip, -0.9, "no wheel locks up solid")
+```
+
+- [ ] **Step 2: Run it and watch it fail**
+
+Run: `./run_tests.sh scenarios`
+Expected: exit 1. `test_braking_while_steering_turns_into_the_corner` fails (average yaw is around −1°/s, not below −3°/s, and the worst wrong-way yaw is about +3°/s), and `test_abs_keeps_the_wheels_turning_under_full_braking` fails with a worst slip ratio of −1.00.
+
+- [ ] **Step 3: Add the two tire-direction unit tests**
+
+In `tests/unit/test_tire_model.gd`, insert these two tests immediately before `func test_max_longitudinal_force_for_free_wheel_is_limited_by_wheel_inertia() -> void:`
+
+```gdscript
+func test_sliding_tire_pushes_straight_against_the_skid() -> void:
+	# A locked wheel (slip ratio -1) on a car moving forward and to the right:
+	# friction must point exactly opposite the way the patch skids.
+	var skid := Vector2(-14.0, 6.0)  # tread slower than the road, sliding right
+	var force := TireModel.contact_force(-1.0, deg_to_rad(23.0), 3000.0, 0.12, 0.14, SLIDE, skid)
+	var expected := Vector2(skid.x, -skid.y).normalized()
+	assert_almost_eq(force.normalized().angle_to(expected), 0.0, 0.001)
+
+
+func test_skid_direction_is_ignored_below_the_peak() -> void:
+	# Under the peak the normalised split still decides the direction, so a
+	# gripping tire keeps its cornering/driving balance.
+	var skid := Vector2(-0.2, 4.0)
+	var gripping := TireModel.contact_force(0.05, 0.05, 3000.0, 0.12, 0.14, SLIDE, skid)
+	var without := TireModel.contact_force(0.05, 0.05, 3000.0, 0.12, 0.14, SLIDE)
+	assert_almost_eq(gripping.angle_to(without), 0.0, 0.001)
+```
+
+Run: `./run_tests.sh unit`
+Expected: exit 1 — `test_sliding_tire_pushes_straight_against_the_skid` fails, because `contact_force` does not take a skid vector yet.
+
+- [ ] **Step 4: Make sliding tires push against the skid**
+
+Replace `car/tire_model.gd` with:
+
+`car/tire_model.gd`:
+
+```gdscript
+class_name TireModel
+extends RefCounted
+## Pure tire math: no nodes and no state, so every function is easy to test.
+##
+## A tire only grips when it slips a little. Slip is measured two ways:
+##   slip ratio - how much faster (or slower) the tread moves than the ground,
+##                along the wheel's heading. + = spinning faster (accelerating).
+##   slip angle - the angle between where the wheel points and where it moves.
+##                + = the wheel is sliding to its right.
+## Each is divided by its "peak" value (the slip where grip is highest), then the
+## two are combined into one vector and fed through a single grip curve. Doing it
+## this way makes braking/accelerating and cornering share one grip budget (the
+## "friction circle"), which is where weight transfer and catchable slides come from.
+
+
+## Grip as a fraction of the maximum, for a normalised slip (1.0 = at the peak).
+## Rises smoothly to 1.0 at the peak, then fades to slide_grip at 3x the peak and
+## stays there. The sign of the slip is ignored.
+static func grip_curve(normalized_slip: float, slide_grip: float) -> float:
+	var s := absf(normalized_slip)
+	if s <= 1.0:
+		return s * (2.0 - s)
+	var fade := clampf((s - 1.0) / 2.0, 0.0, 1.0)
+	return lerpf(1.0, slide_grip, fade)
+
+
+## Longitudinal slip ratio. The ground speed is floored at min_reference_speed so
+## the ratio stays finite when the car is nearly stopped.
+static func slip_ratio(tread_speed: float, ground_speed: float, min_reference_speed: float) -> float:
+	var reference := maxf(absf(ground_speed), min_reference_speed)
+	return (tread_speed - ground_speed) / reference
+
+
+## Slip angle in radians, from the contact patch velocity split into the part
+## along the wheel heading and the part across it (+ = moving to the right).
+static func slip_angle(forward_speed: float, sideways_speed: float, min_reference_speed: float) -> float:
+	return atan2(sideways_speed, maxf(absf(forward_speed), min_reference_speed))
+
+
+## Tire force in the contact patch frame:
+##   x = along the wheel heading (+ = forward), y = across it (+ = right).
+## grip_force: the most force this tire can make right now (friction x load).
+## slip_velocity: how the contact patch actually skids over the ground —
+##   x = tread speed - ground speed along the heading, y = sideways speed.
+##   A sliding tire's friction points straight against that skid, so the force
+##   direction blends from the normalised-slip split (which sets how grip is
+##   shared between driving and cornering below the peak) to the skid direction
+##   once the tire is past the peak. Without this, a locked steered wheel pushes
+##   the car slightly out of the turn. Pass Vector2.ZERO to use only the
+##   normalised direction (pure-maths callers and tests).
+static func contact_force(ratio: float, angle: float, grip_force: float,
+		peak_ratio: float, peak_angle: float, slide_grip: float,
+		slip_velocity := Vector2.ZERO) -> Vector2:
+	var slip := Vector2(ratio / peak_ratio, angle / peak_angle)
+	var amount := slip.length()
+	if amount < 0.000001:
+		return Vector2.ZERO
+	# Longitudinal force pushes along the slip; lateral force pushes against it.
+	var direction := Vector2(slip.x, -slip.y) / amount
+	if slip_velocity.length() > 0.01:
+		var skid := Vector2(slip_velocity.x, -slip_velocity.y).normalized()
+		direction = direction.lerp(skid, clampf(amount - 1.0, 0.0, 1.0)).normalized()
+	return direction * (grip_curve(amount, slide_grip) * grip_force)
+
+
+## Largest longitudinal force that will not overshoot within one tick, i.e. will
+## not flip the sign of the slip speed (tread speed - ground speed). Without this
+## limit the explicit integration jitters violently at low speed.
+## wheel_held: true when the brake holds the wheel still, so the tire force can
+## only change the car's speed, not the wheel's.
+static func max_longitudinal_force(slip_speed: float, wheel_radius: float, wheel_inertia: float,
+		corner_mass: float, wheel_held: bool, delta: float) -> float:
+	var compliance := 1.0 / corner_mass
+	if not wheel_held:
+		compliance += wheel_radius * wheel_radius / wheel_inertia
+	return absf(slip_speed) / (compliance * delta)
+
+
+## Largest lateral force that will not overshoot within one tick: the force that
+## would exactly cancel this corner's sideways speed.
+static func max_lateral_force(sideways_speed: float, corner_mass: float, delta: float) -> float:
+	return absf(sideways_speed) * corner_mass / delta
+```
+
+- [ ] **Step 5: Update the wheel — skid vector, rear grip bias, real ABS**
+
+Replace `car/wheel.gd` with:
+
+`car/wheel.gd`:
+
+```gdscript
+class_name Wheel
+extends Node3D
+## One wheel. Sits at the suspension top mount. Each tick it finds the ground with
+## a sphere cast, runs the suspension and tire maths, and returns the force the car
+## should apply at the contact point. It also moves and spins its visual mesh.
+
+@export var is_front: bool = false
+@export var is_left: bool = false
+
+var stats: CarStats
+var grip_table: GripTable
+
+# --- Contact, refreshed by update_contact() ---
+var in_contact: bool = false
+## Global position where the tire touches the ground.
+var contact_point: Vector3 = Vector3.ZERO
+## Global ground normal at the contact point.
+var contact_normal: Vector3 = Vector3.UP
+var surface: SurfaceDef = null
+## Metres squeezed from full extension (0 = hanging at full droop).
+var compression: float = 0.0
+## m/s, + while compressing.
+var compression_speed: float = 0.0
+
+# --- Tire state ---
+## Front-wheel angle in radians, + = right. Set by the car.
+var steer_angle: float = 0.0
+## Wheel spin in rad/s, + = rolling forward.
+var spin_speed: float = 0.0
+## Set by the car each tick (Nm).
+var drive_torque: float = 0.0
+var brake_torque: float = 0.0
+## Vertical load this wheel carries (N).
+var tire_load: float = 0.0
+var slip_ratio: float = 0.0
+var slip_angle: float = 0.0
+
+var _cast: ShapeCast3D
+var _steer_pivot: Node3D
+var _spin_pivot: Node3D
+var _spin_visual_angle: float = 0.0
+var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+
+
+## Called once by the car in its _ready().
+func setup(car_stats: CarStats, table: GripTable, car_body: CollisionObject3D) -> void:
+	stats = car_stats
+	grip_table = table
+	position = stats.wheel_mount_position(is_front, is_left)
+	_cast = ShapeCast3D.new()
+	var sphere := SphereShape3D.new()
+	sphere.radius = stats.wheel_radius
+	_cast.shape = sphere
+	_cast.target_position = Vector3(0.0, -stats.suspension_length, 0.0)
+	_cast.enabled = false  # updated manually once per tick, in update_contact()
+	_cast.add_exception(car_body)
+	add_child(_cast)
+	_build_visual()
+
+
+func reset() -> void:
+	spin_speed = 0.0
+	compression = 0.0
+	compression_speed = 0.0
+	tire_load = 0.0
+	slip_ratio = 0.0
+	slip_angle = 0.0
+
+
+## Step 1 of a tick: find the ground and measure the suspension.
+func update_contact(delta: float) -> void:
+	var previous_compression := compression
+	_cast.force_shapecast_update()
+	in_contact = _cast.is_colliding()
+	if not in_contact:
+		compression = 0.0
+		compression_speed = 0.0
+		surface = null
+		return
+	contact_point = _cast.get_collision_point(0)
+	contact_normal = _cast.get_collision_normal(0)
+	surface = SurfaceLookup.surface_of(_cast.get_collider(0))
+	# How far the wheel centre travelled down from the mount before touching.
+	# Soft surfaces let the wheel sink a little further.
+	var hit_distance := _cast.get_closest_collision_safe_fraction() * stats.suspension_length
+	var wheel_distance := minf(hit_distance + surface.sink_depth, stats.suspension_length)
+	compression = stats.suspension_length - wheel_distance
+	compression_speed = (compression - previous_compression) / delta
+
+
+## Step 2 of a tick: returns the global force to apply at contact_point (zero in
+## the air). anti_roll: extra suspension force from the anti-roll bar (N, + = up).
+func compute_force(delta: float, anti_roll: float, body: RigidBody3D) -> Vector3:
+	if not in_contact:
+		tire_load = 0.0
+		slip_ratio = 0.0
+		slip_angle = 0.0
+		_spin_freely(delta)
+		return Vector3.ZERO
+
+	var suspension := SuspensionModel.spring_damper_force(compression, compression_speed,
+			stats.spring_stiffness, stats.compress_damping, stats.rebound_damping)
+	suspension += SuspensionModel.bump_stop_force(compression, stats.suspension_length,
+			stats.bump_stop_stiffness)
+	tire_load = maxf(0.0, suspension + anti_roll)
+
+	# The wheel's heading, flattened onto the ground plane.
+	var car_up := body.global_basis.y
+	var heading := (-body.global_basis.z).rotated(car_up, -steer_angle)
+	var forward := (heading - contact_normal * heading.dot(contact_normal)).normalized()
+	var right := forward.cross(contact_normal).normalized()
+
+	# How the contact patch moves over the ground.
+	var patch_velocity := body.linear_velocity \
+			+ body.angular_velocity.cross(contact_point - body.global_position)
+	var forward_speed := patch_velocity.dot(forward)
+	var sideways_speed := patch_velocity.dot(right)
+	var tread_speed := spin_speed * stats.wheel_radius
+
+	slip_ratio = TireModel.slip_ratio(tread_speed, forward_speed, stats.low_speed_reference)
+	slip_angle = TireModel.slip_angle(forward_speed, sideways_speed, stats.low_speed_reference)
+	var friction := surface.grip * stats.tire_grip * grip_table.multiplier(stats.archetype, surface.id)
+	if not is_front:
+		friction *= stats.rear_grip_bias
+	var tire := TireModel.contact_force(slip_ratio, slip_angle, friction * tire_load,
+			stats.peak_slip_ratio, deg_to_rad(stats.peak_slip_angle_deg), stats.slide_grip,
+			Vector2(tread_speed - forward_speed, sideways_speed))
+
+	# Never let a force overshoot within one tick: this is what stops low-speed jitter.
+	var corner_mass := maxf(tire_load / _gravity, 1.0)
+	var wheel_held := brake_torque > 0.0 and is_zero_approx(spin_speed)
+	var long_limit := TireModel.max_longitudinal_force(tread_speed - forward_speed,
+			stats.wheel_radius, stats.wheel_inertia, corner_mass, wheel_held, delta)
+	var longitudinal := clampf(tire.x, -long_limit, long_limit)
+	var lateral_limit := TireModel.max_lateral_force(sideways_speed, corner_mass, delta)
+	var lateral := clampf(tire.y, -lateral_limit, lateral_limit)
+
+	_update_spin(delta, longitudinal)
+
+	# Rolling resistance and surface drag slow the car down but never reverse it.
+	var resistance := surface.rolling_resistance * tire_load + surface.drag * absf(forward_speed)
+	resistance = minf(resistance, absf(forward_speed) * corner_mass / delta)
+	longitudinal -= signf(forward_speed) * resistance
+
+	return car_up * tire_load + forward * longitudinal + right * lateral
+
+
+## Step 3 of a tick: place and spin the visual wheel.
+func update_visual(delta: float) -> void:
+	var wheel_distance := stats.suspension_length - compression
+	_steer_pivot.position = Vector3(0.0, -wheel_distance, 0.0)
+	_steer_pivot.rotation.y = -steer_angle
+	# Rolling forward (-Z) is a negative rotation about +X.
+	_spin_visual_angle = wrapf(_spin_visual_angle - spin_speed * delta, -PI, PI)
+	_spin_pivot.rotation.x = _spin_visual_angle
+
+
+func _update_spin(delta: float, tire_force: float) -> void:
+	# The road pushes back on the tread with the opposite of the tire force.
+	spin_speed += (drive_torque - tire_force * stats.wheel_radius) / stats.wheel_inertia * delta
+	_apply_brakes(delta, tire_force)
+
+
+func _spin_freely(delta: float) -> void:
+	spin_speed += drive_torque / stats.wheel_inertia * delta
+	_apply_brakes(delta, 0.0)
+
+
+## road_force: the longitudinal tire force this tick (N), which is all the brake
+## can react against before the wheel locks.
+func _apply_brakes(delta: float, road_force: float) -> void:
+	var torque := brake_torque
+	# ABS: once the wheel slips more than the target, hold the brake at what the
+	# road can take, so the wheel keeps turning near peak grip instead of locking.
+	if stats.abs_enabled and in_contact and slip_ratio < -stats.abs_target_slip:
+		torque = minf(torque, absf(road_force) * stats.wheel_radius)
+	spin_speed = move_toward(spin_speed, 0.0, torque / stats.wheel_inertia * delta)
+
+
+func _build_visual() -> void:
+	_steer_pivot = Node3D.new()
+	add_child(_steer_pivot)
+	_spin_pivot = Node3D.new()
+	_steer_pivot.add_child(_spin_pivot)
+
+	var tire := MeshInstance3D.new()
+	var cylinder := CylinderMesh.new()
+	cylinder.top_radius = stats.wheel_radius
+	cylinder.bottom_radius = stats.wheel_radius
+	cylinder.height = stats.wheel_width
+	tire.mesh = cylinder
+	tire.rotation_degrees.z = 90.0  # cylinder axis (Y) -> axle axis (X)
+	tire.material_override = _flat_material(Color(0.12, 0.12, 0.12))
+	_spin_pivot.add_child(tire)
+
+	# A bar across the wheel face, so you can see it spin.
+	var hub := MeshInstance3D.new()
+	var bar := BoxMesh.new()
+	bar.size = Vector3(stats.wheel_width + 0.02, stats.wheel_radius * 1.6, 0.08)
+	hub.mesh = bar
+	hub.material_override = _flat_material(Color(0.75, 0.75, 0.78))
+	_spin_pivot.add_child(hub)
+
+
+static func _flat_material(color: Color) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	return material
+```
+
+- [ ] **Step 6: Update the steering assist**
+
+Replace `car/steering.gd` with:
+
+`car/steering.gd`:
+
+```gdscript
+class_name Steering
+extends RefCounted
+## Turns steering input into a front-wheel angle. The lock shrinks with speed and
+## the wheels turn at a limited rate, so the car can't snap sideways.
+
+var stats: CarStats
+## Current front-wheel angle in radians. + = right.
+var angle: float = 0.0
+
+
+func _init(car_stats: CarStats) -> void:
+	stats = car_stats
+
+
+## Largest wheel angle (radians) worth using at a given speed (m/s): the angle
+## that turns the car on its tightest grip-limited arc, plus the slip angle the
+## tire needs to make that turn. More lock than this only ploughs the front
+## tires, which is why full-lock touch steering felt understeery.
+static func max_angle_for_speed(speed: float, car_stats: CarStats) -> float:
+	var grip_accel := car_stats.tire_grip * 9.8
+	var geometric := atan(car_stats.wheelbase * grip_accel / maxf(speed * speed, 1.0))
+	var useful := geometric + deg_to_rad(car_stats.peak_slip_angle_deg) * car_stats.steer_assist_slip
+	return minf(deg_to_rad(car_stats.max_steer_deg), useful)
+
+
+## steer_input: -1 (full left) .. 1 (full right). Returns the new angle.
+func update(delta: float, steer_input: float, speed: float) -> float:
+	var target := clampf(steer_input, -1.0, 1.0) * max_angle_for_speed(speed, stats)
+	angle = move_toward(angle, target, deg_to_rad(stats.steer_rate_deg) * delta)
+	return angle
+```
+
+And replace `tests/unit/test_steering.gd` (the old lock-curve expectations no longer hold):
+
+`tests/unit/test_steering.gd`:
+
+```gdscript
+extends GutTest
+
+var stats: CarStats
+var steering: Steering
+
+
+func before_each() -> void:
+	stats = CarStats.new()
+	steering = Steering.new(stats)
+
+
+func test_full_lock_when_stopped() -> void:
+	assert_almost_eq(rad_to_deg(Steering.max_angle_for_speed(0.0, stats)), 32.0, 0.001)
+
+
+func test_assist_allows_only_the_useful_angle_at_speed() -> void:
+	# At 14 m/s the tightest grip-limited arc needs 7.9 degrees of geometry, and
+	# the assist adds 0.75 of the tire's 8 degree best slip angle on top.
+	assert_almost_eq(rad_to_deg(Steering.max_angle_for_speed(14.0, stats)), 13.89, 0.01)
+	assert_almost_eq(rad_to_deg(Steering.max_angle_for_speed(40.0, stats)), 6.97, 0.01)
+
+
+func test_lock_shrinks_as_speed_rises() -> void:
+	var previous := rad_to_deg(Steering.max_angle_for_speed(5.0, stats))
+	for speed in [10.0, 20.0, 30.0, 40.0, 60.0]:
+		var angle := rad_to_deg(Steering.max_angle_for_speed(speed, stats))
+		assert_lt(angle, previous, "%.0f m/s allows less lock" % speed)
+		previous = angle
+
+
+func test_lock_never_exceeds_the_steering_limit() -> void:
+	for speed in [0.0, 1.0, 3.0, 6.0]:
+		assert_lte(rad_to_deg(Steering.max_angle_for_speed(speed, stats)), stats.max_steer_deg)
+
+
+func test_wheels_turn_at_a_limited_rate() -> void:
+	# 180 deg/s for 1/120 s = 1.5 degrees.
+	steering.update(1.0 / 120.0, 1.0, 0.0)
+	assert_almost_eq(rad_to_deg(steering.angle), 1.5, 0.001)
+
+
+func test_reaches_full_lock_after_enough_time() -> void:
+	for i in 120:
+		steering.update(1.0 / 120.0, 1.0, 0.0)
+	assert_almost_eq(rad_to_deg(steering.angle), 32.0, 0.001)
+
+
+func test_left_input_turns_left() -> void:
+	steering.update(1.0, -1.0, 0.0)
+	assert_almost_eq(rad_to_deg(steering.angle), -32.0, 0.001)
+
+
+func test_recentres_when_released() -> void:
+	steering.update(1.0, 1.0, 0.0)
+	steering.update(1.0, 0.0, 0.0)
+	assert_almost_eq(steering.angle, 0.0, 0.0001)
+```
+
+- [ ] **Step 7: New and retuned stats**
+
+Replace `car/car_stats.gd` with:
+
+`car/car_stats.gd`:
+
+```gdscript
+class_name CarStats
+extends Resource
+## Every tunable number for one car. Tune in the Inspector - no code changes.
+## Units: metres, kilograms, seconds, newtons, newton-metres; degrees where named.
+## Axes: forward is -Z, right is +X, up is +Y.
+
+enum DriveType { FWD, RWD, AWD }
+
+@export_group("Identity")
+@export var display_name: String = "Rally Car"
+## Key into the GripTable ("rally", "truck", ...).
+@export var archetype: StringName = &"rally"
+
+@export_group("Body")
+@export var mass: float = 1300.0
+## Centre of mass relative to the body origin. Lower = harder to roll over.
+@export var center_of_mass: Vector3 = Vector3(0.0, -0.15, 0.0)
+## Size of the gray-box body (collision box and mesh).
+@export var body_size: Vector3 = Vector3(1.6, 0.5, 4.2)
+## Aerodynamic drag: force = aero_drag x speed^2.
+@export var aero_drag: float = 0.42
+
+@export_group("Wheels")
+@export var wheel_radius: float = 0.33
+@export var wheel_width: float = 0.24
+## Distance between left and right wheel centres.
+@export var track_width: float = 1.52
+## Distance between front and rear axles.
+@export var wheelbase: float = 2.52
+## Height of the suspension top mounts relative to the body origin.
+@export var wheel_mount_height: float = 0.1
+## Rotational inertia of one wheel (tire, rim, brake, axle), kg*m^2.
+@export var wheel_inertia: float = 1.2
+
+@export_group("Suspension")
+## Wheel travel from fully extended to fully compressed.
+@export var suspension_length: float = 0.35
+@export var spring_stiffness: float = 26500.0
+@export var compress_damping: float = 2000.0
+@export var rebound_damping: float = 3000.0
+@export var bump_stop_stiffness: float = 200000.0
+@export var anti_roll_front: float = 8000.0
+@export var anti_roll_rear: float = 5000.0
+
+@export_group("Tires")
+## The car's own tire friction, multiplied with the surface grip.
+@export var tire_grip: float = 1.1
+## Rear tire grip as a share of the front's. Below 1.0 the car rotates more.
+@export var rear_grip_bias: float = 0.96
+## Slip ratio where forward/backward grip peaks.
+@export var peak_slip_ratio: float = 0.12
+## Slip angle (degrees) where sideways grip peaks.
+@export var peak_slip_angle_deg: float = 8.0
+## Grip left when fully sliding, as a fraction of peak grip.
+@export_range(0.0, 1.0) var slide_grip: float = 0.75
+## Slip maths treats speeds below this as this (m/s), for low-speed stability.
+@export var low_speed_reference: float = 3.0
+
+@export_group("Engine")
+## Torque curve: rpm points and the torque (Nm) at each. Same length, ascending rpm.
+@export var torque_curve_rpm: PackedFloat32Array = PackedFloat32Array([1000, 2500, 4000, 5500, 6500, 7200])
+@export var torque_curve_nm: PackedFloat32Array = PackedFloat32Array([220, 320, 390, 380, 340, 280])
+@export var idle_rpm: float = 1000.0
+@export var redline_rpm: float = 7200.0
+## Simulated clutch slip: pulling away, the engine may rev up to this rpm.
+@export var launch_rpm: float = 3500.0
+## Engine braking torque (Nm at the engine) when off the throttle.
+@export var engine_braking_nm: float = 50.0
+
+@export_group("Gearbox")
+@export var gear_ratios: PackedFloat32Array = PackedFloat32Array([3.3, 2.1, 1.5, 1.15, 0.92, 0.76])
+@export var reverse_ratio: float = 3.3
+@export var final_drive: float = 4.4
+@export var upshift_rpm: float = 6800.0
+@export var downshift_rpm: float = 3000.0
+## Seconds with no drive torque during a gear change.
+@export var shift_time: float = 0.18
+@export_range(0.0, 1.0) var drivetrain_efficiency: float = 0.85
+
+@export_group("Drivetrain")
+@export var drive_type: DriveType = DriveType.AWD
+## AWD only: share of drive torque sent to the front axle.
+@export_range(0.0, 1.0) var front_torque_split: float = 0.35
+
+@export_group("Brakes")
+## Total brake torque for the whole car at full pedal (Nm).
+@export var brake_torque: float = 10000.0
+## Share of brake torque on the front axle.
+@export_range(0.0, 1.0) var brake_front_bias: float = 0.65
+## ABS: holds the brake back once a wheel slips this much, so it keeps turning
+## near peak grip instead of locking (a locked wheel cannot steer the car).
+@export var abs_enabled: bool = true
+@export var abs_target_slip: float = 0.15
+## Below this speed (m/s) with no pedal pressed, the brakes hold the car.
+@export var auto_hold_speed: float = 0.5
+
+@export_group("Assists")
+## Traction control: trims engine torque while the driven wheels spin. Touch
+## pedals are on/off, so without it full throttle usually means wheelspin.
+@export var traction_control: bool = true
+## Slip ratio the traction control allows before it starts trimming torque.
+@export var traction_slip_target: float = 0.3
+
+@export_group("Steering")
+@export var max_steer_deg: float = 32.0
+## Steering lock at and above steer_limit_speed.
+@export var min_steer_deg: float = 12.0
+@export var steer_limit_speed: float = 25.0
+## How fast the front wheels turn, degrees per second.
+@export var steer_rate_deg: float = 180.0
+## Share of the tire's best slip angle the steering assist adds on top of the
+## geometric angle. Below 1.0 the front tires stay short of ploughing.
+@export var steer_assist_slip: float = 0.75
+
+@export_group("Air control")
+## Seconds all four wheels must be off the ground before air control activates.
+@export var airborne_grace: float = 0.1
+@export var air_pitch_torque: float = 3000.0
+## Set to 0 to turn off steer-to-roll in the air.
+@export var air_roll_torque: float = 1500.0
+
+
+## Suspension top-mount position of a wheel, relative to the body origin.
+func wheel_mount_position(is_front: bool, is_left: bool) -> Vector3:
+	var x := -track_width * 0.5 if is_left else track_width * 0.5
+	var z := -wheelbase * 0.5 if is_front else wheelbase * 0.5
+	return Vector3(x, wheel_mount_height, z)
+```
+
+And `car/rally_car.tres` with:
+
+`car/rally_car.tres`:
+
+```ini
+[gd_resource type="Resource" script_class="CarStats" format=3]
+
+[ext_resource type="Script" path="res://car/car_stats.gd" id="1_stats"]
+
+[resource]
+script = ExtResource("1_stats")
+display_name = "Rally Car"
+archetype = &"rally"
+mass = 1300.0
+center_of_mass = Vector3(0, -0.15, 0)
+body_size = Vector3(1.6, 0.5, 4.2)
+aero_drag = 0.42
+wheel_radius = 0.33
+wheel_width = 0.24
+track_width = 1.52
+wheelbase = 2.52
+wheel_mount_height = 0.1
+wheel_inertia = 1.2
+suspension_length = 0.35
+spring_stiffness = 26500.0
+compress_damping = 2000.0
+rebound_damping = 3000.0
+bump_stop_stiffness = 200000.0
+anti_roll_front = 5000.0
+anti_roll_rear = 8000.0
+tire_grip = 1.1
+rear_grip_bias = 0.96
+peak_slip_ratio = 0.12
+peak_slip_angle_deg = 8.0
+slide_grip = 0.75
+low_speed_reference = 3.0
+torque_curve_rpm = PackedFloat32Array(1000, 2500, 4000, 5500, 6500, 7200)
+torque_curve_nm = PackedFloat32Array(220, 320, 390, 380, 340, 280)
+idle_rpm = 1000.0
+redline_rpm = 7200.0
+launch_rpm = 3500.0
+engine_braking_nm = 50.0
+gear_ratios = PackedFloat32Array(3.3, 2.1, 1.5, 1.15, 0.92, 0.76)
+reverse_ratio = 3.3
+final_drive = 4.4
+upshift_rpm = 6800.0
+downshift_rpm = 3000.0
+shift_time = 0.18
+drivetrain_efficiency = 0.85
+drive_type = 2
+front_torque_split = 0.35
+brake_torque = 10000.0
+brake_front_bias = 0.6
+abs_enabled = true
+abs_target_slip = 0.15
+auto_hold_speed = 0.5
+traction_control = true
+traction_slip_target = 0.3
+max_steer_deg = 32.0
+min_steer_deg = 12.0
+steer_limit_speed = 25.0
+steer_rate_deg = 180.0
+steer_assist_slip = 0.75
+airborne_grace = 0.1
+air_pitch_torque = 3000.0
+air_roll_torque = 1500.0
+```
+
+- [ ] **Step 8: Decouple one drivetrain test from the car's tuning**
+
+In `tests/unit/test_drivetrain.gd`, add the first line of the body of `test_traction_control_trims_torque_while_wheels_spin`, so the test no longer depends on the car's tuned traction target:
+
+```gdscript
+	stats.traction_slip_target = 0.2  # set here so the car's tuning can move freely
+```
+
+- [ ] **Step 9: Run everything**
+
+Run: `./run_tests.sh all`
+Expected: exit 0, **139 passing**, with printed lines close to:
+
+```
+brake-in-turn: average yaw -25.2 deg/s, worst wrong-way yaw +0.0 deg/s (+ = away from the turn)
+straight-line braking: worst slip ratio -0.67 (-1 = locked)
+0-100 km/h: 8.06 s
+braking 100-0 km/h: 35.8 m
+tire slip: asphalt 9.8 deg, mud 16.5 deg | yaw rate: asphalt 31.9 deg/s, mud 26.8 deg/s
+```
+
+- [ ] **Step 10: Commit**
+
+```bash
+git add car tests
+git commit -m "Fix sliding tire direction and ABS; tune the car to rotate"
+```
+
+---
+
+### Task 20: Android debug build on the Xiaomi 13
 
 **Files:**
 - Create: `export_presets.cfg`, `tools/android.sh`, `tools/pull_runs.sh`
@@ -4624,7 +5399,7 @@ git commit -m "Add Android debug export and phone helper scripts"
 
 ---
 
-### Task 20: Performance profile on the phone
+### Task 21: Performance profile on the phone
 
 **Files:**
 - Create: `docs/notes/performance-m1.md`
@@ -4666,7 +5441,7 @@ git commit -m "Record Milestone 1 performance on Xiaomi 13"
 
 ---
 
-### Task 21: Feel tuning loop and sign-off
+### Task 22: Feel tuning loop and sign-off
 
 **Files:**
 - Create: `docs/notes/feel-log.md`
