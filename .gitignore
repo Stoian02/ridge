@@ -1,0 +1,7 @@
+# Godot cache and generated Android project
+.godot/
+/android/
+
+# Local build output and runs pulled from the phone
+/build/
+/runs/
