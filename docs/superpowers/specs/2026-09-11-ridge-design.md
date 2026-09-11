@@ -176,6 +176,11 @@ layered under the engine.
   the spline in **segments**; each segment is its own collision shape tagged with a
   surface. A mud section is expressed as "these segments are Mud".
 - Reshaping a level = moving spline points (editable by hand in the Godot editor).
+- **Unevenness:** trails are not flat. Potholes, bumps, washboard, ruts, rocks and
+  gentle undulation are authored as height features on the drivable surface (the
+  `RoughPatch` heightmap approach proven on the Test Ground in Milestone 1, generalised
+  by the trail builder in Milestone 2). Asphalt gets occasional potholes and patches;
+  mud gets ruts at wheel-track spacing.
 - **Edges:** natural boundaries (rocks, trees, drop-offs) plus an out-of-bounds volume.
 - **Checkpoint gates** (`Area3D`) placed along the spline; each stores its reset
   transform. A **finish gate** ends the run.
@@ -186,7 +191,8 @@ unlock requirement.
 
 ### 6.3 Milestone levels
 - **Test Ground** (dev only): flat area, ramps of several angles, a jump, a slalom, and
-  side-by-side surface patches (asphalt / dirt / mud) for tuning and scenario tests.
+  side-by-side surface patches (asphalt / dirt / mud) for tuning and scenario tests, plus
+  a rough asphalt lane (potholes, speed bumps, washboard) and a rutted mud strip.
 - **Rally Road:** asphalt mountain road; gentle climbs, a couple of hairpins, two small
   jumps. Teaches steering, braking, and air control.
 - **Muddy Valley:** dirt track dropping into a valley and climbing out; muddy stretches
@@ -268,7 +274,7 @@ Code style: readable over clever; small focused files; typed GDScript.
 ---
 
 ## 11. Milestones
-1. **Core feel** — project setup, Test Ground, Rally Car with the full custom physics
+1. **Core feel** — project setup, Test Ground (including rough ground), Rally Car with the full custom physics
    stack, desktop + touch controls (both steering styles), chase camera, telemetry and run
    recorder, unit + scenario tests, first Android build on the Xiaomi 13, performance
    profile. *Done when:* the user signs off that the Rally Car feels good on asphalt, dirt,

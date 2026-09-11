@@ -27,7 +27,7 @@
 
 ## Verified Before Writing
 
-Every code block in Tasks 1–17 was built and run in a throwaway copy of this project on this machine (Godot 4.7.2). The result was **123 passing tests** and a rendered Test Ground. The measured behaviour, which the "Expected" lines below refer to (differences of ±5% are fine):
+Every code block in Tasks 1–18 was built and run in a throwaway copy of this project on this machine (Godot 4.7.2). The result was **133 passing tests** and a rendered Test Ground. The measured behaviour, which the "Expected" lines below refer to (differences of ±5% are fine):
 
 | Check | Measured |
 |---|---|
@@ -41,7 +41,7 @@ Two problems found and fixed during that run are already reflected in this plan:
 - **Gearbox hunting.** Shifting on wheel spin made wheelspin trigger 1↔2 shift loops. The gearbox now shifts on road speed.
 - **Runaway wheelspin.** The touch pedals are on/off, so full throttle meant runaway wheelspin. Traction control was added (a `CarStats` flag, on by default).
 
-Tasks 18–20 need the export templates, the phone and the user, so they could not be pre-run.
+Tasks 19–21 need the export templates, the phone and the user, so they could not be pre-run.
 
 ## Additions and Deferrals Relative to the Spec
 
@@ -75,6 +75,7 @@ Tasks 18–20 need the export templates, the phone and the user, so they could n
 | `debug/run_recorder.gd` | Per-tick CSV recording to `user://runs/` |
 | `levels/shared/golden_hour_mood.gd` | Over the Hill-style sky, sun, fog and grade |
 | `levels/test_ground/test_ground.gd`, `.tscn` | Gray-box tuning ground and the Milestone 1 main scene |
+| `levels/test_ground/rough_patch.gd` | Uneven strip (potholes, bumps, washboard, ruts) as heightmap + mesh |
 | `tests/unit/*`, `tests/scenarios/*` | GUT tests, scenario helpers, feel baseline |
 | `tools/screenshot.sh`, `tools/android.sh`, `tools/pull_runs.sh` | Screenshots, phone builds, pulling runs off the phone |
 | `export_presets.cfg` | Android debug export preset |
@@ -2197,7 +2198,7 @@ git commit -m "Add raycast wheel: contact, suspension and tire forces"
     - Fields: `input: CarInput`, `wheels: Array[Wheel]` (`[FL, FR, RL, RR]`), `steering`, `drivetrain`, `air_control`.
     - Methods: `forward_speed() -> float` (m/s), `reset_to(target: Transform3D)`, `get_telemetry() -> Dictionary` (keys exactly as in `TelemetrySample.make()`).
   - `ScenarioHelper.ticks(seconds) -> int`, `make_flat_ground(surface, center := Vector3.ZERO, size := 600.0) -> StaticBody3D`, `spawn_car(test: GutTest, at: Vector3) -> Car`, `is_upright(car) -> bool`.
-  - `FeelBaseline` constants (wide ranges until the Task 20 sign-off).
+  - `FeelBaseline` constants (wide ranges until the Task 21 sign-off).
   - `TelemetrySample.make() -> Dictionary`, the documented telemetry shape.
 
 - [ ] **Step 1: Write the scenario helpers and the telemetry sample**
@@ -3947,7 +3948,481 @@ git commit -m "Add gray-box Test Ground as main scene, plus screenshot tool"
 
 ---
 
-### Task 18: Android debug build on the Xiaomi 13
+### Task 18: Rough ground on the Test Ground
+
+Added at the user's request (2026-09-11): terrain shouldn't all be even, and suspension feel must be tuned on uneven ground, not only on flat slabs. See spec §6.1 "Unevenness".
+
+**Files:**
+- Create: `levels/test_ground/rough_patch.gd`, `tests/unit/test_rough_patch.gd`, `tests/scenarios/test_rough_ground.gd`
+- Modify: `levels/test_ground/test_ground.gd` (header comment, `_build_layout()`, new `_add_rough_patch()`)
+
+**Interfaces:**
+- Consumes: `SurfaceDef`, `SurfaceLookup.META_KEY`, `ScenarioHelper`, `Car`, `Wheel`.
+- Produces: `RoughPatch` (StaticBody3D):
+  - Enum `Profile { ROUGH_ASPHALT, RUTTED_MUD }`.
+  - Exports: `surface: SurfaceDef`, `profile: Profile`, `size: Vector2` (width x, length z).
+  - Constants: `SPACING`, `BASE_HEIGHT`, `TAPER`, `POTHOLE_DEPTH`, `POTHOLES`, `BUMP_HEIGHT`, `BUMPS`, `WASHBOARD_*`, `RUT_*`, `MUD_WAVE_HEIGHT`, `SHADE_PER_METRE`.
+  - Static functions: `height_at(which, point: Vector2, patch_size: Vector2) -> float`, `feature_offset(which, x, along) -> float`, `rough_asphalt_offset(x, along) -> float`, `rutted_mud_offset(x, along) -> float`.
+  - It builds a `HeightMapShape3D` (samples 0.25 m apart via node scale; verified with Jolt) plus a matching vertex-shaded mesh.
+- The Test Ground gains a rough asphalt lane (centre x = 60, 200 m long: potholes, then speed bumps, then washboard) and a rutted mud strip (centre x = 90, 100 m long). Both are entered from their +Z end, driving toward −Z like the runway.
+
+- [ ] **Step 1: Write the failing tests**
+
+`tests/unit/test_rough_patch.gd`:
+
+```gdscript
+extends GutTest
+
+const ASPHALT := preload("res://surfaces/asphalt.tres")
+const SIZE := Vector2(10.0, 200.0)
+const ROUGH := RoughPatch.Profile.ROUGH_ASPHALT
+const RUTS := RoughPatch.Profile.RUTTED_MUD
+
+
+## Height at x across and `along` metres from the entry end.
+func _height(which: RoughPatch.Profile, x: float, along: float) -> float:
+	return RoughPatch.height_at(which, Vector2(x, SIZE.y * 0.5 - along), SIZE)
+
+
+func test_strip_starts_and_ends_at_ground_level() -> void:
+	assert_almost_eq(_height(ROUGH, 0.0, 0.0), 0.0, 0.0001)
+	assert_almost_eq(_height(ROUGH, 0.0, SIZE.y), 0.0, 0.0001)
+
+
+func test_plain_stretch_sits_at_base_height() -> void:
+	assert_almost_eq(_height(ROUGH, 4.0, 180.0), RoughPatch.BASE_HEIGHT, 0.0001)
+
+
+func test_pothole_dips_below_base() -> void:
+	# Centre of the first pothole: (x -1.2, 10 m along).
+	var expected := RoughPatch.BASE_HEIGHT - RoughPatch.POTHOLE_DEPTH
+	assert_almost_eq(_height(ROUGH, -1.2, 10.0), expected, 0.0001)
+
+
+func test_speed_bump_rises_above_base() -> void:
+	var expected := RoughPatch.BASE_HEIGHT + RoughPatch.BUMP_HEIGHT
+	assert_almost_eq(_height(ROUGH, 0.0, 70.0), expected, 0.0001)
+
+
+func test_washboard_ripples_around_base() -> void:
+	var quarter := RoughPatch.WASHBOARD_WAVELENGTH * 0.25
+	var crest := _height(ROUGH, 0.0, RoughPatch.WASHBOARD_START + quarter)
+	assert_almost_eq(crest, RoughPatch.BASE_HEIGHT + RoughPatch.WASHBOARD_AMPLITUDE, 0.001)
+
+
+func test_ruts_follow_the_wheel_track() -> void:
+	var between := _height(RUTS, 0.0, 50.0)
+	assert_almost_eq(_height(RUTS, -0.76, 50.0), between - RoughPatch.RUT_DEPTH, 0.0001)
+	assert_almost_eq(_height(RUTS, 0.76, 50.0), between - RoughPatch.RUT_DEPTH, 0.0001)
+
+
+func test_heights_never_go_below_the_ground() -> void:
+	for which in [ROUGH, RUTS]:
+		var along := 0.0
+		while along <= SIZE.y:
+			for x in [-5.0, -1.2, -0.76, 0.0, 0.76, 1.5, 5.0]:
+				assert_true(_height(which, x, along) >= 0.0)
+			along += 0.5
+
+
+func test_built_mesh_faces_up() -> void:
+	var patch := RoughPatch.new()
+	patch.surface = ASPHALT
+	patch.size = Vector2(4.0, 20.0)
+	add_child_autofree(patch)
+	var mesh_instance: MeshInstance3D = patch.get_children().filter(func(n): return n is MeshInstance3D)[0]
+	var normals: PackedVector3Array = mesh_instance.mesh.surface_get_arrays(0)[Mesh.ARRAY_NORMAL]
+	assert_gt(normals[0].y, 0.5, "normals point up, so the strip is lit and visible from above")
+```
+
+`tests/scenarios/test_rough_ground.gd`:
+
+```gdscript
+extends GutTest
+## The car can drive over the rough strips: it stays upright and on the strip,
+## and the suspension actually works (compression varies over the features).
+
+const ASPHALT := preload("res://surfaces/asphalt.tres")
+const DIRT := preload("res://surfaces/dirt.tres")
+const MUD := preload("res://surfaces/mud.tres")
+
+
+## Builds dirt ground plus a strip whose entry is at z = 0 (running toward -Z),
+## drives a car across it at roughly target_kmh for `seconds`, and returns stats.
+func _drive_over(surface: SurfaceDef, profile: RoughPatch.Profile, length: float,
+		target_kmh: float, seconds: float) -> Dictionary:
+	add_child_autofree(ScenarioHelper.make_flat_ground(DIRT))
+	var patch := RoughPatch.new()
+	patch.surface = surface
+	patch.profile = profile
+	patch.size = Vector2(10.0, length)
+	patch.position = Vector3(0.0, 0.0, -length * 0.5)
+	add_child_autofree(patch)
+	var car := ScenarioHelper.spawn_car(self, Vector3(0.0, 1.0, 8.0))
+	await wait_physics_frames(ScenarioHelper.ticks(1.0))
+
+	var lowest := INF
+	var highest := -INF
+	var saw_surface := false
+	for i in ScenarioHelper.ticks(seconds):
+		car.input.virtual_throttle = 1.0 if car.forward_speed() * 3.6 < target_kmh else 0.0
+		await get_tree().physics_frame
+		var wheel: Wheel = car.wheels[0]
+		if wheel.in_contact and wheel.surface == surface:
+			saw_surface = true
+			lowest = minf(lowest, wheel.compression)
+			highest = maxf(highest, wheel.compression)
+	return {"car": car, "saw_surface": saw_surface, "compression_range": highest - lowest}
+
+
+func test_rough_asphalt_is_drivable_and_felt() -> void:
+	var result := await _drive_over(ASPHALT, RoughPatch.Profile.ROUGH_ASPHALT, 200.0, 50.0, 14.0)
+	var car: Car = result.car
+	gut.p("rough asphalt: compression range %.3f m, ended at z %.0f" % [result.compression_range, car.global_position.z])
+	assert_true(result.saw_surface, "the front-left wheel drove on the strip")
+	assert_gt(result.compression_range, 0.04, "bumps and potholes moved the suspension")
+	assert_true(ScenarioHelper.is_upright(car))
+	assert_lt(absf(car.global_position.x), 4.0, "still on the 10 m wide strip")
+
+
+func test_rutted_mud_is_drivable_and_felt() -> void:
+	var result := await _drive_over(MUD, RoughPatch.Profile.RUTTED_MUD, 100.0, 30.0, 10.0)
+	var car: Car = result.car
+	gut.p("rutted mud: compression range %.3f m, ended at z %.0f" % [result.compression_range, car.global_position.z])
+	assert_true(result.saw_surface, "the front-left wheel drove on the strip")
+	assert_gt(result.compression_range, 0.02, "the waves moved the suspension")
+	assert_true(ScenarioHelper.is_upright(car))
+	assert_lt(absf(car.global_position.x), 4.0, "still on the 10 m wide strip")
+```
+
+- [ ] **Step 2: Run them and watch them fail**
+
+Run: `./run_tests.sh all`
+Expected: exit 1, `SCRIPT ERROR` saying `RoughPatch` is not declared.
+
+- [ ] **Step 3: Implement the rough patch**
+
+`levels/test_ground/rough_patch.gd`:
+
+```gdscript
+class_name RoughPatch
+extends StaticBody3D
+## A drivable strip of uneven ground: a heightmap collision shape plus a matching
+## mesh, both built from one height function. The strip rises from ground level to
+## BASE_HEIGHT over its first and last few metres so cars can drive on and off;
+## the features (potholes, bumps, ruts...) are carved into that raised base.
+## Local axes: x across the strip, z along it. Cars enter at the +Z end.
+
+enum Profile { ROUGH_ASPHALT, RUTTED_MUD }
+
+## Metres between height samples.
+const SPACING := 0.25
+## Top of the strip above the surrounding ground (m). Deep enough that potholes
+## stay above the ground underneath.
+const BASE_HEIGHT := 0.15
+## Length of the entry and exit slopes (m).
+const TAPER := 3.0
+
+# Rough asphalt, by distance from the entry end.
+const POTHOLE_DEPTH := 0.12
+## Potholes as (x, distance along, radius), all in metres.
+const POTHOLES: Array[Vector3] = [
+	Vector3(-1.2, 10.0, 0.5), Vector3(0.8, 16.0, 0.6), Vector3(-0.4, 24.0, 0.45),
+	Vector3(1.5, 31.0, 0.7), Vector3(-1.6, 38.0, 0.5), Vector3(0.3, 45.0, 0.55),
+	Vector3(-0.8, 52.0, 0.65),
+]
+const BUMP_HEIGHT := 0.08
+const BUMP_LENGTH := 0.9
+## Speed bumps across the whole width, centred at these distances along.
+const BUMPS: Array[float] = [70.0, 80.0, 90.0, 100.0, 110.0]
+const WASHBOARD_START := 120.0
+const WASHBOARD_END := 170.0
+const WASHBOARD_AMPLITUDE := 0.025
+const WASHBOARD_WAVELENGTH := 0.7
+
+# Rutted mud.
+## Rut centres match the Rally Car's wheel track (1.52 m).
+const RUT_CENTERS: Array[float] = [-0.76, 0.76]
+const RUT_HALF_WIDTH := 0.35
+const RUT_DEPTH := 0.1
+const MUD_WAVE_HEIGHT := 0.04
+
+## How strongly features are shaded: colour x (1 + offset x this), so dips read
+## darker and crests lighter from the driver's seat.
+const SHADE_PER_METRE := 4.0
+
+@export var surface: SurfaceDef
+@export var profile: Profile = Profile.ROUGH_ASPHALT
+## Width (x) and length (z) in metres.
+@export var size := Vector2(10.0, 200.0)
+
+
+func _ready() -> void:
+	set_meta(SurfaceLookup.META_KEY, surface)
+	var columns := int(size.x / SPACING) + 1
+	var rows := int(size.y / SPACING) + 1
+	var heights := PackedFloat32Array()
+	heights.resize(columns * rows)
+	for row in rows:
+		for column in columns:
+			heights[row * columns + column] = height_at(profile, _sample_position(column, row), size)
+	_add_collision(columns, rows, heights)
+	_add_mesh(columns, rows, heights)
+
+
+## Height above the surrounding ground at a local (x, z) point of the strip.
+static func height_at(which: Profile, point: Vector2, patch_size: Vector2) -> float:
+	var along := patch_size.y * 0.5 - point.y  # distance from the entry end
+	var ramp := smoothstep(0.0, TAPER, minf(along, patch_size.y - along))
+	return maxf(0.0, (BASE_HEIGHT + feature_offset(which, point.x, along)) * ramp)
+
+
+## How far the features raise (+) or lower (-) the strip from BASE_HEIGHT.
+static func feature_offset(which: Profile, x: float, along: float) -> float:
+	match which:
+		Profile.RUTTED_MUD:
+			return rutted_mud_offset(x, along)
+		_:
+			return rough_asphalt_offset(x, along)
+
+
+## Rough asphalt: potholes, then speed bumps, then washboard ripples.
+static func rough_asphalt_offset(x: float, along: float) -> float:
+	var offset := 0.0
+	for pothole in POTHOLES:
+		var distance := Vector2(x - pothole.x, along - pothole.y).length()
+		if distance < pothole.z:
+			var t := distance / pothole.z
+			offset -= POTHOLE_DEPTH * (1.0 - t * t)  # bowl-shaped
+	for bump in BUMPS:
+		var t := absf(along - bump) / (BUMP_LENGTH * 0.5)
+		if t < 1.0:
+			offset += BUMP_HEIGHT * (0.5 + 0.5 * cos(PI * t))
+	if along >= WASHBOARD_START and along <= WASHBOARD_END:
+		offset += WASHBOARD_AMPLITUDE * sin(TAU * (along - WASHBOARD_START) / WASHBOARD_WAVELENGTH)
+	return offset
+
+
+## Rutted mud: two ruts at wheel-track spacing plus slow waves along the strip.
+static func rutted_mud_offset(x: float, along: float) -> float:
+	var offset := MUD_WAVE_HEIGHT * sin(along * 0.9)
+	for center in RUT_CENTERS:
+		var t := absf(x - center) / RUT_HALF_WIDTH
+		if t < 1.0:
+			offset -= RUT_DEPTH * (0.5 + 0.5 * cos(PI * t))
+	return offset
+
+
+func _sample_position(column: int, row: int) -> Vector2:
+	return Vector2(column * SPACING - size.x * 0.5, row * SPACING - size.y * 0.5)
+
+
+func _add_collision(columns: int, rows: int, heights: PackedFloat32Array) -> void:
+	var shape := HeightMapShape3D.new()
+	shape.map_width = columns
+	shape.map_depth = rows
+	shape.map_data = heights
+	var collision := CollisionShape3D.new()
+	collision.shape = shape
+	# The shape puts samples 1 m apart; scaling the node sets the real spacing.
+	collision.scale = Vector3(SPACING, 1.0, SPACING)
+	add_child(collision)
+
+
+func _add_mesh(columns: int, rows: int, heights: PackedFloat32Array) -> void:
+	var base_color := surface.debug_color
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for row in rows:
+		for column in columns:
+			var point := _sample_position(column, row)
+			var along := size.y * 0.5 - point.y
+			var shade := clampf(1.0 + feature_offset(profile, point.x, along) * SHADE_PER_METRE, 0.5, 1.3)
+			tool.set_color(Color(base_color.r * shade, base_color.g * shade, base_color.b * shade))
+			tool.add_vertex(Vector3(point.x, heights[row * columns + column], point.y))
+	for row in rows - 1:
+		for column in columns - 1:
+			var i := row * columns + column
+			tool.add_index(i)
+			tool.add_index(i + 1)
+			tool.add_index(i + columns)
+			tool.add_index(i + 1)
+			tool.add_index(i + columns + 1)
+			tool.add_index(i + columns)
+	tool.generate_normals()
+
+	var mesh := MeshInstance3D.new()
+	mesh.mesh = tool.commit()
+	var material := StandardMaterial3D.new()
+	material.vertex_color_use_as_albedo = true
+	material.vertex_color_is_srgb = true  # same colour space as the other surfaces' albedo
+	material.roughness = 0.9
+	mesh.material_override = material
+	add_child(mesh)
+```
+
+- [ ] **Step 4: Run the tests**
+
+Run: `./run_tests.sh all`
+Expected: exit 0, `test_rough_patch.gd` 8 passing, `test_rough_ground.gd` 2 passing, and printed lines close to:
+
+```
+rough asphalt: compression range 0.177 m, ended at z -164
+rutted mud: compression range 0.108 m, ended at z -67
+```
+
+- [ ] **Step 5: Put the strips on the Test Ground**
+
+Replace `levels/test_ground/test_ground.gd` with this version. Compared with Task 17 it has two new header lines, two `_add_rough_patch(...)` calls at the end of `_build_layout()`, and the new `_add_rough_patch()` function.
+
+`levels/test_ground/test_ground.gd`:
+
+```gdscript
+extends Node3D
+## Gray-box tuning ground (dev only). From the spawn point, facing -Z:
+##   - dirt everywhere (the base ground)
+##   - an asphalt runway straight ahead, with slalom cones and a kicker jump
+##   - a mud strip parallel to the runway, 30 m to the right
+##   - three hills to the left: 10 and 20 degree dirt, 30 degree asphalt
+##   - a rough asphalt lane 60 m to the right: potholes, speed bumps, washboard
+##   - a rutted mud strip 90 m to the right
+## Press R (or the Reset button) to return to the spawn point.
+
+const ASPHALT := preload("res://surfaces/asphalt.tres")
+const DIRT := preload("res://surfaces/dirt.tres")
+const MUD := preload("res://surfaces/mud.tres")
+
+## Thickness of ramps and plateaus (m).
+const SLAB := 1.0
+
+@onready var car: Car = $Car
+@onready var camera: ChaseCamera = $ChaseCamera
+@onready var touch_controls: TouchControls = $TouchControls
+@onready var telemetry: TelemetryOverlay = $TelemetryOverlay
+@onready var recorder: RunRecorder = $RunRecorder
+
+var _spawn: Transform3D
+
+
+func _ready() -> void:
+	_build_layout()
+	_spawn = car.global_transform
+	car.input.reset_requested.connect(_on_reset_requested)
+	touch_controls.telemetry_toggled.connect(telemetry.toggle)
+	touch_controls.recording_toggled.connect(recorder.toggle)
+
+
+func _on_reset_requested() -> void:
+	car.reset_to(_spawn)
+	camera.snap_to_target()
+
+
+func _build_layout() -> void:
+	_add_block(DIRT, Vector3(600.0, 1.0, 600.0), Vector3(0.0, -0.5, 0.0))
+	# Strips sit 2 cm above the dirt so their surfaces don't overlap.
+	_add_block(ASPHALT, Vector3(14.0, 0.2, 400.0), Vector3(0.0, -0.08, -190.0))
+	_add_block(MUD, Vector3(14.0, 0.2, 300.0), Vector3(30.0, -0.08, -140.0))
+	for i in 8:
+		_add_cone(Vector3(-3.5 if i % 2 == 0 else 3.5, 0.02, -30.0 - i * 18.0))
+	_add_ramp(ASPHALT, Vector3(0.0, 0.02, -250.0), 8.0, 15.0, 8.0)
+	_add_hill(DIRT, Vector3(-30.0, 0.0, -20.0), 10.0, 40.0)
+	_add_hill(DIRT, Vector3(-50.0, 0.0, -20.0), 20.0, 25.0)
+	_add_hill(ASPHALT, Vector3(-70.0, 0.0, -20.0), 30.0, 16.0)
+	_add_rough_patch(ASPHALT, RoughPatch.Profile.ROUGH_ASPHALT, Vector3(60.0, 0.0, -110.0), Vector2(10.0, 200.0))
+	_add_rough_patch(MUD, RoughPatch.Profile.RUTTED_MUD, Vector3(90.0, 0.0, -60.0), Vector2(10.0, 100.0))
+
+
+## An uneven strip (see RoughPatch). center: middle of the strip at ground level.
+func _add_rough_patch(surface: SurfaceDef, profile: RoughPatch.Profile, center: Vector3, size: Vector2) -> void:
+	var patch := RoughPatch.new()
+	patch.surface = surface
+	patch.profile = profile
+	patch.size = size
+	patch.position = center
+	add_child(patch)
+
+
+## A box of one surface. tilt_deg rotates it about X (+ raises its -Z end).
+func _add_block(surface: SurfaceDef, size: Vector3, center: Vector3, tilt_deg := 0.0) -> void:
+	var body := StaticBody3D.new()
+	body.position = center
+	body.rotation_degrees.x = tilt_deg
+	body.set_meta(SurfaceLookup.META_KEY, surface)
+
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = size
+	shape.shape = box
+	body.add_child(shape)
+
+	var mesh := MeshInstance3D.new()
+	var box_mesh := BoxMesh.new()
+	box_mesh.size = size
+	mesh.mesh = box_mesh
+	var material := StandardMaterial3D.new()
+	material.albedo_color = surface.debug_color
+	material.roughness = 0.9
+	mesh.material_override = material
+	body.add_child(mesh)
+
+	add_child(body)
+
+
+## A ramp whose top surface starts at near_edge and climbs toward -Z at angle_deg
+## (negative angles go down). Returns the far edge of its top surface.
+func _add_ramp(surface: SurfaceDef, near_edge: Vector3, width: float, angle_deg: float, length: float) -> Vector3:
+	var a := deg_to_rad(angle_deg)
+	# Where the near edge of the top face ends up, relative to the box centre,
+	# once the box is tilted.
+	var edge_offset := Vector3(0.0,
+			SLAB * 0.5 * cos(a) - length * 0.5 * sin(a),
+			SLAB * 0.5 * sin(a) + length * 0.5 * cos(a))
+	_add_block(surface, Vector3(width, SLAB, length), near_edge - edge_offset, angle_deg)
+	return near_edge + Vector3(0.0, length * sin(a), -length * cos(a))
+
+
+## Up-ramp, a 10 m flat top, and a down-ramp.
+func _add_hill(surface: SurfaceDef, start: Vector3, angle_deg: float, ramp_length: float) -> void:
+	var width := 10.0
+	var top := _add_ramp(surface, start, width, angle_deg, ramp_length)
+	_add_block(surface, Vector3(width, SLAB, 10.0), top + Vector3(0.0, -SLAB * 0.5, -5.0))
+	_add_ramp(surface, top + Vector3(0.0, 0.0, -10.0), width, -angle_deg, ramp_length)
+
+
+## Visual-only cone marker.
+func _add_cone(base: Vector3) -> void:
+	var mesh := MeshInstance3D.new()
+	var cone := CylinderMesh.new()
+	cone.top_radius = 0.02
+	cone.bottom_radius = 0.25
+	cone.height = 0.7
+	mesh.mesh = cone
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(1.0, 0.45, 0.1)
+	mesh.material_override = material
+	mesh.position = base + Vector3(0.0, 0.35, 0.0)
+	add_child(mesh)
+```
+
+- [ ] **Step 6: Run all tests**
+
+Run: `./run_tests.sh all`
+Expected: exit 0 and **133 passing tests** in total.
+
+- [ ] **Step 7: Add the strips to the user's desktop drive check**
+
+The drive check from Task 17 Step 8 is done by the user after this task. Add to it: drive right to the rough asphalt lane (60 m right of spawn) and the rutted mud strip (90 m right). Potholes and ruts show as darker patches and bump crests as lighter ones. The car should jolt over them without flipping, and the telemetry `comp` values should jump around.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add levels/test_ground tests/unit/test_rough_patch.gd tests/scenarios/test_rough_ground.gd
+git commit -m "Add rough asphalt and rutted mud strips to the Test Ground"
+```
+
+---
+
+### Task 19: Android debug build on the Xiaomi 13
 
 **Files:**
 - Create: `export_presets.cfg`, `tools/android.sh`, `tools/pull_runs.sh`
@@ -4149,7 +4624,7 @@ git commit -m "Add Android debug export and phone helper scripts"
 
 ---
 
-### Task 19: Performance profile on the phone
+### Task 20: Performance profile on the phone
 
 **Files:**
 - Create: `docs/notes/performance-m1.md`
@@ -4191,7 +4666,7 @@ git commit -m "Record Milestone 1 performance on Xiaomi 13"
 
 ---
 
-### Task 20: Feel tuning loop and sign-off
+### Task 21: Feel tuning loop and sign-off
 
 **Files:**
 - Create: `docs/notes/feel-log.md`
