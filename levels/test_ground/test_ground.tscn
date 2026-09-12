@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://levels/test_ground/test_ground.gd" id="1_ground"]
+[ext_resource type="PackedScene" path="res://car/car.tscn" id="2_car"]
+[ext_resource type="Script" path="res://levels/shared/golden_hour_mood.gd" id="3_mood"]
+[ext_resource type="Script" path="res://camera/chase_camera.gd" id="4_camera"]
+[ext_resource type="Script" path="res://input/touch_controls.gd" id="5_touch"]
+[ext_resource type="Script" path="res://debug/telemetry_overlay.gd" id="6_telemetry"]
+[ext_resource type="Script" path="res://debug/run_recorder.gd" id="7_recorder"]
+
+[node name="TestGround" type="Node3D"]
+script = ExtResource("1_ground")
+
+[node name="Mood" type="Node3D" parent="."]
+script = ExtResource("3_mood")
+
+[node name="Car" parent="." instance=ExtResource("2_car")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="ChaseCamera" type="Camera3D" parent="." node_paths=PackedStringArray("target")]
+current = true
+far = 1500.0
+script = ExtResource("4_camera")
+target = NodePath("../Car")
+
+[node name="TouchControls" type="CanvasLayer" parent="." node_paths=PackedStringArray("car_input")]
+script = ExtResource("5_touch")
+car_input = NodePath("../Car/CarInput")
+
+[node name="RunRecorder" type="Node" parent="." node_paths=PackedStringArray("car")]
+script = ExtResource("7_recorder")
+car = NodePath("../Car")
+
+[node name="TelemetryOverlay" type="CanvasLayer" parent="." node_paths=PackedStringArray("car", "recorder")]
+script = ExtResource("6_telemetry")
+car = NodePath("../Car")
+recorder = NodePath("../RunRecorder")

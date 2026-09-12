@@ -6,6 +6,7 @@ config_version=5
 [application]
 
 config/name="Ridge"
+run/main_scene="res://levels/test_ground/test_ground.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 run/max_fps=60
 
