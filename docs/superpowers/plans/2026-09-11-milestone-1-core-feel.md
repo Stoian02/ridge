@@ -5065,6 +5065,8 @@ enum DriveType { FWD, RWD, AWD }
 @export var abs_target_slip: float = 0.15
 ## Below this speed (m/s) with no pedal pressed, the brakes hold the car.
 @export var auto_hold_speed: float = 0.5
+## Below this speed (m/s) the brake pedal selects reverse and gas selects drive.
+@export var direction_change_speed: float = 1.0
 
 @export_group("Assists")
 ## Traction control: trims engine torque while the driven wheels spin. Touch
@@ -5075,9 +5077,6 @@ enum DriveType { FWD, RWD, AWD }
 
 @export_group("Steering")
 @export var max_steer_deg: float = 32.0
-## Steering lock at and above steer_limit_speed.
-@export var min_steer_deg: float = 12.0
-@export var steer_limit_speed: float = 25.0
 ## How fast the front wheels turn, degrees per second.
 @export var steer_rate_deg: float = 180.0
 ## Share of the tire's best slip angle the steering assist adds on top of the
@@ -5155,11 +5154,10 @@ brake_front_bias = 0.6
 abs_enabled = true
 abs_target_slip = 0.15
 auto_hold_speed = 0.5
+direction_change_speed = 1.0
 traction_control = true
 traction_slip_target = 0.3
 max_steer_deg = 32.0
-min_steer_deg = 12.0
-steer_limit_speed = 25.0
 steer_rate_deg = 180.0
 steer_assist_slip = 0.75
 airborne_grace = 0.1
