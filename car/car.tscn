@@ -1,0 +1,46 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://car/car.gd" id="1_car"]
+[ext_resource type="Script" path="res://car/wheel.gd" id="2_wheel"]
+[ext_resource type="Script" path="res://input/car_input.gd" id="3_input"]
+[ext_resource type="Resource" path="res://car/rally_car.tres" id="4_stats"]
+[ext_resource type="Resource" path="res://surfaces/grip_table.tres" id="5_grip"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_body"]
+albedo_color = Color(0.86, 0.32, 0.16, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cabin"]
+albedo_color = Color(0.2, 0.24, 0.3, 1)
+
+[node name="Car" type="RigidBody3D"]
+can_sleep = false
+script = ExtResource("1_car")
+stats = ExtResource("4_stats")
+grip_table = ExtResource("5_grip")
+
+[node name="BodyShape" type="CollisionShape3D" parent="."]
+
+[node name="BodyMesh" type="MeshInstance3D" parent="."]
+material_override = SubResource("StandardMaterial3D_body")
+
+[node name="CabinMesh" type="MeshInstance3D" parent="."]
+material_override = SubResource("StandardMaterial3D_cabin")
+
+[node name="CarInput" type="Node" parent="."]
+script = ExtResource("3_input")
+
+[node name="WheelFL" type="Node3D" parent="."]
+script = ExtResource("2_wheel")
+is_front = true
+is_left = true
+
+[node name="WheelFR" type="Node3D" parent="."]
+script = ExtResource("2_wheel")
+is_front = true
+
+[node name="WheelRL" type="Node3D" parent="."]
+script = ExtResource("2_wheel")
+is_left = true
+
+[node name="WheelRR" type="Node3D" parent="."]
+script = ExtResource("2_wheel")
