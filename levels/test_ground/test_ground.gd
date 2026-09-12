@@ -4,6 +4,8 @@ extends Node3D
 ##   - an asphalt runway straight ahead, with slalom cones and a kicker jump
 ##   - a mud strip parallel to the runway, 30 m to the right
 ##   - three hills to the left: 10 and 20 degree dirt, 30 degree asphalt
+##   - a rough asphalt lane 60 m to the right: potholes, speed bumps, washboard
+##   - a rutted mud strip 90 m to the right
 ## Press R (or the Reset button) to return to the spawn point.
 
 const ASPHALT := preload("res://surfaces/asphalt.tres")
@@ -46,6 +48,18 @@ func _build_layout() -> void:
 	_add_hill(DIRT, Vector3(-30.0, 0.0, -20.0), 10.0, 40.0)
 	_add_hill(DIRT, Vector3(-50.0, 0.0, -20.0), 20.0, 25.0)
 	_add_hill(ASPHALT, Vector3(-70.0, 0.0, -20.0), 30.0, 16.0)
+	_add_rough_patch(ASPHALT, RoughPatch.Profile.ROUGH_ASPHALT, Vector3(60.0, 0.0, -110.0), Vector2(10.0, 200.0))
+	_add_rough_patch(MUD, RoughPatch.Profile.RUTTED_MUD, Vector3(90.0, 0.0, -60.0), Vector2(10.0, 100.0))
+
+
+## An uneven strip (see RoughPatch). center: middle of the strip at ground level.
+func _add_rough_patch(surface: SurfaceDef, profile: RoughPatch.Profile, center: Vector3, size: Vector2) -> void:
+	var patch := RoughPatch.new()
+	patch.surface = surface
+	patch.profile = profile
+	patch.size = size
+	patch.position = center
+	add_child(patch)
 
 
 ## A box of one surface. tilt_deg rotates it about X (+ raises its -Z end).
