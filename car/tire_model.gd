@@ -40,16 +40,27 @@ static func slip_angle(forward_speed: float, sideways_speed: float, min_referenc
 ## Tire force in the contact patch frame:
 ##   x = along the wheel heading (+ = forward), y = across it (+ = right).
 ## grip_force: the most force this tire can make right now (friction x load).
+## slip_velocity: how the contact patch actually skids over the ground —
+##   x = tread speed - ground speed along the heading, y = sideways speed.
+##   A sliding tire's friction points straight against that skid, so the force
+##   direction blends from the normalised-slip split (which sets how grip is
+##   shared between driving and cornering below the peak) to the skid direction
+##   once the tire is past the peak. Without this, a locked steered wheel pushes
+##   the car slightly out of the turn. Pass Vector2.ZERO to use only the
+##   normalised direction (pure-maths callers and tests).
 static func contact_force(ratio: float, angle: float, grip_force: float,
-		peak_ratio: float, peak_angle: float, slide_grip: float) -> Vector2:
+		peak_ratio: float, peak_angle: float, slide_grip: float,
+		slip_velocity := Vector2.ZERO) -> Vector2:
 	var slip := Vector2(ratio / peak_ratio, angle / peak_angle)
 	var amount := slip.length()
 	if amount < 0.000001:
 		return Vector2.ZERO
-	var direction := slip / amount
-	var force := grip_curve(amount, slide_grip) * grip_force
 	# Longitudinal force pushes along the slip; lateral force pushes against it.
-	return Vector2(direction.x * force, -direction.y * force)
+	var direction := Vector2(slip.x, -slip.y) / amount
+	if slip_velocity.length() > 0.01:
+		var skid := Vector2(slip_velocity.x, -slip_velocity.y).normalized()
+		direction = direction.lerp(skid, clampf(amount - 1.0, 0.0, 1.0)).normalized()
+	return direction * (grip_curve(amount, slide_grip) * grip_force)
 
 
 ## Largest longitudinal force that will not overshoot within one tick, i.e. will

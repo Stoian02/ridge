@@ -39,12 +39,14 @@ enum DriveType { FWD, RWD, AWD }
 @export var compress_damping: float = 2000.0
 @export var rebound_damping: float = 3000.0
 @export var bump_stop_stiffness: float = 200000.0
-@export var anti_roll_front: float = 8000.0
-@export var anti_roll_rear: float = 5000.0
+@export var anti_roll_front: float = 5000.0
+@export var anti_roll_rear: float = 8000.0
 
 @export_group("Tires")
 ## The car's own tire friction, multiplied with the surface grip.
 @export var tire_grip: float = 1.1
+## Rear tire grip as a share of the front's. Below 1.0 the car rotates more.
+@export var rear_grip_bias: float = 0.96
 ## Slip ratio where forward/backward grip peaks.
 @export var peak_slip_ratio: float = 0.12
 ## Slip angle (degrees) where sideways grip peaks.
@@ -78,15 +80,17 @@ enum DriveType { FWD, RWD, AWD }
 @export_group("Drivetrain")
 @export var drive_type: DriveType = DriveType.AWD
 ## AWD only: share of drive torque sent to the front axle.
-@export_range(0.0, 1.0) var front_torque_split: float = 0.45
+@export_range(0.0, 1.0) var front_torque_split: float = 0.35
 
 @export_group("Brakes")
 ## Total brake torque for the whole car at full pedal (Nm).
 @export var brake_torque: float = 10000.0
 ## Share of brake torque on the front axle.
-@export_range(0.0, 1.0) var brake_front_bias: float = 0.65
-## Simple ABS: eases the brake when a wheel starts to lock.
+@export_range(0.0, 1.0) var brake_front_bias: float = 0.6
+## ABS: holds the brake back once a wheel slips this much, so it keeps turning
+## near peak grip instead of locking (a locked wheel cannot steer the car).
 @export var abs_enabled: bool = true
+@export var abs_target_slip: float = 0.15
 ## Below this speed (m/s) with no pedal pressed, the brakes hold the car.
 @export var auto_hold_speed: float = 0.5
 ## Below this speed (m/s) the brake pedal selects reverse and gas selects drive.
@@ -97,15 +101,15 @@ enum DriveType { FWD, RWD, AWD }
 ## pedals are on/off, so without it full throttle usually means wheelspin.
 @export var traction_control: bool = true
 ## Slip ratio the traction control allows before it starts trimming torque.
-@export var traction_slip_target: float = 0.2
+@export var traction_slip_target: float = 0.3
 
 @export_group("Steering")
 @export var max_steer_deg: float = 32.0
-## Steering lock at and above steer_limit_speed.
-@export var min_steer_deg: float = 8.0
-@export var steer_limit_speed: float = 40.0
 ## How fast the front wheels turn, degrees per second.
 @export var steer_rate_deg: float = 180.0
+## Share of the tire's best slip angle the steering assist adds on top of the
+## geometric angle. Below 1.0 the front tires stay short of ploughing.
+@export var steer_assist_slip: float = 0.75
 
 @export_group("Air control")
 ## Seconds all four wheels must be off the ground before air control activates.

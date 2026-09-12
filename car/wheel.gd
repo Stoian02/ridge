@@ -120,8 +120,11 @@ func compute_force(delta: float, anti_roll: float, body: RigidBody3D) -> Vector3
 	slip_ratio = TireModel.slip_ratio(tread_speed, forward_speed, stats.low_speed_reference)
 	slip_angle = TireModel.slip_angle(forward_speed, sideways_speed, stats.low_speed_reference)
 	var friction := surface.grip * stats.tire_grip * grip_table.multiplier(stats.archetype, surface.id)
+	if not is_front:
+		friction *= stats.rear_grip_bias
 	var tire := TireModel.contact_force(slip_ratio, slip_angle, friction * tire_load,
-			stats.peak_slip_ratio, deg_to_rad(stats.peak_slip_angle_deg), stats.slide_grip)
+			stats.peak_slip_ratio, deg_to_rad(stats.peak_slip_angle_deg), stats.slide_grip,
+			Vector2(tread_speed - forward_speed, sideways_speed))
 
 	# Never let a force overshoot within one tick: this is what stops low-speed jitter.
 	var corner_mass := maxf(tire_load / _gravity, 1.0)
@@ -155,19 +158,22 @@ func update_visual(delta: float) -> void:
 func _update_spin(delta: float, tire_force: float) -> void:
 	# The road pushes back on the tread with the opposite of the tire force.
 	spin_speed += (drive_torque - tire_force * stats.wheel_radius) / stats.wheel_inertia * delta
-	_apply_brakes(delta)
+	_apply_brakes(delta, tire_force)
 
 
 func _spin_freely(delta: float) -> void:
 	spin_speed += drive_torque / stats.wheel_inertia * delta
-	_apply_brakes(delta)
+	_apply_brakes(delta, 0.0)
 
 
-func _apply_brakes(delta: float) -> void:
+## road_force: the longitudinal tire force this tick (N), which is all the brake
+## can react against before the wheel locks.
+func _apply_brakes(delta: float, road_force: float) -> void:
 	var torque := brake_torque
-	# Simple ABS: ease off when the wheel turns much slower than the ground.
-	if stats.abs_enabled and in_contact and slip_ratio < -stats.peak_slip_ratio * 1.5:
-		torque *= 0.3
+	# ABS: once the wheel slips more than the target, hold the brake at what the
+	# road can take, so the wheel keeps turning near peak grip instead of locking.
+	if stats.abs_enabled and in_contact and slip_ratio < -stats.abs_target_slip:
+		torque = minf(torque, absf(road_force) * stats.wheel_radius)
 	spin_speed = move_toward(spin_speed, 0.0, torque / stats.wheel_inertia * delta)
 
 

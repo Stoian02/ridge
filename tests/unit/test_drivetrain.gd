@@ -85,6 +85,7 @@ func test_downshifts_below_downshift_rpm() -> void:
 
 
 func test_traction_control_trims_torque_while_wheels_spin() -> void:
+	stats.traction_slip_target = 0.2  # set here so the car's tuning can move freely
 	_update_at_rpm(4000.0, 1.0, 0.0, 0.0)
 	var gripping := drivetrain.drive_torque
 	_update_at_rpm(4000.0, 1.0, 0.0, 0.3)

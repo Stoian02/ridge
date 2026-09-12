@@ -75,6 +75,24 @@ func test_combined_slip_shares_one_grip_budget() -> void:
 	assert_lt(force.length(), 3000.0)
 
 
+func test_sliding_tire_pushes_straight_against_the_skid() -> void:
+	# A locked wheel (slip ratio -1) on a car moving forward and to the right:
+	# friction must point exactly opposite the way the patch skids.
+	var skid := Vector2(-14.0, 6.0)  # tread slower than the road, sliding right
+	var force := TireModel.contact_force(-1.0, deg_to_rad(23.0), 3000.0, 0.12, 0.14, SLIDE, skid)
+	var expected := Vector2(skid.x, -skid.y).normalized()
+	assert_almost_eq(force.normalized().angle_to(expected), 0.0, 0.001)
+
+
+func test_skid_direction_is_ignored_below_the_peak() -> void:
+	# Under the peak the normalised split still decides the direction, so a
+	# gripping tire keeps its cornering/driving balance.
+	var skid := Vector2(-0.2, 4.0)
+	var gripping := TireModel.contact_force(0.05, 0.05, 3000.0, 0.12, 0.14, SLIDE, skid)
+	var without := TireModel.contact_force(0.05, 0.05, 3000.0, 0.12, 0.14, SLIDE)
+	assert_almost_eq(gripping.angle_to(without), 0.0, 0.001)
+
+
 func test_max_longitudinal_force_for_free_wheel_is_limited_by_wheel_inertia() -> void:
 	# compliance = 1/300 + 0.3^2 / 1.0 = 0.09333 -> 1.0 / (0.09333 * 0.01) = 1071.43
 	var force := TireModel.max_longitudinal_force(1.0, 0.3, 1.0, 300.0, false, 0.01)
