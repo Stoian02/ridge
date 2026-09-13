@@ -60,5 +60,7 @@ func _build_sun() -> DirectionalLight3D:
 	light.light_energy = sun_energy
 	light.shadow_enabled = true
 	light.directional_shadow_max_distance = shadow_distance
+	# Two cascades instead of the default four: shadow casters are drawn once per cascade.
+	light.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	light.rotation_degrees = Vector3(-sun_elevation_deg, sun_azimuth_deg, 0.0)
 	return light

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="TrailDef" format=3]
+
+[ext_resource type="Script" path="res://levels/trail/trail_def.gd" id="1_trail"]
+
+[resource]
+script = ExtResource("1_trail")
+rough_sections = Array[Vector3]([Vector3(680, 150, 18)])
+pothole_clusters = Array[Vector2]([Vector2(250, 4), Vector2(1050, 5)])
+jumps = Array[Vector3]([Vector3(440, 1.2, 12), Vector3(1380, 1, 10)])
+checkpoint_distances = PackedFloat32Array(300, 600, 900, 1200)
+seed = 1

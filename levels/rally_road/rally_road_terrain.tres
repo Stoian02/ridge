@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="TerrainDef" format=3]
+
+[ext_resource type="Script" path="res://levels/trail/terrain_def.gd" id="1_terrain"]
+
+[resource]
+script = ExtResource("1_terrain")
+seed = 7
