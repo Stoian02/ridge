@@ -47,7 +47,7 @@ func test_rebuilding_replaces_the_generated_nodes_with_the_same_level() -> void:
 	var first_gates := level.checkpoints.reset_transforms.duplicate()
 	var first_counts := [level.scatter_builder.pine_count, level.scatter_builder.rock_count, level.scatter_builder.post_count]
 	level.build()
-	await wait_frames(1)
+	await wait_process_frames(1)
 	assert_eq(level.get_children().filter(func(c: Node) -> bool: return c.name.begins_with("Generated")).size(), 1)
 	assert_eq(level.field.heights, first_heights, "same settings, same terrain")
 	assert_eq(level.checkpoints.reset_transforms, first_gates, "same checkpoint positions")

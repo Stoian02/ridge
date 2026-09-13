@@ -36,7 +36,7 @@ func build(sampler: RoadSampler, profile: RoadProfile, def: TrailDef) -> void:
 		chunk_start = chunk_end
 
 
-## Cross-section stations from left to right as Vector3(lateral, part, _).
+## Cross-section stations from left to right as Vector2(lateral offset, part).
 ## Boundaries between parts appear twice (one station per part) so colours
 ## change sharply instead of fading.
 static func cross_section(def: TrailDef) -> Array[Vector2]:
