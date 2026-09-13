@@ -72,7 +72,15 @@ Measured (headless, flat asphalt unless noted):
 | Rally Road scripted lap | 1:33.3 | 1:30.3 |
 | Kicker, gas held (tilt / landing yaw) | 62° / 41 °/s | 64° / 22 °/s |
 
+User after driving the tune: "a lot better for now"; "not really that much more punchy, but for a stock Subaru I think it is fine" (tuned car versions may come later); "AWD is a lot more planted, but still loose where needed, I like it."
+
+Recordings (desktop, `user://runs/`, analysed against the road curve):
+- **Run 1 (22:33, spin):** start→finish gate 78.5 s, max 113 km/h, shifts at 55 / 80 / 107 km/h, throttle 82% of the time. Leaving the rough stretch flat out in 4th at 110–113 km/h, the rear wheels ran onto the left dirt shoulder (~856–872 m), a full-lock flick back right plus a brief lift at ~887 m set the rear sliding. With full throttle and full countersteer the body slip grew steadily from 3° to 32° over ~2 s (rear tyres 21–34°, fronts 10–19°, yaw ~35–45°/s — progressive, not a snap); braking at 67 km/h while ~32° sideways finished the spin (75°) at ~960 m, just past CP3. Recovered by reversing, no reset. Cost: CP3→CP4 27.0 s vs 20.1 s in run 2.
+- **Run 2 (22:34, clean):** start→finish gate 71.6 s (scripted driver 90.3 s), max 114 km/h, 34% of the time in 4th, throttle 88%, brake 3%, never beyond the shoulder. Only two mild slides, both in the hairpins at ~45 km/h (16–17° body slip). Jumps: 1.14 s airborne at 446 m (98 km/h), 0.88 s at 1385 m; clean landings. Every other checkpoint segment within 0.2 s of run 1 — very consistent.
+- Steering input is on/off (±1.0) in both runs, so countersteer is always full lock.
+
 Open, for the next drive:
+0. **Slide recovery** — the run 1 spin shows the tune's bigger asphalt→dirt grip step (1.32 → 1.01) unsettles the car when two wheels drop off at 110 km/h, and power-on full countersteer does not pull the AWD straight (65% rear torque keeps the rears saturated). Realistic enough for now; if recoveries feel impossible, the AWD split (below) and a smaller dirt grip step are the levers. Driving tip: lift, don't brake, when the rear is already sideways.
 1. **AWD balance** — for an STI-like AWD the car still rotates more than the real one (65% rear torque, rear anti-roll 8920 vs front 5580, rear grip 96%, 60% front brake bias). Most AWD-like lever: `front_torque_split` 0.35 → ~0.41 and a slightly softer rear bar. User: fine for now.
 2. Rolling pull is a little down on the old lighter car; if it feels flat, raise mid-range torque before touching mass.
 3. Gas-held jump nose-dive still open (Task 16 test pending).
