@@ -194,7 +194,7 @@ layered under the engine.
 unlock requirement.
 
 ### 6.3 Milestone levels
-- **Test Ground** (dev only): flat area, ramps of several angles, a jump, a slalom, and
+- **Test Ground** (reachable as **Free Drive** from the main menu since Milestone 2 B1; no clock or stars): flat area, ramps of several angles, a jump, a slalom, and
   side-by-side surface patches (asphalt / dirt / mud) for tuning and scenario tests, plus
   a rough asphalt lane (potholes, speed bumps, washboard) and a rutted mud strip.
 - **Rally Road:** asphalt mountain road; gentle climbs, a couple of hairpins, two small
@@ -287,7 +287,11 @@ Code style: readable over clever; small focused files; typed GDScript.
    - **Part A** — trail builder, Rally Road, checkpoints, resets, run clock, run HUD.
      Detailed in `docs/superpowers/specs/2026-09-13-m2a-rally-road-design.md`.
      *Done when:* Rally Road is drivable start to finish on the phone at 60 fps.
-   - **Part B** — Muddy Valley, stars and results, level select, pause menu, save data.
+   - **Part B**, in two halves:
+     - **B1 — Game flow:** main menu, level select, Free Drive (Test Ground), stars and
+       results, pause menu, save data. Detailed in
+       `docs/superpowers/specs/2026-09-13-m2b1-game-flow-design.md`.
+     - **B2 — Muddy Valley:** dirt and mud trail building and the Muddy Valley level.
      *Done when:* both levels are playable start to finish on the phone with star
      targets set from real runs.
 3. **Later (each planned separately)** — more cars, snow/ice and water, remaining levels,
