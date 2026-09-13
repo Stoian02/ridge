@@ -56,6 +56,17 @@ func test_combined_steer_is_clamped() -> void:
 	assert_almost_eq(input.steer, 1.0, 0.0001)
 
 
+func test_locked_input_ignores_every_device() -> void:
+	Input.action_press(InputActions.THROTTLE)
+	input.virtual_steer = 1.0
+	input.virtual_brake = 1.0
+	input.locked = true
+	input.refresh()
+	assert_almost_eq(input.throttle, 0.0, 0.0001)
+	assert_almost_eq(input.brake, 0.0, 0.0001)
+	assert_almost_eq(input.steer, 0.0, 0.0001)
+
+
 func test_request_reset_emits_signal() -> void:
 	watch_signals(input)
 	input.request_reset()

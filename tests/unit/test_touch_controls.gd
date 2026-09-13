@@ -76,3 +76,11 @@ func test_gas_and_steer_together() -> void:
 	controls.update_outputs(0.016)
 	assert_almost_eq(input.virtual_steer, -1.0, 0.0001)
 	assert_almost_eq(input.virtual_throttle, 1.0, 0.0001)
+
+
+func test_track_button_requests_a_track_switch() -> void:
+	watch_signals(controls)
+	var buttons := controls.find_children("*", "Button", true, false)
+	var track: Button = buttons.filter(func(b: Node) -> bool: return b.text == "Track")[0]
+	track.pressed.emit()
+	assert_signal_emitted(controls, "track_switch_requested")

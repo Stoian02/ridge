@@ -4,12 +4,13 @@ extends CanvasLayer
 ## because the project emulates touch from the mouse).
 ##   Left side:  steering - an analog drag zone, or two buttons.
 ##   Right side: brake and gas pedals.
-##   Top strip:  steering-style toggle, reset, telemetry and recording.
+##   Top strip:  steering-style toggle, reset, telemetry, recording and track switch.
 ## Writes into the car's CarInput virtual_* values.
 ## Coordinates are in the 1920x1080 canvas (the project stretches it to the screen).
 
 signal telemetry_toggled
 signal recording_toggled
+signal track_switch_requested
 
 ## Touches above this line belong to the top-strip buttons, not the driving controls.
 const TOP_STRIP_HEIGHT := 150.0
@@ -152,6 +153,7 @@ func _build_ui() -> void:
 	_add_button(bar, "Reset", _on_reset_pressed)
 	_add_button(bar, "Telemetry", telemetry_toggled.emit)
 	_add_button(bar, "Rec", recording_toggled.emit)
+	_add_button(bar, "Track", track_switch_requested.emit)
 	_update_mode_label()
 
 
