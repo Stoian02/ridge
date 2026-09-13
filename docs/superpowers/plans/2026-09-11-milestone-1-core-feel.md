@@ -43,6 +43,8 @@ Two problems found and fixed during that run are already reflected in this plan:
 
 Tasks 20–22 need the export templates, the phone and the user, so they could not be pre-run.
 
+**Review fixes made during execution, not back-ported into earlier task blocks:** Task 6's review moved the reverse/drive switch speed out of `drivetrain.gd` into `CarStats` as `direction_change_speed` (commit `125ff1b`, which also adds one drivetrain test). So Task 5's and Task 6's blocks still show the original constant, and every later "Expected: N passing" count is one lower than a real run. Task 19's full-file blocks already include the field.
+
 ## Additions and Deferrals Relative to the Spec
 
 - **Added:** traction control, simple ABS, and auto-hold at standstill. These are mobile-friendly assists; each is a `CarStats` setting.

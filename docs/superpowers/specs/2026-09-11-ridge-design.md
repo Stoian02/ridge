@@ -306,3 +306,11 @@ Code style: readable over clever; small focused files; typed GDScript.
 - Car unlock star thresholds — set when a second car exists.
 - Whether steer-roll air control stays — decided in Milestone 1 playtesting.
 - 120 FPS rendering — decided after Milestone 1 profiling.
+- Rough terrain along whole trails (Milestone 2, from the M1 final review): `RoughPatch`'s
+  per-vertex heightmap (0.25 m spacing, ~33k vertices per 200 m strip) will not scale to full
+  trails as-is. Before designing the trail builder, choose between short authored rough strips
+  joined to an otherwise flat trail mesh (the proven, cheap approach) and a decimated / LOD
+  heightmap along the whole spline.
+- Jump landings (from the M1 final review): a driven wheel can spin up to redline in the air and
+  meet the ground at a very different speed. Add a scripted jump-landing scenario test before
+  the Milestone 1 feel sign-off, and tune from it.
