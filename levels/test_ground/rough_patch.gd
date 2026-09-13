@@ -84,15 +84,11 @@ static func rough_asphalt_offset(x: float, along: float) -> float:
 	var offset := 0.0
 	for pothole in POTHOLES:
 		var distance := Vector2(x - pothole.x, along - pothole.y).length()
-		if distance < pothole.z:
-			var t := distance / pothole.z
-			offset -= POTHOLE_DEPTH * (1.0 - t * t)  # bowl-shaped
+		offset += RoughShapes.pothole(distance, pothole.z, POTHOLE_DEPTH)
 	for bump in BUMPS:
-		var t := absf(along - bump) / (BUMP_LENGTH * 0.5)
-		if t < 1.0:
-			offset += BUMP_HEIGHT * (0.5 + 0.5 * cos(PI * t))
+		offset += RoughShapes.bump(along - bump, BUMP_LENGTH, BUMP_HEIGHT)
 	if along >= WASHBOARD_START and along <= WASHBOARD_END:
-		offset += WASHBOARD_AMPLITUDE * sin(TAU * (along - WASHBOARD_START) / WASHBOARD_WAVELENGTH)
+		offset += RoughShapes.washboard(along - WASHBOARD_START, WASHBOARD_AMPLITUDE, WASHBOARD_WAVELENGTH)
 	return offset
 
 
@@ -100,9 +96,7 @@ static func rough_asphalt_offset(x: float, along: float) -> float:
 static func rutted_mud_offset(x: float, along: float) -> float:
 	var offset := MUD_WAVE_HEIGHT * sin(along * 0.9)
 	for center in RUT_CENTERS:
-		var t := absf(x - center) / RUT_HALF_WIDTH
-		if t < 1.0:
-			offset -= RUT_DEPTH * (0.5 + 0.5 * cos(PI * t))
+		offset += RoughShapes.rut(x - center, RUT_HALF_WIDTH, RUT_DEPTH)
 	return offset
 
 
