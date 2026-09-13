@@ -15,26 +15,24 @@ const MUD := preload("res://surfaces/mud.tres")
 ## Thickness of ramps and plateaus (m).
 const SLAB := 1.0
 
-@onready var car: Car = $Car
-@onready var camera: ChaseCamera = $ChaseCamera
-@onready var touch_controls: TouchControls = $TouchControls
-@onready var telemetry: TelemetryOverlay = $TelemetryOverlay
-@onready var recorder: RunRecorder = $RunRecorder
+@onready var rig: DrivingRig = $DrivingRig
 
 var _spawn: Transform3D
 
 
 func _ready() -> void:
 	_build_layout()
-	_spawn = car.global_transform
-	car.input.reset_requested.connect(_on_reset_requested)
-	touch_controls.telemetry_toggled.connect(telemetry.toggle)
-	touch_controls.recording_toggled.connect(recorder.toggle)
+	_spawn = rig.car.global_transform
+	rig.car.input.reset_requested.connect(_on_reset_requested)
+	rig.track_switch_requested.connect(_on_track_switch_requested)
 
 
 func _on_reset_requested() -> void:
-	car.reset_to(_spawn)
-	camera.snap_to_target()
+	rig.place_car(_spawn)
+
+
+func _on_track_switch_requested() -> void:
+	LevelSwitcher.switch_from(get_tree(), scene_file_path)
 
 
 func _build_layout() -> void:

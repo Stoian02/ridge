@@ -13,7 +13,7 @@ func _load_level() -> Node3D:
 func test_car_lands_upright_on_the_asphalt_runway() -> void:
 	var level := _load_level()
 	await wait_physics_frames(ScenarioHelper.ticks(2.0))
-	var car: Car = level.get_node("Car")
+	var car: Car = level.get_node("DrivingRig/Car")
 	for wheel in car.wheels:
 		assert_true(wheel.in_contact)
 		assert_eq(wheel.surface.id, &"asphalt")
@@ -22,10 +22,10 @@ func test_car_lands_upright_on_the_asphalt_runway() -> void:
 
 func test_reset_returns_the_car_to_spawn() -> void:
 	var level := _load_level()
-	var car: Car = level.get_node("Car")
+	var car: Car = level.get_node("DrivingRig/Car")
 	# The touch controls own the car's virtual inputs in a real scene; switch them
 	# off so this test can drive the car through the same inputs.
-	level.get_node("TouchControls").process_mode = Node.PROCESS_MODE_DISABLED
+	level.get_node("DrivingRig/TouchControls").process_mode = Node.PROCESS_MODE_DISABLED
 	await wait_physics_frames(ScenarioHelper.ticks(1.0))
 	car.input.virtual_throttle = 1.0
 	await wait_physics_frames(ScenarioHelper.ticks(2.0))
