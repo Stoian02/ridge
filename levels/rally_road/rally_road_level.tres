@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="LevelDef" format=3]
+
+[ext_resource type="Script" path="res://game/level_def.gd" id="1_gme3o"]
+
+[resource]
+script = ExtResource("1_gme3o")
+id = &"rally_road"
+display_name = "Rally Road"
+scene_path = "res://levels/rally_road/rally_road.tscn"
+two_star_time = 85.0
+three_star_time = 74.0

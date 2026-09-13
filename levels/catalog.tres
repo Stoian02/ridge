@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="LevelCatalog" format=3]
+
+[ext_resource type="Script" path="res://game/level_def.gd" id="1_gufqt"]
+[ext_resource type="Resource" path="res://levels/rally_road/rally_road_level.tres" id="2_3v4in"]
+[ext_resource type="Script" path="res://game/level_catalog.gd" id="3_sd0ii"]
+
+[resource]
+script = ExtResource("3_sd0ii")
+levels = Array[ExtResource("1_gufqt")]([ExtResource("2_3v4in")])
