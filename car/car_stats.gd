@@ -15,6 +15,9 @@ enum DriveType { FWD, RWD, AWD }
 @export var mass: float = 1300.0
 ## Centre of mass relative to the body origin. Lower = harder to roll over.
 @export var center_of_mass: Vector3 = Vector3(0.0, -0.15, 0.0)
+## Resistance to rotating, kg*m^2, around x (pitch), y (yaw) and z (roll).
+## Zero means Godot derives it from the gray-box body, which is far too easy to roll.
+@export var inertia: Vector3 = Vector3.ZERO
 ## Size of the gray-box body (collision box and mesh).
 @export var body_size: Vector3 = Vector3(1.6, 0.5, 4.2)
 ## Aerodynamic drag: force = aero_drag x speed^2.

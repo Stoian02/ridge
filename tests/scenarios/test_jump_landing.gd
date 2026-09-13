@@ -65,9 +65,10 @@ func test_lifting_off_the_gas_flies_level_and_lands_straight() -> void:
 func test_holding_the_gas_flies_level_and_lands_straight() -> void:
 	var result := await _take_kicker(true)
 	if result.worst_pitch_deg >= 25.0 or result.landing_yaw >= 20.0 or not result.upright:
-		# Known before Milestone 2A (measured: 62 deg nose-down and a 41 deg/s yaw kick
-		# at 100 km/h; a full flip at 115 km/h). Waiting on a feel decision with the
-		# user, so it is reported rather than failed.
+		# Known since Milestone 2A (at 100 km/h: 62 deg nose-down and a 41 deg/s yaw kick
+		# with the first tune, 64 deg and 22 deg/s after the Session 3 weight/grip pass;
+		# a full flip at 115 km/h). Waiting on a feel decision with the user, so it is
+		# reported rather than failed.
 		pending("holding the gas off the kicker pitches the nose down: %.0f deg, yaw kick %.1f deg/s" % [
 			result.worst_pitch_deg, result.landing_yaw])
 		return

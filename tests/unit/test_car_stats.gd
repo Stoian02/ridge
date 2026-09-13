@@ -21,6 +21,19 @@ func test_wheel_mount_positions() -> void:
 	assert_eq(stats.wheel_mount_position(false, false), Vector3(0.76, 0.1, 1.26))
 
 
+func test_car_uses_the_stats_rotation_inertia() -> void:
+	# A thin gray-box body would make the car far too easy to roll; the stats set
+	# realistic values instead (x = pitch, y = yaw, z = roll).
+	var car: Car = load("res://car/car.tscn").instantiate()
+	add_child_autofree(car)
+	assert_gt(RALLY.inertia.z, 0.0, "the rally car sets its own inertia")
+	assert_eq(car.inertia, RALLY.inertia)
+
+
+func test_zero_inertia_leaves_it_to_the_body_shape() -> void:
+	assert_eq(CarStats.new().inertia, Vector3.ZERO)
+
+
 func test_static_sag_leaves_suspension_travel_both_ways() -> void:
 	# At rest each spring carries a quarter of the weight. It should sit roughly in
 	# the middle third of its travel, so it can both compress and extend.

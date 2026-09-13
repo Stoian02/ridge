@@ -39,4 +39,42 @@ Carried forward to tuning sessions on real tracks (Milestone 2 onward):
 3. **Hard jump landings** — add the scripted jump-landing scenario test first (from the final review), then tune `bump_stop_stiffness` / damping.
 4. Still undecided: keep steer-to-roll in the air (`air_roll_torque`), and the default touch steering style.
 
+## Session 3 (2026-09-13) — desktop, Rally Road (Milestone 2 Part A)
+
+Notes from the user:
+- Countdown, clock, checkpoints, countdown pedal lock and all resets "work perfect"; never below 60 fps.
+- "The car overall is slidy, like you are not on asphalt." Rear grip and the oversteer are fine for now: "you can take the corners nice with a little slide."
+- "The car feels too light" — maybe GTA IV-like weight, "but not too much".
+- Wants more low-rpm torque and shorter gears: shifts came at ~58 km/h (1→2) and ~100 km/h (2→3), 4th and 5th never reached. (Not deliberate: Milestone 1 used road-car gearing.)
+- Asked whether the car is AWD (it is: 35% front / 65% rear); feels the oversteer is a lot for AWD.
+
+Diagnosis:
+- Asphalt barely out-gripped dirt: effective grip 1.10 vs 0.92 (real tarmac grips ~40–50% more than gravel).
+- Rotation inertia came from the thin 0.5 m gray-box body: roll ~300 kg·m² vs ~550 for a real car, so the body flicked like a light car.
+- Old gearing at the 6800 rpm upshift: 58 / 92 / 128 / 167 / 209 / 253 km/h.
+- First short-gear attempt (final 5.0) was slower from 40 km/h rolling (3.08 s vs 2.70 s) — an extra shift, and 11% more mass cancelled the torque gain — so the gearing was moved to a middle ratio.
+
+Changes made (`car/rally_car.tres`, `surfaces/grip_table.tres`, new `CarStats.inertia`):
+- Grip: `tire_grip` 1.1 → 1.2; rally-on-asphalt multiplier 1.0 → 1.1 (asphalt 1.32, dirt 1.01, mud 0.66). `rear_grip_bias` and `slide_grip` unchanged.
+- Weight: `mass` 1300 → 1450; `inertia` (pitch, yaw, roll) = (2400, 2700, 550); springs, dampers and anti-roll bars scaled with mass (+11.5%); `brake_torque` 10000 → 11000; air-control torques scaled with inertia (3700 / 2700); `steer_rate_deg` 180 → 140.
+- Engine: torque 220/320/390/380/340/280 → 320/410/440/420/370/300 Nm; `shift_time` 0.18 → 0.12.
+- Gearbox: ratios 3.2 / 2.2 / 1.65 / 1.3 / 1.08 / 0.92, `final_drive` 4.4 → 4.8 → shifts at ~55 / 80 / 107 / 136 / 163 / 191 km/h.
+
+Measured (headless, flat asphalt unless noted):
+| | Before | After |
+|---|---|---|
+| 0–70 km/h | 4.12 s | 3.86 s |
+| 0–100 km/h | 7.73–8.06 s | 7.50 s |
+| 40→80 km/h rolling | 2.70 s | 2.89 s (heavier car) |
+| Braking 100–0 | 35.8 m | 33.2 m |
+| Steady turn yaw (asphalt / mud) | 31.9 / 26.8 °/s | 35.4 / 33.0 °/s |
+| Brake-in-turn | 25.2 °/s, no wrong way | 24.2 °/s, no wrong way |
+| Rally Road scripted lap | 1:33.3 | 1:30.3 |
+| Kicker, gas held (tilt / landing yaw) | 62° / 41 °/s | 64° / 22 °/s |
+
+Open, for the next drive:
+1. **AWD balance** — for an STI-like AWD the car still rotates more than the real one (65% rear torque, rear anti-roll 8920 vs front 5580, rear grip 96%, 60% front brake bias). Most AWD-like lever: `front_torque_split` 0.35 → ~0.41 and a slightly softer rear bar. User: fine for now.
+2. Rolling pull is a little down on the old lighter car; if it feels flat, raise mid-range torque before touching mass.
+3. Gas-held jump nose-dive still open (Task 16 test pending).
+
 Not done on purpose: narrowing the scenario-test ranges in `tests/scenarios/feel_baseline.gd` around this tune (plan Task 22 Step 5) — the feel is still expected to change, so the ranges stay wide until a tune is locked.

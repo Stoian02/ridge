@@ -109,6 +109,7 @@ func _apply_stats() -> void:
 	mass = stats.mass
 	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
 	center_of_mass = stats.center_of_mass
+	inertia = stats.inertia
 
 	var body_box := BoxShape3D.new()
 	body_box.size = stats.body_size
