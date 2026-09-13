@@ -21,7 +21,8 @@ static func read(path: String) -> Dictionary:
 	return {}
 
 
-## Saves `data` as JSON at `path`. Returns OK, or the error that stopped the write.
+## Saves `data` as JSON at `path`. Returns OK, or the error that stopped the write;
+## a failure is also printed, so a lost save shows up in the log instead of vanishing.
 static func write(path: String, data: Dictionary) -> Error:
 	var folder := path.get_base_dir()
 	if not DirAccess.dir_exists_absolute(folder):
@@ -29,7 +30,15 @@ static func write(path: String, data: Dictionary) -> Error:
 	var temp := path + ".tmp"
 	var file := FileAccess.open(temp, FileAccess.WRITE)
 	if file == null:
-		return FileAccess.get_open_error()
+		return _report_failure(path, FileAccess.get_open_error())
 	file.store_string(JSON.stringify(data, "\t"))
 	file.close()
-	return DirAccess.rename_absolute(temp, path)
+	var renamed := DirAccess.rename_absolute(temp, path)
+	if renamed != OK:
+		return _report_failure(path, renamed)
+	return OK
+
+
+static func _report_failure(path: String, error: Error) -> Error:
+	print("SaveSystem: could not save %s (%s)" % [path, error_string(error)])
+	return error

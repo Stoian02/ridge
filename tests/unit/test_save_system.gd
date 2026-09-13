@@ -19,6 +19,7 @@ func _write_text(path: String, text: String) -> void:
 func before_each() -> void:
 	for suffix in ["", ".tmp", ".bad"]:
 		_remove(PATH + suffix)
+	_remove(FOLDER + "/blocked")
 
 
 func after_each() -> void:
@@ -69,3 +70,11 @@ func test_a_newer_damaged_file_replaces_an_older_bad_copy() -> void:
 	_write_text(PATH, "new damage")
 	SaveSystem.read(PATH)
 	assert_eq(FileAccess.get_file_as_string(PATH + ".bad"), "new damage")
+
+
+func test_a_write_that_cannot_happen_returns_an_error() -> void:
+	# A plain file sits where the save's folder should be, so the save can't be written.
+	_write_text(FOLDER + "/blocked", "not a folder")
+	var error := SaveSystem.write(FOLDER + "/blocked/save.json", {"version": 1})
+	assert_ne(error, OK)
+	assert_false(FileAccess.file_exists(FOLDER + "/blocked/save.json.tmp"))
