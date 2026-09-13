@@ -24,11 +24,11 @@ func test_split_text_with_and_without_a_best_to_compare() -> void:
 	assert_eq(RunHud.split_text(2, 41.3, 0.5), "CP 2   0:41.3   +0.5")
 
 
-func test_finish_panel_shows_and_hides() -> void:
+func test_a_split_shows_until_cleared() -> void:
 	var hud := RunHud.new()
 	add_child_autofree(hud)
-	assert_false(hud.is_finish_visible())
-	hud.show_finish(92.4, 90.9)
-	assert_true(hud.is_finish_visible())
-	hud.hide_finish()
-	assert_false(hud.is_finish_visible())
+	assert_false(hud.is_split_visible())
+	hud.show_split(1, 20.0, NAN)
+	assert_true(hud.is_split_visible())
+	hud.clear_split()
+	assert_false(hud.is_split_visible())

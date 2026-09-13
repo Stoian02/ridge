@@ -1,11 +1,9 @@
 class_name RunHud
 extends CanvasLayer
-## The run's on-screen information: the countdown, the running time, checkpoint
-## split flashes, and the finish panel with Restart.
+## The run's on-screen information: the countdown, the running time and checkpoint
+## split flashes. The results after the finish are a separate overlay (ResultsScreen).
 ## Coordinates are in the 1920x1080 canvas; the time sits top-right, clear of the
 ## top-strip buttons and the pedals.
-
-signal restart_pressed
 
 ## How long a checkpoint split stays on screen (s).
 const SPLIT_SECONDS := 2.0
@@ -19,9 +17,6 @@ var controller: RunController
 var _countdown: Label
 var _time: Label
 var _split: Label
-var _finish_panel: PanelContainer
-var _finish_time: Label
-var _finish_best: Label
 var _split_timer := 0.0
 
 
@@ -32,8 +27,7 @@ func _ready() -> void:
 func setup(run_controller: RunController) -> void:
 	controller = run_controller
 	controller.checkpoint_reached.connect(show_split)
-	controller.run_finished.connect(show_finish)
-	controller.countdown_started.connect(hide_finish)
+	controller.countdown_started.connect(clear_split)
 
 
 func _process(delta: float) -> void:
@@ -78,20 +72,13 @@ func show_split(index: int, split: float, delta: float) -> void:
 	_split_timer = SPLIT_SECONDS
 
 
-func show_finish(time: float, session_best: float) -> void:
-	_finish_time.text = "Finish  %s" % format_time(time)
-	_finish_best.text = "Session best  %s" % format_time(session_best)
-	_finish_panel.visible = true
-
-
-func hide_finish() -> void:
-	_finish_panel.visible = false
+func clear_split() -> void:
 	_split.visible = false
 	_split_timer = 0.0
 
 
-func is_finish_visible() -> bool:
-	return _finish_panel.visible
+func is_split_visible() -> bool:
+	return _split.visible
 
 
 func _build_ui() -> void:
@@ -111,32 +98,6 @@ func _build_ui() -> void:
 	_split.offset_top = 110.0
 	_split.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_split.visible = false
-
-	_finish_panel = PanelContainer.new()
-	_finish_panel.set_anchors_preset(Control.PRESET_CENTER)
-	_finish_panel.position = Vector2(-300.0, -170.0)
-	_finish_panel.custom_minimum_size = Vector2(600.0, 340.0)
-	_finish_panel.visible = false
-	add_child(_finish_panel)
-	var column := VBoxContainer.new()
-	column.alignment = BoxContainer.ALIGNMENT_CENTER
-	column.add_theme_constant_override("separation", 24)
-	_finish_panel.add_child(column)
-	_finish_time = Label.new()
-	_finish_time.add_theme_font_size_override("font_size", 64)
-	_finish_time.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(_finish_time)
-	_finish_best = Label.new()
-	_finish_best.add_theme_font_size_override("font_size", 40)
-	_finish_best.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(_finish_best)
-	var restart := Button.new()
-	restart.text = "Restart"
-	restart.custom_minimum_size = Vector2(320.0, 110.0)
-	restart.focus_mode = Control.FOCUS_NONE
-	restart.add_theme_font_size_override("font_size", 44)
-	restart.pressed.connect(restart_pressed.emit)
-	column.add_child(restart)
 
 
 func _label(font_size: int, at: Vector2) -> Label:

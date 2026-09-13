@@ -1,10 +1,10 @@
 class_name DrivingRig
 extends Node3D
 ## The car with everything needed to drive it: chase camera, touch controls,
-## telemetry and run recorder, wired together. Levels place one and use
-## place_car() to put the car somewhere.
+## telemetry and run recorder. Levels place one, use place_car() to put the car
+## somewhere, and listen to pause_requested. The steering style comes from the save.
 
-signal track_switch_requested
+signal pause_requested
 
 @onready var car: Car = $Car
 @onready var camera: ChaseCamera = $ChaseCamera
@@ -14,9 +14,8 @@ signal track_switch_requested
 
 
 func _ready() -> void:
-	touch_controls.telemetry_toggled.connect(telemetry.toggle)
-	touch_controls.recording_toggled.connect(recorder.toggle)
-	touch_controls.track_switch_requested.connect(track_switch_requested.emit)
+	touch_controls.pause_requested.connect(pause_requested.emit)
+	touch_controls.set_steer_mode(TouchControls.mode_from_name(GameState.progress.steer_mode))
 
 
 ## Puts the car upright and still at `target`, with the camera straight behind it.

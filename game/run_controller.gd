@@ -1,12 +1,14 @@
 class_name RunController
 extends Node
 ## Runs a timed run: a countdown with the pedals locked, the clock, checkpoint
-## splits, the finish, and restarts. Owns the RunClock that the HUD reads.
+## splits, the finish (pedals locked again so the car coasts over the line), and
+## restarts. Owns the RunClock that the HUD reads.
 
 signal countdown_started
-## delta is the difference from the session best at this checkpoint, or NAN.
+## delta is the difference from the best run at this checkpoint, or NAN.
 signal checkpoint_reached(index: int, split: float, delta: float)
-signal run_finished(time: float, session_best: float)
+## splits: this run's checkpoint index -> split time.
+signal run_finished(time: float, splits: Dictionary)
 
 var clock := RunClock.new()
 var rig: DrivingRig
@@ -50,8 +52,10 @@ func _on_checkpoint_passed(index: int) -> void:
 func _on_finished() -> void:
 	if clock.stage != RunClock.Stage.RUNNING:
 		return
+	var splits := clock.splits.duplicate()
 	clock.finish()
-	run_finished.emit(clock.elapsed, clock.session_best_time)
+	rig.car.input.locked = true
+	run_finished.emit(clock.elapsed, splits)
 
 
 func _on_car_reset(_reason: StringName) -> void:

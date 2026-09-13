@@ -36,7 +36,8 @@ func test_driving_through_every_gate_finishes_the_run() -> void:
 	assert_eq(level.run.clock.stage, RunClock.Stage.FINISHED)
 	gut.p("400 m straight finished in %s" % RunHud.format_time(level.run.clock.elapsed))
 	assert_between(level.run.clock.elapsed, 10.0, 40.0)
-	assert_true(level.hud.is_finish_visible())
+	await _seconds(RunLevel.RESULTS_DELAY + 0.1)
+	assert_true(level.results.is_showing(), "results appear after the finish")
 
 
 func test_reset_button_returns_to_the_last_checkpoint_with_the_clock_running() -> void:
@@ -91,6 +92,6 @@ func test_restart_after_the_finish_starts_a_new_countdown() -> void:
 			break
 	level.run.restart()
 	assert_eq(level.run.clock.stage, RunClock.Stage.COUNTDOWN)
-	assert_false(level.hud.is_finish_visible())
+	assert_false(level.results.is_showing())
 	assert_eq(level.tracker.last_passed, 0)
-	assert_gt(level.run.clock.session_best_time, 0.0, "the session best survives a restart")
+	assert_gt(level.run.clock.best_time, 0.0, "the best run survives a restart")

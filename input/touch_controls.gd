@@ -4,13 +4,12 @@ extends CanvasLayer
 ## because the project emulates touch from the mouse).
 ##   Left side:  steering - an analog drag zone, or two buttons.
 ##   Right side: brake and gas pedals.
-##   Top strip:  steering-style toggle, reset, telemetry, recording and track switch.
+##   Top strip:  Reset and Pause. Steering style, Telemetry and Rec live in the
+##               pause menu (spec §3.5).
 ## Writes into the car's CarInput virtual_* values.
 ## Coordinates are in the 1920x1080 canvas (the project stretches it to the screen).
 
-signal telemetry_toggled
-signal recording_toggled
-signal track_switch_requested
+signal pause_requested
 
 ## Touches above this line belong to the top-strip buttons, not the driving controls.
 const TOP_STRIP_HEIGHT := 150.0
@@ -32,7 +31,15 @@ var _steer_touch := -1         # finger doing analog steering, or -1
 var _steer_origin := Vector2.ZERO
 var _button_steer := 0.0
 var _canvas: Control
-var _mode_button: Button
+
+
+## The steering style for a saved setting name ("analog" or "buttons").
+static func mode_from_name(mode_name: String) -> TouchSteerLogic.Mode:
+	return TouchSteerLogic.Mode.BUTTONS if mode_name == Progress.STEER_BUTTONS else TouchSteerLogic.Mode.ANALOG
+
+
+static func mode_name(mode: TouchSteerLogic.Mode) -> String:
+	return Progress.STEER_BUTTONS if mode == TouchSteerLogic.Mode.BUTTONS else Progress.STEER_ANALOG
 
 
 func _ready() -> void:
@@ -80,6 +87,21 @@ func update_outputs(delta: float) -> void:
 	car_input.virtual_steer = _current_steer(delta)
 
 
+## Forgets every touch and zeroes the car's pedals and steering. The pause menu
+## calls this, so a thumb held on the gas doesn't keep the car going after Resume.
+func release_all_touches() -> void:
+	_touches.clear()
+	_steer_touch = -1
+	_button_steer = 0.0
+	update_outputs(0.0)
+
+
+func set_steer_mode(mode: TouchSteerLogic.Mode) -> void:
+	steer_mode = mode
+	_steer_touch = -1
+	_button_steer = 0.0
+
+
 func screen_size() -> Vector2:
 	if screen_size_override != Vector2.ZERO:
 		return screen_size_override
@@ -123,21 +145,6 @@ func _any_touch_in(rect: Rect2) -> bool:
 	return false
 
 
-func _toggle_steer_mode() -> void:
-	if steer_mode == TouchSteerLogic.Mode.ANALOG:
-		steer_mode = TouchSteerLogic.Mode.BUTTONS
-	else:
-		steer_mode = TouchSteerLogic.Mode.ANALOG
-	_steer_touch = -1
-	_button_steer = 0.0
-	_update_mode_label()
-
-
-func _update_mode_label() -> void:
-	var label := "Analog" if steer_mode == TouchSteerLogic.Mode.ANALOG else "Buttons"
-	_mode_button.text = "Steer: %s" % label
-
-
 func _build_ui() -> void:
 	_canvas = Control.new()
 	_canvas.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -149,12 +156,8 @@ func _build_ui() -> void:
 	bar.position = Vector2(20.0, 20.0)
 	bar.add_theme_constant_override("separation", 16)
 	add_child(bar)
-	_mode_button = _add_button(bar, "", _toggle_steer_mode)
 	_add_button(bar, "Reset", _on_reset_pressed)
-	_add_button(bar, "Telemetry", telemetry_toggled.emit)
-	_add_button(bar, "Rec", recording_toggled.emit)
-	_add_button(bar, "Track", track_switch_requested.emit)
-	_update_mode_label()
+	_add_button(bar, "Pause", pause_requested.emit)
 
 
 func _add_button(parent: Control, text: String, callback: Callable) -> Button:

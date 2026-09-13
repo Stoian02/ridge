@@ -1,12 +1,14 @@
 extends Node3D
-## Gray-box tuning ground (dev only). From the spawn point, facing -Z:
+## Gray-box tuning ground, reached as Free Drive from the main menu (no clock or
+## stars). From the spawn point, facing -Z:
 ##   - dirt everywhere (the base ground)
 ##   - an asphalt runway straight ahead, with slalom cones and a kicker jump
 ##   - a mud strip parallel to the runway, 30 m to the right
 ##   - three hills to the left: 10 and 20 degree dirt, 30 degree asphalt
 ##   - a rough asphalt lane 60 m to the right: potholes, speed bumps, washboard
 ##   - a rutted mud strip 90 m to the right
-## Press R (or the Reset button) to return to the spawn point.
+## Press R (or the Reset button) to return to the spawn point; Pause, Escape or the
+## back gesture open a pause menu without Restart.
 
 const ASPHALT := preload("res://surfaces/asphalt.tres")
 const DIRT := preload("res://surfaces/dirt.tres")
@@ -17,6 +19,7 @@ const SLAB := 1.0
 
 @onready var rig: DrivingRig = $DrivingRig
 
+var pause_menu: PauseMenu
 var _spawn: Transform3D
 
 
@@ -24,15 +27,18 @@ func _ready() -> void:
 	_build_layout()
 	_spawn = rig.car.global_transform
 	rig.car.input.reset_requested.connect(_on_reset_requested)
-	rig.track_switch_requested.connect(_on_track_switch_requested)
+	pause_menu = PauseMenu.new()
+	pause_menu.name = "PauseMenu"
+	pause_menu.show_restart = false
+	add_child(pause_menu)
+	pause_menu.setup(rig)
+	rig.pause_requested.connect(pause_menu.toggle)
+	pause_menu.back_pressed.connect(pause_menu.open)
+	pause_menu.main_menu_pressed.connect(GameState.change_scene.bind(GameState.MAIN_MENU))
 
 
 func _on_reset_requested() -> void:
 	rig.place_car(_spawn)
-
-
-func _on_track_switch_requested() -> void:
-	LevelSwitcher.switch_from(get_tree(), scene_file_path)
 
 
 func _build_layout() -> void:

@@ -1,7 +1,16 @@
 extends GutTest
-## Rally Road as a whole: it builds, and a scripted driver can complete it.
+## Rally Road as a whole: it builds, a scripted driver can complete it, and the
+## finish is saved (to the sandbox) and shown on the results screen.
 
 const RALLY_ROAD := preload("res://levels/rally_road/rally_road.tscn")
+
+
+func before_each() -> void:
+	SaveSandbox.enter()
+
+
+func after_each() -> void:
+	SaveSandbox.leave()
 
 
 func _load() -> RunLevel:
@@ -22,6 +31,15 @@ func test_rally_road_builds_with_its_gates_and_layout() -> void:
 	assert_between(sampler.length, 1350.0, 1650.0, "about 1.5 km")
 	assert_eq(level.trail.checkpoints.reset_transforms.size(), 6, "start, 4 checkpoints, finish")
 	assert_lt(level.trail.build_seconds, 3.0, "desktop build time")
+	assert_not_null(level.level, "Rally Road finds its catalog entry")
+
+
+func test_a_saved_best_run_is_the_split_reference() -> void:
+	var state := SaveSandbox.game_state()
+	state.record_finish(state.catalog.levels[0], 80.0, {1: 16.0, 2: 28.0})
+	var level := _load()
+	assert_almost_eq(level.run.clock.best_time, 80.0, 0.0001)
+	assert_eq(level.run.clock.best_splits, {1: 16.0, 2: 28.0})
 
 
 func test_scripted_driver_completes_rally_road() -> void:
@@ -46,11 +64,24 @@ func test_scripted_driver_completes_rally_road() -> void:
 			for wheel in car.wheels:
 				if not wheel.in_contact:
 					lost_contact += 1
+	var time := level.run.clock.elapsed
 	gut.p("scripted driver: finished %s after %s, %d checkpoints, %d wheel-ticks without contact away from jumps" % [
-		level.tracker.is_finished(), RunHud.format_time(level.run.clock.elapsed),
+		level.tracker.is_finished(), RunHud.format_time(time),
 		get_signal_emit_count(level.run, "checkpoint_reached"), lost_contact])
 	assert_true(level.tracker.is_finished(), "reached the finish")
 	assert_signal_not_emitted(level.resets, "car_reset")
 	assert_signal_emit_count(level.run, "checkpoint_reached", 4)
-	assert_between(level.run.clock.elapsed, 60.0, 150.0)
+	assert_between(time, 60.0, 150.0)
 	assert_lt(lost_contact, 24, "no seams or potholes throw the wheels off the ground")
+
+	var wait := 0
+	while not level.results.is_showing() and wait < ScenarioHelper.ticks(3.0):
+		await get_tree().physics_frame
+		wait += 1
+	assert_true(level.results.is_showing(), "results appear after the finish")
+	assert_eq(level.results.stars.earned, Stars.for_time(time, level.level))
+	var saved: Dictionary = SaveSystem.read(SaveSandbox.PATH)["levels"]["rally_road"]
+	assert_almost_eq(float(saved["best_time"]), time, 0.001, "the finish was saved")
+	assert_eq(saved["best_splits"].size(), 4, "with its four checkpoint splits")
+	level.results.retry_pressed.emit()
+	assert_eq(SaveSandbox.requested_scenes, [level.scene_file_path], "Retry reloads Rally Road")
