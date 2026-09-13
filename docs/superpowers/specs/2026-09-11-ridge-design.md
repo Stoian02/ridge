@@ -54,9 +54,11 @@ There is **no fuel and no damage**. The only pressure is the clock.
 - Reset returns the car, upright and stationary, to the last passed checkpoint's
   position and heading (the start line counts as checkpoint 0).
 - **Automatic reset** when:
-  - the car is flipped — body up-vector past a tunable angle and no wheel contact —
-    for **2 s**; or
-  - the car enters the level's out-of-bounds volume.
+  - the car is flipped — tilted more than 70° and nearly stopped — for **2 s** (wheel
+    contact isn't required: a car on its side often has a wheel touching); or
+  - the car falls off the map (below a floor under the lowest terrain).
+- Leaving the road is otherwise allowed: soft edges let the car run onto the shoulders
+  and the terrain beyond; only the two cases above reset automatically.
 - "Stuck" is handled by the manual Reset button.
 - **The clock keeps running** through resets; lost time is the only penalty.
 
@@ -181,7 +183,9 @@ layered under the engine.
   `RoughPatch` heightmap approach proven on the Test Ground in Milestone 1, generalised
   by the trail builder in Milestone 2). Asphalt gets occasional potholes and patches;
   mud gets ruts at wheel-track spacing.
-- **Edges:** natural boundaries (rocks, trees, drop-offs) plus an out-of-bounds volume.
+- **Edges:** soft — dirt shoulders and drivable terrain beyond, with natural boundaries
+  (rock cuts, trees, drop-offs). There is no out-of-bounds volume; only falling off the
+  map resets automatically (§2.4).
 - **Checkpoint gates** (`Area3D`) placed along the spline; each stores its reset
   transform. A **finish gate** ends the run.
 
@@ -279,10 +283,13 @@ Code style: readable over clever; small focused files; typed GDScript.
    recorder, unit + scenario tests, first Android build on the Xiaomi 13, performance
    profile. *Done when:* the user signs off that the Rally Car feels good on asphalt, dirt,
    and mud on the phone.
-2. **First playable** — trail builder, Rally Road and Muddy Valley, checkpoints, resets,
-   run clock, stars, results, level select, pause menu, save data, Over the Hill-style
-   mood pass on both levels. *Done when:* both levels are playable start to finish on
-   the phone with star targets set from real runs.
+2. **First playable**, in two parts:
+   - **Part A** — trail builder, Rally Road, checkpoints, resets, run clock, run HUD.
+     Detailed in `docs/superpowers/specs/2026-09-13-m2a-rally-road-design.md`.
+     *Done when:* Rally Road is drivable start to finish on the phone at 60 fps.
+   - **Part B** — Muddy Valley, stars and results, level select, pause menu, save data.
+     *Done when:* both levels are playable start to finish on the phone with star
+     targets set from real runs.
 3. **Later (each planned separately)** — more cars, snow/ice and water, remaining levels,
    car select and unlocks, particles and audio, art pass, UI polish.
 
