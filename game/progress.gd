@@ -1,14 +1,19 @@
 class_name Progress
 extends RefCounted
 ## The player's progress in memory (spec §5.3): per level, the best time with that
-## run's checkpoint splits and the most stars earned; plus the steering style.
+## run's checkpoint splits and the most stars earned; plus the steering style and
+## the last car chosen.
 ## Converts to and from the save file's Dictionary (spec §5.5).
 
 const VERSION := 1
 const STEER_ANALOG := "analog"
 const STEER_BUTTONS := "buttons"
+## The starter car's id (see CarCatalog).
+const DEFAULT_CAR := "rally"
 
 var steer_mode: String = STEER_ANALOG
+## Id of the car the player last chose in car select.
+var selected_car: String = DEFAULT_CAR
 
 ## Level id (String) -> {"best_time": float, "best_splits": {int: float}, "stars": int}.
 var _levels := {}
@@ -70,7 +75,7 @@ func to_dictionary() -> Dictionary:
 		for index in record["best_splits"]:
 			splits[str(index)] = record["best_splits"][index]
 		levels[id] = {"best_time": record["best_time"], "best_splits": splits, "stars": record["stars"]}
-	return {"version": VERSION, "settings": {"steer_mode": steer_mode}, "levels": levels}
+	return {"version": VERSION, "settings": {"steer_mode": steer_mode, "selected_car": selected_car}, "levels": levels}
 
 
 ## Reads save data. Unknown keys are ignored; missing or wrongly typed values take
@@ -80,6 +85,9 @@ static func from_dictionary(data: Dictionary) -> Progress:
 	var settings = data.get("settings")
 	if settings is Dictionary and settings.get("steer_mode") in [STEER_ANALOG, STEER_BUTTONS]:
 		progress.steer_mode = settings["steer_mode"]
+	var car_id = settings.get("selected_car") if settings is Dictionary else null
+	if car_id is String and car_id != "":
+		progress.selected_car = car_id
 	var levels = data.get("levels")
 	if not levels is Dictionary:
 		return progress

@@ -7,6 +7,8 @@ const DEFAULT_SAVE_PATH := "user://save.json"
 const MAIN_MENU := "res://ui/main_menu.tscn"
 const LEVEL_SELECT := "res://ui/level_select.tscn"
 const FREE_DRIVE := "res://levels/test_ground/test_ground.tscn"
+const CAR_SELECT := "res://ui/car_select.tscn"
+const CAR_CATALOG := preload("res://car/car_catalog.tres")
 
 var catalog: LevelCatalog = CATALOG
 ## Where progress is saved. Tests point this at a throwaway file (see SaveSandbox).
@@ -15,6 +17,9 @@ var progress := Progress.new()
 ## Loads a scene by path. Tests replace it so a menu test records the request
 ## instead of swapping out the test runner.
 var scene_changer: Callable
+var car_catalog: CarCatalog = CAR_CATALOG
+## The scene car select starts once a car is chosen: a level, or Free Drive.
+var pending_scene := ""
 
 
 func _ready() -> void:
@@ -36,16 +41,43 @@ func level_for_scene(scene_path: String) -> LevelDef:
 	return catalog.find_by_scene(scene_path)
 
 
-## Records a finished run and saves. Returns what Progress.record_finish returns.
+## Records a finished run and saves. Returns what Progress.record_finish returns,
+## plus "new_cars": the cars (Array[CarDef]) this finish unlocked.
 func record_finish(level: LevelDef, time: float, splits: Dictionary) -> Dictionary:
+	var stars_before := progress.total_stars(catalog)
 	var result := progress.record_finish(level, time, splits)
 	save()
+	result["new_cars"] = car_catalog.newly_unlocked(stars_before, progress.total_stars(catalog))
 	return result
 
 
 func set_steer_mode(mode: String) -> void:
 	progress.steer_mode = mode
 	save()
+
+
+## The car to drive: the player's last choice while it exists and is unlocked,
+## otherwise the starter car.
+func selected_car() -> CarDef:
+	var car := car_catalog.find_by_id(StringName(progress.selected_car))
+	if car == null or not is_car_unlocked(car):
+		return car_catalog.cars[0]
+	return car
+
+
+func is_car_unlocked(car: CarDef) -> bool:
+	return progress.total_stars(catalog) >= car.unlock_stars
+
+
+func set_selected_car(id: StringName) -> void:
+	progress.selected_car = String(id)
+	save()
+
+
+## Opens car select, which then starts `scene_path` with the chosen car.
+func choose_car_for(scene_path: String) -> void:
+	pending_scene = scene_path
+	change_scene(CAR_SELECT)
 
 
 ## Leaves the current scene for `path`, unpausing first so the next scene runs.

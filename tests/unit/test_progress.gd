@@ -117,3 +117,11 @@ func test_unknown_missing_and_wrongly_typed_values_fall_back_to_defaults() -> vo
 	assert_true(loaded.best_splits(&"first").is_empty())
 	assert_eq(loaded.stars(&"second"), 0)
 	assert_eq(Progress.from_dictionary({}).steer_mode, Progress.STEER_ANALOG)
+
+
+func test_the_selected_car_is_saved_and_defaults_to_the_rally_car() -> void:
+	assert_eq(progress.selected_car, Progress.DEFAULT_CAR)
+	progress.selected_car = "offroad_4x4"
+	assert_eq(Progress.from_dictionary(progress.to_dictionary()).selected_car, "offroad_4x4")
+	assert_eq(Progress.from_dictionary({"settings": {"steer_mode": "analog"}}).selected_car, "rally", "an older save")
+	assert_eq(Progress.from_dictionary({"settings": {"selected_car": 7}}).selected_car, "rally", "a wrongly typed value")

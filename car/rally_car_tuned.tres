@@ -1,0 +1,61 @@
+[gd_resource type="Resource" script_class="CarStats" format=3]
+
+[ext_resource type="Script" path="res://car/car_stats.gd" id="1_stats"]
+
+[resource]
+script = ExtResource("1_stats")
+display_name = "Rally Car Tuned"
+archetype = &"rally"
+mass = 1380.0
+center_of_mass = Vector3(0, -0.18, 0)
+inertia = Vector3(2400, 2700, 550)
+body_size = Vector3(1.6, 0.5, 4.2)
+aero_drag = 0.42
+wheel_radius = 0.33
+wheel_width = 0.24
+track_width = 1.52
+wheelbase = 2.52
+wheel_mount_height = 0.1
+wheel_inertia = 1.2
+suspension_length = 0.35
+spring_stiffness = 35400.0
+compress_damping = 2680.0
+rebound_damping = 4020.0
+bump_stop_stiffness = 200000.0
+anti_roll_front = 6700.0
+anti_roll_rear = 10700.0
+tire_grip = 1.3
+rear_grip_bias = 0.96
+peak_slip_ratio = 0.12
+peak_slip_angle_deg = 8.0
+slide_grip = 0.75
+low_speed_reference = 3.0
+torque_curve_rpm = PackedFloat32Array(1000, 2500, 4000, 5500, 6500, 7200)
+torque_curve_nm = PackedFloat32Array(416, 533, 572, 546, 481, 390)
+idle_rpm = 1000.0
+redline_rpm = 7200.0
+launch_rpm = 4000.0
+engine_braking_nm = 50.0
+gear_ratios = PackedFloat32Array(3.2, 2.2, 1.65, 1.3, 1.08, 0.92)
+reverse_ratio = 3.3
+final_drive = 4.8
+upshift_rpm = 6800.0
+downshift_rpm = 3000.0
+shift_time = 0.09
+drivetrain_efficiency = 0.85
+drive_type = 2
+front_torque_split = 0.41
+brake_torque = 11000.0
+brake_front_bias = 0.6
+abs_enabled = true
+abs_target_slip = 0.15
+auto_hold_speed = 0.5
+direction_change_speed = 1.0
+traction_control = true
+traction_slip_target = 0.3
+max_steer_deg = 32.0
+steer_rate_deg = 140.0
+steer_assist_slip = 0.75
+airborne_grace = 0.1
+air_pitch_torque = 3700.0
+air_roll_torque = 2700.0

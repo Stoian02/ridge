@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="CarDef" format=3]
+
+[ext_resource type="Script" path="res://car/car_def.gd" id="1_def"]
+[ext_resource type="Script" path="res://car/car_body_def.gd" id="2_body"]
+[ext_resource type="Resource" path="res://car/offroad_4x4.tres" id="3_stats"]
+
+[sub_resource type="Resource" id="Resource_body"]
+script = ExtResource("2_body")
+body_color = Color(0.62, 0.58, 0.4, 1)
+window_color = Color(0.18, 0.22, 0.26, 1)
+trim_color = Color(0.1, 0.1, 0.1, 1)
+rim_color = Color(0.2, 0.2, 0.2, 1)
+hood_length = 0.28
+cabin_length = 0.42
+cabin_height = 0.62
+windscreen_slope = 0.05
+rear_window_slope = 0.02
+nose_taper = 0.06
+tail_taper = 0.02
+bevel = 0.05
+roof_rack = true
+bull_bar = true
+spare_wheel = true
+fender_flares = true
+
+[resource]
+script = ExtResource("1_def")
+id = &"offroad_4x4"
+display_name = "Off-road 4x4"
+description = "Heavy and torquey with locked diffs. Loves mud, slow on asphalt."
+best_on = "Mud, rough ground"
+stats = ExtResource("3_stats")
+body = SubResource("Resource_body")
+unlock_stars = 3

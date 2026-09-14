@@ -54,3 +54,32 @@ func test_leaving_the_sandbox_restores_the_real_settings() -> void:
 	assert_eq(state.save_path, state.DEFAULT_SAVE_PATH)
 	assert_true(state.scene_changer.get_object() is SceneTree)
 	SaveSandbox.enter()
+
+
+func test_the_selected_car_falls_back_to_the_rally_car_while_locked_or_unknown() -> void:
+	assert_eq(state.selected_car().id, &"rally")
+	state.set_selected_car(&"offroad_4x4")
+	assert_eq(state.selected_car().id, &"rally", "the 4x4 needs 3 stars")
+	state.record_finish(state.catalog.levels[0], 60.0, {})
+	assert_eq(state.selected_car().id, &"offroad_4x4")
+	state.progress.selected_car = "no_such_car"
+	assert_eq(state.selected_car().id, &"rally")
+
+
+func test_choosing_a_car_is_saved() -> void:
+	state.set_selected_car(&"rally_tuned")
+	var saved := SaveSystem.read(SaveSandbox.PATH)
+	assert_eq(saved["settings"]["selected_car"], "rally_tuned")
+
+
+func test_choose_car_for_remembers_the_scene_and_opens_car_select() -> void:
+	state.choose_car_for("res://levels/rally_road/rally_road.tscn")
+	assert_eq(state.pending_scene, "res://levels/rally_road/rally_road.tscn")
+	assert_eq(SaveSandbox.requested_scenes, [state.CAR_SELECT])
+
+
+func test_a_finish_reports_the_cars_it_unlocks() -> void:
+	var result: Dictionary = state.record_finish(state.catalog.levels[0], 60.0, {})
+	assert_eq(result["new_cars"].map(func(car: CarDef) -> StringName: return car.id), [&"offroad_4x4"])
+	var again: Dictionary = state.record_finish(state.catalog.levels[0], 59.0, {})
+	assert_true(again["new_cars"].is_empty(), "the 4x4 was already unlocked")

@@ -11,6 +11,7 @@ const PATH := "user://test_sandbox/save.json"
 static var requested_scenes: Array[String] = []
 static var _real_changer: Callable
 static var _real_catalog: LevelCatalog
+static var _real_car_catalog: CarCatalog
 
 
 static func enter() -> void:
@@ -19,6 +20,8 @@ static func enter() -> void:
 	var state := game_state()
 	_real_changer = state.scene_changer
 	_real_catalog = state.catalog
+	_real_car_catalog = state.car_catalog
+	state.pending_scene = ""
 	state.save_path = PATH
 	state.scene_changer = func(path: String) -> void: requested_scenes.append(path)
 	state.reload()
@@ -29,6 +32,8 @@ static func leave() -> void:
 	state.get_tree().paused = false
 	state.scene_changer = _real_changer
 	state.catalog = _real_catalog
+	state.car_catalog = _real_car_catalog
+	state.pending_scene = ""
 	state.save_path = state.DEFAULT_SAVE_PATH
 	state.reload()
 	clear_files()

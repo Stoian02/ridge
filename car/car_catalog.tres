@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="CarCatalog" format=3]
+
+[ext_resource type="Script" path="res://car/car_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://car/car_def.gd" id="2_def"]
+[ext_resource type="Resource" path="res://car/cars/rally.tres" id="3_rally"]
+[ext_resource type="Resource" path="res://car/cars/offroad_4x4.tres" id="4_offroad"]
+[ext_resource type="Resource" path="res://car/cars/rally_tuned.tres" id="5_tuned"]
+
+[resource]
+script = ExtResource("1_catalog")
+cars = Array[ExtResource("2_def")]([ExtResource("3_rally"), ExtResource("4_offroad"), ExtResource("5_tuned")])
