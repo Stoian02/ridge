@@ -7,7 +7,8 @@ extends Node3D
 ## runs before this one.
 ## Its LevelDef comes from the catalog by scene path; a level that isn't in the
 ## catalog (one built by a test) runs without stars or saving.
-## At the finish the pedals lock and the results appear straight away.
+## At the finish the pedals lock and the results appear straight away. Change car
+## and Next level go through car select.
 
 @onready var trail: TrailLevel = $Trail
 @onready var rig: DrivingRig = $DrivingRig
@@ -59,6 +60,7 @@ func _add_overlays() -> void:
 	pause_menu.level_select_pressed.connect(GameState.change_scene.bind(GameState.LEVEL_SELECT))
 	pause_menu.main_menu_pressed.connect(GameState.change_scene.bind(GameState.MAIN_MENU))
 	pause_menu.back_pressed.connect(_on_back)
+	pause_menu.car_select_pressed.connect(_change_car)
 	rig.pause_requested.connect(_on_pause_requested)
 
 
@@ -85,14 +87,16 @@ func _on_run_finished(time: float, splits: Dictionary) -> void:
 	var best := time
 	var new_best := true
 	var has_next := false
+	var new_cars: Array[CarDef] = []
 	if level != null:
 		var result := GameState.record_finish(level, time, splits)
 		earned = result["stars"]
 		best = result["best_time"]
 		new_best = result["new_best"]
+		new_cars.assign(result["new_cars"])
 		var next := GameState.catalog.next_after(level)
 		has_next = next != null and GameState.progress.is_unlocked(GameState.catalog, next)
-	results.show_results(time, earned, level, best, new_best, has_next)
+	results.show_results(time, earned, level, best, new_best, has_next, new_cars)
 
 
 func _retry() -> void:
@@ -102,7 +106,17 @@ func _retry() -> void:
 		GameState.change_scene(scene_file_path)
 
 
+## Change car: car select for this level, which then restarts it with the new car.
+## A level built by a test has no scene to return to, so it just restarts.
+func _change_car() -> void:
+	if scene_file_path.is_empty():
+		pause_menu.close()
+		run.restart()
+	else:
+		GameState.choose_car_for(scene_file_path)
+
+
 func _next_level() -> void:
 	var next := GameState.catalog.next_after(level) if level != null else null
 	if next != null:
-		GameState.change_scene(next.scene_path)
+		GameState.choose_car_for(next.scene_path)

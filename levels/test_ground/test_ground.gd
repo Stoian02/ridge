@@ -35,6 +35,7 @@ func _ready() -> void:
 	rig.pause_requested.connect(pause_menu.toggle)
 	pause_menu.back_pressed.connect(pause_menu.open)
 	pause_menu.main_menu_pressed.connect(GameState.change_scene.bind(GameState.MAIN_MENU))
+	pause_menu.car_select_pressed.connect(GameState.choose_car_for.bind(GameState.FREE_DRIVE))
 
 
 func _on_reset_requested() -> void:

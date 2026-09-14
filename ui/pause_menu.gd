@@ -4,10 +4,12 @@ extends CanvasLayer
 ## every touch. The menu runs even while the game is paused, and it answers the
 ## phone's back gesture and Escape: closing itself when open, otherwise asking the
 ## level (back_pressed). Free Drive turns off show_restart, which hides Restart and
-## Level select (there is no run to restart).
+## Level select (there is no run to restart). Change car is offered in both.
 
 signal restart_pressed
 signal level_select_pressed
+## Change car: the level opens car select for itself.
+signal car_select_pressed
 signal main_menu_pressed
 ## Back gesture or Escape while the menu is closed; the level decides what it means.
 signal back_pressed
@@ -125,6 +127,7 @@ func _build_ui() -> void:
 	var restart := UiKit.button("Restart", _on_restart)
 	restart.visible = show_restart
 	column.add_child(restart)
+	column.add_child(UiKit.button("Change car", car_select_pressed.emit))
 	var level_select := UiKit.button("Level select", level_select_pressed.emit)
 	level_select.visible = show_restart
 	column.add_child(level_select)

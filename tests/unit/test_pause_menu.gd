@@ -115,3 +115,14 @@ func test_level_select_and_main_menu_emit_their_signals() -> void:
 	_button_starting("Main menu").pressed.emit()
 	assert_signal_emitted(menu, "level_select_pressed")
 	assert_signal_emitted(menu, "main_menu_pressed")
+
+
+func test_change_car_is_offered_in_levels_and_free_drive() -> void:
+	for show_restart: bool in [true, false]:
+		_add_menu(show_restart)
+		var button := _button_starting("Change car")
+		assert_true(button.visible, "shown with show_restart %s" % show_restart)
+		watch_signals(menu)
+		button.pressed.emit()
+		assert_signal_emitted(menu, "car_select_pressed")
+		menu.queue_free()

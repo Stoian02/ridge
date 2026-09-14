@@ -16,6 +16,7 @@ var stars: StarRow
 var _time: Label
 var _targets: Label
 var _best: Label
+var _unlocks: Label
 var _next: Button
 
 
@@ -30,14 +31,17 @@ func _ready() -> void:
 
 ## Shows the overlay for a finish in `time` that earned `earned` stars on `level`
 ## (null for a level without star times).
+## `new_cars` are the cars this finish unlocked (spec §5.3).
 func show_results(time: float, earned: int, level: LevelDef, best_time: float, new_best: bool,
-		has_next: bool) -> void:
+		has_next: bool, new_cars: Array[CarDef] = []) -> void:
 	_time.text = RunHud.format_time(time)
 	stars.earned = earned
 	stars.visible = level != null
 	_targets.text = targets_text(level) if level != null else ""
 	_best.text = "New best!" if new_best else "Best  %s" % RunHud.format_time(best_time)
 	_next.visible = has_next
+	_unlocks.text = unlocks_text(new_cars)
+	_unlocks.visible = not new_cars.is_empty()
 	visible = true
 
 
@@ -47,6 +51,14 @@ func hide_results() -> void:
 
 func is_showing() -> bool:
 	return visible
+
+
+## "New car unlocked: Off-road 4x4", one line per car; empty when there are none.
+static func unlocks_text(new_cars: Array[CarDef]) -> String:
+	var lines := PackedStringArray()
+	for car in new_cars:
+		lines.append("New car unlocked: %s" % car.display_name)
+	return "\n".join(lines)
 
 
 ## "1 star: finish · 2 stars: under 1:25.0 · 3 stars: under 1:14.0"
@@ -66,6 +78,10 @@ func _build_ui() -> void:
 	column.add_child(_targets)
 	_best = UiKit.label("")
 	column.add_child(_best)
+	_unlocks = UiKit.label("")
+	_unlocks.add_theme_color_override("font_color", Color(0.98, 0.8, 0.35))
+	_unlocks.visible = false
+	column.add_child(_unlocks)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 20)

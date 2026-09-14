@@ -71,3 +71,13 @@ func test_the_font_has_every_character_the_screen_uses() -> void:
 	var font := ThemeDB.fallback_font
 	for character in ResultsScreen.targets_text(level) + "New best!Best Finish":
 		assert_true(font.has_char(character.unicode_at(0)), "font has '%s'" % character)
+
+
+func test_newly_unlocked_cars_are_announced() -> void:
+	screen.show_results(80.0, 2, level, 80.0, true, false)
+	assert_false(_label_texts().any(func(text: String) -> bool: return text.begins_with("New car")), "nothing new")
+	var car := CarDef.new()
+	car.display_name = "Off-road 4x4"
+	var new_cars: Array[CarDef] = [car]
+	screen.show_results(70.0, 3, level, 70.0, true, false, new_cars)
+	assert_has(_label_texts(), "New car unlocked: Off-road 4x4")

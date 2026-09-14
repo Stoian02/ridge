@@ -87,7 +87,8 @@ func test_scripted_driver_completes_rally_road() -> void:
 	assert_eq(SaveSandbox.requested_scenes, [level.scene_file_path], "Retry reloads Rally Road")
 	assert_true(level.results._next.visible, "finishing Rally Road unlocks the next level")
 	level.results.next_pressed.emit()
-	assert_eq(SaveSandbox.requested_scenes[-1], "res://levels/muddy_valley/muddy_valley.tscn", "Next level opens Muddy Valley")
+	assert_eq(SaveSandbox.requested_scenes[-1], SaveSandbox.game_state().CAR_SELECT, "Next level opens car select")
+	assert_eq(SaveSandbox.game_state().pending_scene, "res://levels/muddy_valley/muddy_valley.tscn", "for Muddy Valley")
 
 
 func test_the_road_carries_on_past_the_finish() -> void:
