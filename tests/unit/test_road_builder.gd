@@ -154,6 +154,27 @@ func test_shoulder_colour_blends_into_a_surface_stretch() -> void:
 	assert_true(builder._color(muddy_profile, muddy, 145.0, 5.5, RoadBuilder.Part.SHOULDER).is_equal_approx(stretch.color))
 
 
+func test_transition_surfaces_cover_the_road_and_shoulders() -> void:
+	var muddy := _muddy_def()
+	var stretch := muddy.surface_stretches[0]
+	var damp := SurfaceDef.new()
+	damp.id = &"damp_dirt"
+	var soft := SurfaceDef.new()
+	soft.id = &"soft_mud"
+	stretch.transition_surfaces = [damp, soft]
+	stretch.transition_length = 8.0
+	builder.build(sampler, RoadProfile.new(muddy, sampler.length), muddy)
+	await wait_physics_frames(2)
+	var space := builder.get_world_3d().direct_space_state
+	for check in [[121.0, &"damp_dirt"], [125.0, &"soft_mud"], [145.0, &"mud"],
+			[165.0, &"soft_mud"], [169.0, &"damp_dirt"]]:
+		for lateral: float in [1.0, 5.5]:
+			var from := Vector3(lateral, 5.0, -check[0])
+			var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 10.0))
+			assert_eq(SurfaceLookup.surface_of(hit["collider"]).id, check[1],
+					"surface at %.1f m, lateral %.1f m" % [check[0], lateral])
+
+
 func test_stretches_with_the_same_ruts_share_their_stations() -> void:
 	var one_stretch := RoadBuilder.cross_section(_muddy_def()).size()
 	var muddy := _muddy_def()

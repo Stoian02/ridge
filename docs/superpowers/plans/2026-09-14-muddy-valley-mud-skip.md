@@ -45,3 +45,35 @@ while adding one deliberate hidden shortcut on the final climb.
 - Record peak primitives and draw calls in the Muddy Valley performance note.
 - Commit the implementation by explicitly named files, then ask the owner about
   merging the branch.
+
+## Revision 2 tasks
+
+### Task 5: Staged mud transition
+
+- Add two Muddy Valley-only `SurfaceDef` resources for damp dirt and soft mud.
+- Let a `SurfaceStretch` select ordered transition surfaces near both ends and
+  expose their exact row boundaries to `RoadBuilder`.
+- Set the mud stretches to 8 m of physical staging and 12 m of visual/rut fade.
+- Cover the staged road and shoulder collision, colours and unchanged default
+  behavior with unit tests.
+
+### Task 6: Worn shortcut track
+
+- Add a `TrailShortcut` definition and a `ShortcutBuilder` that lays a narrow
+  vertex-coloured mesh and dirt-tagged collision over the terrain.
+- Ease the path from the road before the final hedge, behind its left side, and
+  back through the existing exit opening.
+- Widen Muddy Valley's shoulders by 0.5 m so the normal route and shortcut join
+  leave enough recovery room beside the hedges.
+- Blend its outer vertices into the grass colour and keep the centre lightly
+  worn.
+- Add deterministic washboard, undulation and potholes, fading them out at both
+  joins.
+- Reconfigure the final hedge and update unit and real-car scenarios.
+
+### Task 7: Revision verification
+
+- Prove the normal route and the full shortcut both finish without resets.
+- Measure shortcut roughness and ensure it has a meaningful drawback.
+- Recheck build time, primitive/draw-call bounds, Rally Road regression, and
+  `./run_tests.sh all`.

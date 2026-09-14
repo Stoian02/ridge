@@ -128,16 +128,16 @@ func stretch_at(distance: float) -> SurfaceStretch:
 ## The road's surface at `distance`: a stretch's surface, or the trail's base surface.
 func surface_at(distance: float) -> SurfaceDef:
 	var stretch := stretch_at(distance)
-	return stretch.surface if stretch != null else def.base_surface
+	return stretch.surface_at(distance) if stretch != null else def.base_surface
 
 
 ## Every stretch start and end on the road, sorted.
 func surface_boundaries() -> PackedFloat32Array:
 	var boundaries := PackedFloat32Array()
 	for stretch in def.surface_stretches:
-		for end: float in [stretch.start, stretch.end()]:
-			if end > 0.0 and end < road_length:
-				boundaries.append(end)
+		for boundary: float in stretch.surface_boundaries():
+			if boundary > 0.0 and boundary < road_length and not boundaries.has(boundary):
+				boundaries.append(boundary)
 	boundaries.sort()
 	return boundaries
 

@@ -19,7 +19,7 @@ extends Resource
 @export var chunk_length: float = 100.0
 
 @export_group("Surface")
-## The road's surface outside any stretch. Shoulders are always dirt.
+## The road's surface outside any stretch. Shoulders are dirt outside stretches.
 @export var base_surface: SurfaceDef = preload("res://surfaces/asphalt.tres")
 ## Painted edge lines along the road.
 @export var painted_lines: bool = true
@@ -74,6 +74,9 @@ extends Resource
 ## Outward hedge segments as Vector3(distance, length, side).
 @export var hedge_returns: Array[Vector3] = []
 @export var hedge_color: Color = Color(0.16, 0.25, 0.11)
+
+@export_group("Shortcut")
+@export var shortcut: TrailShortcut
 
 @export_group("Colours")
 ## The road's own colour: asphalt, or dirt on a dirt trail.

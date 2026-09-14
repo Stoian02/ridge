@@ -21,9 +21,9 @@ func _load() -> RunLevel:
 	return level
 
 
-func _surface_under_road(level: RunLevel, distance: float) -> StringName:
+func _surface_under_road(level: RunLevel, distance: float, lateral: float = 0.0) -> StringName:
 	var sampler := level.trail.sampler
-	var above := sampler.position(distance) + Vector3.UP * 3.0
+	var above := sampler.surface_point(distance, lateral, level.trail.profile) + Vector3.UP * 3.0
 	var query := PhysicsRayQueryParameters3D.create(above, above + Vector3.DOWN * 6.0)
 	query.exclude = [level.rig.car.get_rid()]
 	var hit := level.get_world_3d().direct_space_state.intersect_ray(query)
@@ -35,12 +35,13 @@ func test_muddy_valley_builds_with_its_gates_mud_and_creek() -> void:
 	var sampler := level.trail.sampler
 	var scatter := level.trail.scatter_builder
 	var hedge := level.trail.hedge_builder
+	var shortcut := level.trail.shortcut_builder
 	var hedge_batches := hedge.get_children().filter(func(child: Node) -> bool: return child is MultiMeshInstance3D).size()
-	gut.p("Muddy Valley: %.0f m long, built in %.2f s (%d x %d terrain chunks, %d pines, %d broadleaf, %d rocks, %d posts, %d water points, %d hedge bushes in %d batches)" % [
+	gut.p("Muddy Valley: %.0f m long, built in %.2f s (%d x %d terrain chunks, %d pines, %d broadleaf, %d rocks, %d posts, %d water points, %d hedge bushes in %d batches, %d shortcut primitives)" % [
 		sampler.length, level.trail.build_seconds,
 		level.trail.field.chunk_count().x, level.trail.field.chunk_count().y,
 		scatter.pine_count, scatter.broadleaf_count, scatter.rock_count, scatter.post_count,
-		level.trail.creek_builder.water_points.size(), hedge.bush_count, hedge_batches])
+		level.trail.creek_builder.water_points.size(), hedge.bush_count, hedge_batches, shortcut.primitive_count])
 	assert_between(sampler.length, 1450.0, 1650.0, "about 1.5 km plus the run-off")
 	assert_eq(level.trail.checkpoints.reset_transforms.size(), 6, "start, 4 checkpoints, finish")
 	assert_lt(level.trail.build_seconds, 3.0, "desktop build time")
@@ -50,6 +51,9 @@ func test_muddy_valley_builds_with_its_gates_mud_and_creek() -> void:
 	assert_gt(hedge.bush_count, 500, "dense hedges beside the mud")
 	assert_lte(hedge.bush_count * 20, 13100, "hedges add at most 13.1k visible primitives")
 	assert_lte(hedge_batches, 16, "hedges add at most 16 draw calls even if every batch is visible")
+	assert_lte(shortcut.primitive_count, 7000, "the worn shortcut stays cheap")
+	assert_lte(hedge.bush_count * 20 + shortcut.primitive_count, 20000,
+			"all new path geometry adds at most 20k primitives")
 	await wait_physics_frames(2)
 	assert_eq(_surface_under_road(level, 800.0), &"mud", "the mud stretch beside the creek")
 	assert_eq(_surface_under_road(level, 1400.0), &"mud", "the final climb")
@@ -58,6 +62,16 @@ func test_muddy_valley_builds_with_its_gates_mud_and_creek() -> void:
 	var verge_hit := level.get_world_3d().direct_space_state.intersect_ray(
 			PhysicsRayQueryParameters3D.create(verge, verge + Vector3.DOWN * 6.0))
 	assert_eq(SurfaceLookup.surface_of(verge_hit["collider"]).id, &"mud", "mud covers the shoulder too")
+
+
+func test_mud_stages_in_over_damp_dirt_and_soft_mud() -> void:
+	var level := _load()
+	for check in [[758.0, &"dirt"], [762.0, &"damp_dirt"], [766.0, &"soft_mud"],
+			[770.0, &"mud"], [840.0, &"mud"], [844.0, &"soft_mud"],
+			[848.0, &"damp_dirt"], [852.0, &"dirt"]]:
+		for lateral: float in [0.0, -6.0]:
+			assert_eq(_surface_under_road(level, check[0], lateral), check[1],
+					"surface at %.0f m, lateral %.0f m" % [check[0], lateral])
 
 
 func test_scripted_driver_completes_muddy_valley() -> void:
@@ -146,31 +160,34 @@ func test_hidden_shortcut_connects_its_entry_and_exit() -> void:
 	var level := _load()
 	var car := level.rig.car
 	var sampler := level.trail.sampler
+	var shortcut := level.trail.shortcut_builder
 	await TrailScenarios.wait_for_go(level)
-	await TrailScenarios.place_at_offset(level, 1378.0, -5.5)
-	var route: Array[Vector2] = [
-		Vector2(1387.0, -5.5), Vector2(1390.0, -12.0),
-		Vector2(1410.0, -12.0), Vector2(1468.0, -12.0),
-		Vector2(1475.0, -5.5), Vector2(1490.0, -3.0),
-	]
-	var waypoint := 0
-	for tick in ScenarioHelper.ticks(35.0):
-		if waypoint >= route.size():
+	await TrailScenarios.place(level, shortcut.transform_at(1277.0, CheckpointPlacer.RESET_HEIGHT))
+	watch_signals(level.resets)
+	var lowest_compression := INF
+	var highest_compression := -INF
+	var reached_end := false
+	var seconds := 45.0
+	for tick in ScenarioHelper.ticks(seconds):
+		var distance := sampler.closest_distance(car.global_position)
+		if distance >= 1487.0 and absf(sampler.lateral_offset(car.global_position)) < level.trail.trail.half_total_width():
+			seconds = tick / float(Engine.physics_ticks_per_second)
+			reached_end = true
 			break
-		var instruction := route[waypoint]
-		var target := sampler.position(instruction.x) + sampler.right(instruction.x) * instruction.y
-		target.y = level.trail.field.height_at(target.x, target.z)
-		TrailScenarios.drive_toward(car, target, 9.0)
-		if Vector2(car.global_position.x - target.x, car.global_position.z - target.z).length() < 3.0:
-			waypoint += 1
+		TrailScenarios.drive_toward(car, shortcut.surface_point(minf(distance + 8.0, 1490.0)), 10.0)
+		for wheel in car.wheels:
+			if wheel.in_contact:
+				lowest_compression = minf(lowest_compression, wheel.compression)
+				highest_compression = maxf(highest_compression, wheel.compression)
 		await get_tree().physics_frame
 	var final_distance := sampler.closest_distance(car.global_position)
 	var final_lateral := sampler.lateral_offset(car.global_position)
-	gut.p("shortcut reached waypoint %d/%d at %.0f m, lateral %.1f m" % [
-			waypoint, route.size(), final_distance, final_lateral])
-	assert_eq(waypoint, route.size(), "the car passes through both hedge openings")
-	assert_gt(final_distance, 1480.0)
+	gut.p("rough shortcut: reached %s in %.1f s at %.0f m, lateral %.1f m, compression range %.3f m" % [
+			reached_end, seconds, final_distance, final_lateral, highest_compression - lowest_compression])
+	assert_true(reached_end, "the shortcut runs from the hedge start to its exit")
+	assert_signal_not_emitted(level.resets, "car_reset")
 	assert_lt(absf(final_lateral), level.trail.trail.half_total_width())
+	assert_gt(highest_compression - lowest_compression, 0.18, "the shortcut has a substantial roughness drawback")
 
 
 ## A car that slides into the creek can drive out along it. (Straight up the

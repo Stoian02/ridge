@@ -69,3 +69,38 @@ The gap positions and widths are tuned with the real car.
 - The normal scripted driver still finishes Muddy Valley without a reset.
 - Rally Road's recorded regression values remain unchanged.
 - Unit, scenario and full suites contain no failure or `SCRIPT ERROR`.
+
+## Revision 2: Smoother Mud and Full-Length Shortcut
+
+**Status:** Approved by the owner on 2026-09-14
+
+### Mud transition
+
+Each end of a mud stretch gets two 4 m physical stages, mirrored on exit. The
+existing dirt, mud and car resources are unchanged.
+
+| Surface | Grip | Rolling resistance | Sink | Drag |
+|---|---:|---:|---:|---:|
+| Damp dirt | 0.70 | 0.06 | 0.025 m | 12 |
+| Soft mud | 0.60 | 0.08 | 0.04 m | 25 |
+| Existing mud | 0.50 | 0.10 | 0.06 m | 40 |
+
+Road and shoulder colour, and the rut depth, fade continuously over 12 m at
+each end. Collision changes from dirt to damp dirt to soft mud to mud in smaller
+steps instead of one abrupt change.
+
+### Shortcut revision
+
+The old entry around 1390 m is removed. A 4 m-wide worn track branches from the
+left half of the road around 1275 m, passes behind the beginning of the final
+left hedge at 1295 m, follows it, and rejoins through the opening around 1475 m.
+The final left hedge has no start return because entering behind it is now the
+intended shortcut.
+
+The track is a slightly lighter, yellow-green version of the grass, with edges
+blended back to the terrain colour. Its eased entry and exit make the route
+readable and driveable. Muddy Valley's shoulders widen from 2.5 m to 3 m so the
+main route and the shortcut join have enough recovery room without moving the
+hedges closer to the car. It uses dirt traction, but frequent 12–22 cm potholes,
+8 cm washboard and broader undulation make it substantially bumpier than the
+mud route. The roughness fades at the entry and exit so the joins stay smooth.

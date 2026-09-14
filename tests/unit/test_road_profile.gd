@@ -136,6 +136,23 @@ func test_surface_follows_the_stretches() -> void:
 	assert_eq(profile.detail_ranges, [Vector2(198.0, 202.0), Vector2(298.0, 302.0)] as Array[Vector2])
 
 
+func test_surface_steps_smoothly_through_configured_transition_surfaces() -> void:
+	var muddy := _muddy_def()
+	var stretch := muddy.surface_stretches[0]
+	var damp := SurfaceDef.new()
+	damp.id = &"damp_dirt"
+	var soft := SurfaceDef.new()
+	soft.id = &"soft_mud"
+	stretch.transition_surfaces = [damp, soft]
+	stretch.transition_length = 8.0
+	var profile := RoadProfile.new(muddy, 1000.0)
+	for check in [[200.0, &"damp_dirt"], [203.9, &"damp_dirt"], [204.0, &"soft_mud"],
+			[207.9, &"soft_mud"], [208.0, &"mud"], [291.9, &"mud"],
+			[292.1, &"soft_mud"], [296.1, &"damp_dirt"], [299.9, &"damp_dirt"]]:
+		assert_eq(profile.surface_at(check[0]).id, check[1], "surface at %.1f m" % check[0])
+	assert_eq(profile.surface_boundaries(), PackedFloat32Array([200.0, 204.0, 208.0, 292.0, 296.0, 300.0]))
+
+
 func test_a_dirt_road_has_potholes_but_no_tarmac_patches() -> void:
 	var muddy := _muddy_def()
 	muddy.rough_sections = [Vector3(400.0, 120.0, 20.0)]

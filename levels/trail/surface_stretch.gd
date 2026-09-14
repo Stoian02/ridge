@@ -6,6 +6,11 @@ extends Resource
 @export var start: float = 0.0
 @export var length: float = 50.0
 @export var surface: SurfaceDef
+## Ordered physical surfaces from the base road toward `surface`. They occupy
+## equal parts of transition_length at both ends, in reverse order on exit.
+@export var transition_surfaces: Array[SurfaceDef] = []
+## Total physical transition length at each end (m).
+@export var transition_length: float = 0.0
 @export var color: Color = Color(0.27, 0.2, 0.14)
 ## Depth of the two wheel ruts (m); 0 = no ruts.
 @export var rut_depth: float = 0.0
@@ -23,6 +28,32 @@ func end() -> float:
 
 func contains(distance: float) -> bool:
 	return distance >= start and distance < end()
+
+
+## Physical surface at a distance known to be inside this stretch.
+func surface_at(distance: float) -> SurfaceDef:
+	if transition_surfaces.is_empty() or transition_length <= 0.0:
+		return surface
+	var edge_distance := minf(distance - start, end() - distance)
+	var stage_length := transition_length / transition_surfaces.size()
+	var stage := floori(edge_distance / stage_length)
+	return transition_surfaces[stage] if stage >= 0 and stage < transition_surfaces.size() else surface
+
+
+## Stretch ends and every physical transition boundary, sorted.
+func surface_boundaries() -> PackedFloat32Array:
+	var boundaries := PackedFloat32Array([start, end()])
+	if transition_surfaces.is_empty() or transition_length <= 0.0:
+		return boundaries
+	var stage_length := transition_length / transition_surfaces.size()
+	for stage in range(1, transition_surfaces.size() + 1):
+		var offset := stage_length * stage
+		if offset >= length * 0.5:
+			break
+		boundaries.append(start + offset)
+		boundaries.append(end() - offset)
+	boundaries.sort()
+	return boundaries
 
 
 ## How strongly the stretch shows at `distance`: 0 outside it, rising to 1 over

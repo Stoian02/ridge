@@ -163,8 +163,8 @@ func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stati
 	for row in distances.size() - 1:
 		var midpoint := (distances[row] + distances[row + 1]) * 0.5
 		var stretch := profile.stretch_at(midpoint)
-		var surface := stretch.surface if stretch != null else def.base_surface
-		var shoulder_surface: SurfaceDef = stretch.surface if stretch != null else DIRT
+		var surface := stretch.surface_at(midpoint) if stretch != null else def.base_surface
+		var shoulder_surface: SurfaceDef = stretch.surface_at(midpoint) if stretch != null else DIRT
 		row_surfaces.append(surface)
 		shoulder_surfaces.append(shoulder_surface)
 		if not surfaces.has(surface):

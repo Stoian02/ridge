@@ -4,34 +4,60 @@
 [ext_resource type="Script" path="res://levels/trail/surface_stretch.gd" id="2_stretch"]
 [ext_resource type="Resource" path="res://surfaces/dirt.tres" id="3_dirt"]
 [ext_resource type="Resource" path="res://surfaces/mud.tres" id="4_mud"]
+[ext_resource type="Resource" path="res://levels/muddy_valley/damp_dirt.tres" id="5_damp"]
+[ext_resource type="Resource" path="res://levels/muddy_valley/soft_mud.tres" id="6_soft"]
+[ext_resource type="Script" path="res://surfaces/surface_def.gd" id="7_surface"]
+[ext_resource type="Script" path="res://levels/trail/trail_shortcut.gd" id="8_shortcut"]
 
 [sub_resource type="Resource" id="Resource_mud_creek_side"]
 script = ExtResource("2_stretch")
 start = 760.0
 length = 90.0
 surface = ExtResource("4_mud")
+transition_surfaces = Array[ExtResource("7_surface")]([ExtResource("5_damp"), ExtResource("6_soft")])
+transition_length = 8.0
 color = Color(0.22, 0.16, 0.11, 1)
 rut_depth = 0.08
+blend_length = 12.0
 
 [sub_resource type="Resource" id="Resource_mud_floor"]
 script = ExtResource("2_stretch")
 start = 980.0
 length = 70.0
 surface = ExtResource("4_mud")
+transition_surfaces = Array[ExtResource("7_surface")]([ExtResource("5_damp"), ExtResource("6_soft")])
+transition_length = 8.0
 color = Color(0.22, 0.16, 0.11, 1)
 rut_depth = 0.08
+blend_length = 12.0
 
 [sub_resource type="Resource" id="Resource_mud_climb"]
 script = ExtResource("2_stretch")
 start = 1300.0
 length = 200.0
 surface = ExtResource("4_mud")
+transition_surfaces = Array[ExtResource("7_surface")]([ExtResource("5_damp"), ExtResource("6_soft")])
+transition_length = 8.0
 color = Color(0.22, 0.16, 0.11, 1)
 rut_depth = 0.08
+blend_length = 12.0
+
+[sub_resource type="Resource" id="Resource_final_shortcut"]
+script = ExtResource("8_shortcut")
+start = 1275.0
+length = 215.0
+side = -1.0
+lateral_offset = 12.0
+width = 4.0
+entry_length = 20.0
+exit_length = 20.0
+color = Color(0.48, 0.56, 0.3, 1)
+seed = 37
 
 [resource]
 script = ExtResource("1_trail")
 road_width = 9.0
+shoulder_width = 3.0
 detail_step = 0.5
 base_surface = ExtResource("3_dirt")
 painted_lines = false
@@ -49,8 +75,9 @@ creek_start = 745.0
 creek_length = 150.0
 creek_offset = 17.0
 hedges = Array[Vector3]([Vector3(755, 100, -1), Vector3(755, 100, 1), Vector3(975, 80, -1), Vector3(975, 80, 1), Vector3(1295, 210, -1), Vector3(1295, 210, 1)])
-hedge_gaps = Array[Vector3]([Vector3(1386, 8, -1), Vector3(1470, 10, -1)])
-hedge_returns = Array[Vector3]([Vector3(755, 24, -1), Vector3(855, 24, -1), Vector3(755, 4, 1), Vector3(855, 4, 1), Vector3(975, 24, -1), Vector3(1055, 24, -1), Vector3(975, 24, 1), Vector3(1055, 24, 1), Vector3(1295, 24, -1), Vector3(1505, 24, -1), Vector3(1295, 24, 1), Vector3(1505, 24, 1)])
+hedge_gaps = Array[Vector3]([Vector3(1470, 14, -1)])
+hedge_returns = Array[Vector3]([Vector3(755, 24, -1), Vector3(855, 24, -1), Vector3(755, 4, 1), Vector3(855, 4, 1), Vector3(975, 24, -1), Vector3(1055, 24, -1), Vector3(975, 24, 1), Vector3(1055, 24, 1), Vector3(1505, 24, -1), Vector3(1295, 24, 1), Vector3(1505, 24, 1)])
+shortcut = SubResource("Resource_final_shortcut")
 asphalt_color = Color(0.45, 0.34, 0.23, 1)
 shoulder_color = Color(0.38, 0.47, 0.23, 1)
 seed = 5

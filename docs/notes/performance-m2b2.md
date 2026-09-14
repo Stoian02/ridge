@@ -10,8 +10,9 @@ user's session after merge.
 | Rally Road | 1.20 s | 8 x 12 | 10188 | — | 5141 | 32 |
 | Muddy Valley | 1.72 s | 11 x 11 | 2140 | 7507 | 6533 | 53 |
 
-With the mud-skip fix, Muddy Valley builds in 1.46–1.60 s on the same desktop.
-The hedges contain 651 bushes in 8 terrain-chunk batches.
+With the revised mud-skip fix, Muddy Valley builds in 1.55–1.64 s on the same
+desktop. The hedges contain 636 bushes in 7 terrain-chunk batches, and the worn
+shortcut contains 6,880 triangles in one mesh and one collision body.
 
 ## Render counts (desktop, the chase camera at each spot)
 | Level | Spot (m) | Primitives | Draw calls | Objects |
@@ -30,30 +31,34 @@ The hedges contain 651 bushes in 8 terrain-chunk batches.
 The direct screenshot rerun for the mud-skip fix could not run in the handover
 environment: it has no X11 or Wayland display, while Godot's headless display
 uses the dummy renderer and cannot capture a frame. A conservative bound still
-keeps the change within budget. Each bush has 20 triangles, so all 651 bushes
-together add 13,020 primitives; all hedge batches together add 8 draw calls.
-Adding every hedge at once to the previous sampled maxima gives 286,984
-primitives and 141 draw calls, below the 300,000/150 budgets. The scenario test
-enforces the bush and batch bounds. The displayed screenshots still need a
-visual review on a machine with a display.
+keeps the change within budget. Each bush has 20 triangles, so all 636 bushes
+together add 12,720 primitives. Adding every hedge and shortcut triangle at
+once to the previous sampled maxima gives 293,564 primitives and 141 draw
+calls, below the 300,000/150 budgets. The scenario test enforces the geometry
+and batch bounds. The displayed screenshots still need a visual review on a
+machine with a display.
 
 ## Scripted driver and mud (desktop)
-- Scripted driver: 1:39.8, no resets, 151 wheel-ticks without contact away from the jump.
-- Standstill in the mud climb at 1400 m to the finish: 16.5 s.
-- 3 s from rest: 8.6 m on mud, 13.9 m on dirt.
-- Out of the creek: 6.0 s.
-- Run-off: Muddy Valley crossed the finish at 29 km/h and stopped 4 m past it (road ends 70 m past it); Rally Road crossed the finish at 95 km/h and stopped 30 m past it (road ends 70 m past it).
+- Scripted driver: 1:41.7–1:41.8, no resets, 117–131 wheel-ticks without contact away from the jump.
+- Standstill in the mud climb at 1400 m to the finish: 16.4–16.6 s.
+- 3 s from rest: 10.2 m on mud, 13.5 m on dirt.
+- Out of the creek: 5.9 s.
+- Run-off: Muddy Valley crossed the finish at 31 km/h and stopped 4 m past it (road ends 70 m past it); Rally Road crossed the finish at 95 km/h and stopped 30 m past it (road ends 70 m past it).
 
 ## Mud-skip fix (desktop scenarios)
 
 - Mud collision covers both shoulders inside every stretch and returns to dirt
   outside it.
-- Scripted driver: completes in 1:32–1:41 with no resets.
+- Scripted driver: completes in 1:41.7 with no resets after the staged mud and
+  widened shoulders.
 - Direct outside-line attempt at the second stretch: stopped at 972 m before
   the 980 m mud, without touching mud.
-- Hidden final-climb shortcut: enters near 1390 m, exits near 1475 m and reaches
-  the road again at about 1487 m.
-- Hedge render cost: 651 bushes × 20 triangles in 8 draw batches.
+- Hidden final-climb shortcut: branches from the road at 1275 m, passes behind
+  the hedge from 1295 m, and reaches the road again at about 1487 m. The real
+  car completes it in 29.4–29.5 s with 0.289–0.294 m of
+  suspension-compression range.
+- New-path render cost: 636 hedge bushes × 20 triangles in 7 draw batches, plus
+  6,880 shortcut triangles in one draw call.
 
 ## Budgets still to check on the phone
 60 fps, < 300k triangles, < 150 draw calls, < 4 ms physics, < 3 s load after a fresh app start.
