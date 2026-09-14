@@ -3,6 +3,7 @@ extends GutTest
 
 const LEVEL_CURVES := {
 	"res://tools/generate_rally_road_curve.gd": "res://levels/rally_road/rally_road_curve.tres",
+	"res://tools/generate_muddy_valley_curve.gd": "res://levels/muddy_valley/muddy_valley_curve.tres",
 }
 
 

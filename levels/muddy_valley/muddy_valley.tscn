@@ -1,0 +1,50 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://levels/shared/run_level.gd" id="1_level"]
+[ext_resource type="Script" path="res://levels/shared/golden_hour_mood.gd" id="2_mood"]
+[ext_resource type="Script" path="res://levels/trail/trail_level.gd" id="3_trail"]
+[ext_resource type="Resource" path="res://levels/muddy_valley/muddy_valley_trail.tres" id="4_trail_def"]
+[ext_resource type="Resource" path="res://levels/muddy_valley/muddy_valley_terrain.tres" id="5_terrain_def"]
+[ext_resource type="Resource" path="res://levels/muddy_valley/muddy_valley_scatter.tres" id="6_scatter_def"]
+[ext_resource type="Curve3D" path="res://levels/muddy_valley/muddy_valley_curve.tres" id="7_curve"]
+[ext_resource type="PackedScene" path="res://levels/shared/driving_rig.tscn" id="8_rig"]
+[ext_resource type="Script" path="res://game/checkpoint_tracker.gd" id="9_tracker"]
+[ext_resource type="Script" path="res://game/reset_controller.gd" id="10_resets"]
+[ext_resource type="Script" path="res://game/run_controller.gd" id="11_run"]
+[ext_resource type="Script" path="res://ui/run_hud.gd" id="12_hud"]
+
+[node name="MuddyValley" type="Node3D"]
+script = ExtResource("1_level")
+
+[node name="Mood" type="Node3D" parent="."]
+script = ExtResource("2_mood")
+sun_color = Color(1, 0.8, 0.58, 1)
+sun_energy = 1.25
+sun_elevation_deg = 18.0
+sky_top = Color(0.4, 0.56, 0.76, 1)
+sky_horizon = Color(0.9, 0.82, 0.6, 1)
+ground_color = Color(0.3, 0.34, 0.22, 1)
+fog_density = 0.009
+
+[node name="Trail" type="Node3D" parent="."]
+script = ExtResource("3_trail")
+trail = ExtResource("4_trail_def")
+terrain = ExtResource("5_terrain_def")
+scatter = ExtResource("6_scatter_def")
+
+[node name="Road" type="Path3D" parent="Trail"]
+curve = ExtResource("7_curve")
+
+[node name="DrivingRig" parent="." instance=ExtResource("8_rig")]
+
+[node name="CheckpointTracker" type="Node" parent="."]
+script = ExtResource("9_tracker")
+
+[node name="ResetController" type="Node" parent="."]
+script = ExtResource("10_resets")
+
+[node name="RunController" type="Node" parent="."]
+script = ExtResource("11_run")
+
+[node name="RunHud" type="CanvasLayer" parent="."]
+script = ExtResource("12_hud")

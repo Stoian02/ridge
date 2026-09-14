@@ -23,6 +23,8 @@ var results: ResultsScreen
 
 func _ready() -> void:
 	level = GameState.level_for_scene(scene_file_path)
+	if is_missing_from_catalog(scene_file_path, level):
+		push_warning("%s is not in the level catalog, so it runs without stars or saving" % scene_file_path)
 	if level != null and GameState.progress.best_time(level.id) > 0.0:
 		run.clock.set_reference_best(GameState.progress.best_time(level.id), GameState.progress.best_splits(level.id))
 	tracker.setup(trail.checkpoints.reset_transforms)
@@ -34,6 +36,12 @@ func _ready() -> void:
 	run.countdown_started.connect(results.hide_results)
 	run.setup(rig, tracker, resets, trail.start_transform())
 	print("%s built in %.2f s" % [name, trail.build_seconds])
+
+
+## True for a level saved as a scene but not listed in the catalog. Levels built
+## in code by tests have no scene path and are expected to be missing.
+static func is_missing_from_catalog(scene_path: String, found: LevelDef) -> bool:
+	return found == null and not scene_path.is_empty()
 
 
 func _add_overlays() -> void:

@@ -38,3 +38,23 @@ func test_the_shipped_catalog_starts_with_rally_road() -> void:
 	assert_eq(rally.display_name, "Rally Road")
 	assert_true(ResourceLoader.exists(rally.scene_path), "its scene exists")
 	assert_gt(rally.two_star_time, rally.three_star_time, "two stars is the easier target")
+
+
+func test_muddy_valley_follows_rally_road_and_unlocks_after_it() -> void:
+	var shipped: LevelCatalog = load("res://levels/catalog.tres")
+	assert_eq(shipped.levels.size(), 2)
+	var muddy: LevelDef = shipped.levels[1]
+	assert_eq(muddy.id, &"muddy_valley")
+	assert_eq(muddy.display_name, "Muddy Valley")
+	assert_true(ResourceLoader.exists(muddy.scene_path), "its scene exists")
+	assert_gt(muddy.two_star_time, muddy.three_star_time, "two stars is the easier target")
+	var progress := Progress.new()
+	assert_false(progress.is_unlocked(shipped, muddy), "locked at first")
+	progress.record_finish(shipped.levels[0], 90.0, {})
+	assert_true(progress.is_unlocked(shipped, muddy), "unlocked by finishing Rally Road")
+
+
+func test_a_saved_level_scene_missing_from_the_catalog_is_flagged() -> void:
+	assert_true(RunLevel.is_missing_from_catalog("res://levels/lost/lost.tscn", null))
+	assert_false(RunLevel.is_missing_from_catalog("", null), "a level built in code by a test")
+	assert_false(RunLevel.is_missing_from_catalog("res://a.tscn", catalog.levels[0]), "a catalog level")

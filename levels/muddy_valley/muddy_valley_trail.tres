@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="TrailDef" format=3]
+
+[ext_resource type="Script" path="res://levels/trail/trail_def.gd" id="1_trail"]
+[ext_resource type="Script" path="res://levels/trail/surface_stretch.gd" id="2_stretch"]
+[ext_resource type="Resource" path="res://surfaces/dirt.tres" id="3_dirt"]
+[ext_resource type="Resource" path="res://surfaces/mud.tres" id="4_mud"]
+
+[sub_resource type="Resource" id="Resource_mud_creek_side"]
+script = ExtResource("2_stretch")
+start = 760.0
+length = 90.0
+surface = ExtResource("4_mud")
+color = Color(0.22, 0.16, 0.11, 1)
+rut_depth = 0.08
+
+[sub_resource type="Resource" id="Resource_mud_floor"]
+script = ExtResource("2_stretch")
+start = 980.0
+length = 70.0
+surface = ExtResource("4_mud")
+color = Color(0.22, 0.16, 0.11, 1)
+rut_depth = 0.08
+
+[sub_resource type="Resource" id="Resource_mud_climb"]
+script = ExtResource("2_stretch")
+start = 1300.0
+length = 200.0
+surface = ExtResource("4_mud")
+color = Color(0.22, 0.16, 0.11, 1)
+rut_depth = 0.08
+
+[resource]
+script = ExtResource("1_trail")
+road_width = 9.0
+detail_step = 0.5
+base_surface = ExtResource("3_dirt")
+painted_lines = false
+surface_stretches = Array[ExtResource("2_stretch")]([SubResource("Resource_mud_creek_side"), SubResource("Resource_mud_floor"), SubResource("Resource_mud_climb")])
+undulation_amplitude = 0.1
+undulation_wavelengths = Vector2(13, 21)
+rough_sections = Array[Vector3]([Vector3(150, 130, 25), Vector3(380, 180, 25), Vector3(600, 110, 25), Vector3(900, 240, 20), Vector3(1150, 140, 20)])
+pothole_clusters = Array[Vector2]([Vector2(110, 5), Vector2(800, 6), Vector2(1250, 5)])
+pothole_radius_range = Vector2(0.25, 1.1)
+pothole_depth_range = Vector2(0.05, 0.18)
+jumps = Array[Vector3]([Vector3(330, 1, 10)])
+end_margin = 70.0
+checkpoint_distances = PackedFloat32Array(270, 650, 950, 1230)
+creek_start = 745.0
+creek_length = 150.0
+creek_offset = 17.0
+asphalt_color = Color(0.45, 0.34, 0.23, 1)
+shoulder_color = Color(0.38, 0.47, 0.23, 1)
+seed = 5
