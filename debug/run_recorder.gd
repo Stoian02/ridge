@@ -13,6 +13,9 @@ const WHEEL_FIELDS := ["contact", "surface", "load", "compression", "slip_ratio"
 
 @export var car: Car
 
+## Id of the car being recorded; recordings are named after it when set.
+var car_id := ""
+
 var _file: FileAccess
 var _path := ""
 var _time := 0.0
@@ -48,7 +51,8 @@ func start(path: String = "") -> String:
 	if path.is_empty():
 		DirAccess.make_dir_recursive_absolute(RUNS_DIR)
 		var stamp := Time.get_datetime_string_from_system().replace(":", "-")
-		path = "%s/run_%s.csv" % [RUNS_DIR, stamp]
+		var suffix := "_%s" % car_id if not car_id.is_empty() else ""
+		path = "%s/run_%s%s.csv" % [RUNS_DIR, stamp, suffix]
 	_file = FileAccess.open(path, FileAccess.WRITE)
 	if _file == null:
 		push_error("RunRecorder: cannot open %s (%s)" % [path, error_string(FileAccess.get_open_error())])
