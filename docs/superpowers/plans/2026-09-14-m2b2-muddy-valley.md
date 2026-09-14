@@ -2709,13 +2709,13 @@ func test_the_road_carries_on_past_the_finish() -> void:
   Run the `-gtest` commands for `res://tests/unit/test_curve_generator.gd`, `res://tests/unit/test_level_catalog.gd`, `res://tests/scenarios/test_rally_road.gd` and `res://tests/scenarios/test_muddy_valley.gd`.
   Expected: all pass. In the scratch clone, `test_muddy_valley.gd` printed:
   ```
-Muddy Valley: 1568 m long, built in 1.64 s (11 x 11 terrain chunks, 2140 pines, 7507 broadleaf, 6533 rocks, 53 posts, 42 water points)
-scripted driver: finished true after 1:39.9, 4 checkpoints, 155 wheel-ticks without contact away from the jump
-from a standstill at 1400 m (8% mud climb) to the finish at 1498 m: 16.5 s
-3 s at full throttle from rest: 8.6 m on mud, 14.0 m on dirt
-out of the creek channel in 6.0 s
-crossed the finish at 29 km/h and stopped 4 m past it (road ends 70 m past it)
-```
+  Muddy Valley: 1568 m long, built in 1.64 s (11 x 11 terrain chunks, 2140 pines, 7507 broadleaf, 6533 rocks, 53 posts, 42 water points)
+  scripted driver: finished true after 1:39.9, 4 checkpoints, 155 wheel-ticks without contact away from the jump
+  from a standstill at 1400 m (8% mud climb) to the finish at 1498 m: 16.5 s
+  3 s at full throttle from rest: 8.6 m on mud, 14.0 m on dirt
+  out of the creek channel in 6.0 s
+  crossed the finish at 29 km/h and stopped 4 m past it (road ends 70 m past it)
+  ```
   Timing lines may differ slightly between machines; the assertions must pass.
   Run: `./run_tests.sh all` — expected: exit 0.
 
@@ -2797,19 +2797,19 @@ script = ExtResource("1_shots")
   Run: `godot --path . res://tools/level_shots.tscn -- res://levels/rally_road/rally_road.tscn 15 700 1490`
   Expected: 10 PNGs in `build/level_shots/`, and one line per spot. In the scratch clone the counts were:
   ```
-muddy_valley built in 1.66 s
-muddy_valley at   15 m: 261436 primitives, 133 draw calls, 603 objects
-muddy_valley at  320 m: 273968 primitives, 127 draw calls, 599 objects
-muddy_valley at  560 m: 261696 primitives, 129 draw calls, 601 objects
-muddy_valley at  760 m: 242300 primitives, 121 draw calls, 593 objects
-muddy_valley at 1000 m: 259296 primitives, 110 draw calls, 578 objects
-muddy_valley at 1250 m: 209644 primitives, 111 draw calls, 587 objects
-muddy_valley at 1450 m: 150652 primitives, 96 draw calls, 564 objects
-rally_road built in 1.17 s
-rally_road at   15 m: 268456 primitives, 129 draw calls, 623 objects
-rally_road at  700 m: 261236 primitives, 105 draw calls, 603 objects
-rally_road at 1490 m: 190092 primitives, 101 draw calls, 601 objects
-```
+  muddy_valley built in 1.66 s
+  muddy_valley at   15 m: 261436 primitives, 133 draw calls, 603 objects
+  muddy_valley at  320 m: 273968 primitives, 127 draw calls, 599 objects
+  muddy_valley at  560 m: 261696 primitives, 129 draw calls, 601 objects
+  muddy_valley at  760 m: 242300 primitives, 121 draw calls, 593 objects
+  muddy_valley at 1000 m: 259296 primitives, 110 draw calls, 578 objects
+  muddy_valley at 1250 m: 209644 primitives, 111 draw calls, 587 objects
+  muddy_valley at 1450 m: 150652 primitives, 96 draw calls, 564 objects
+  rally_road built in 1.17 s
+  rally_road at   15 m: 268456 primitives, 129 draw calls, 623 objects
+  rally_road at  700 m: 261236 primitives, 105 draw calls, 603 objects
+  rally_road at 1490 m: 190092 primitives, 101 draw calls, 601 objects
+  ```
 
 - [ ] **Step 3: Write `docs/notes/performance-m2b2.md`** with this structure, filled in with the numbers printed in Step 2 and by the Task 6 tests:
   ```markdown
