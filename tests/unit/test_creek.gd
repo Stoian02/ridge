@@ -98,3 +98,32 @@ func test_no_creek_builds_no_water() -> void:
 	builder.build(_field(), sampler, trail)
 	assert_eq(builder.get_child_count(), 0)
 	assert_eq(builder.water_points.size(), 0)
+
+
+func test_scenery_keeps_out_of_the_creek() -> void:
+	var field := _field()
+	var scatter := ScatterDef.new()
+	scatter.pine_spacing = 4.0
+	scatter.rock_spacing = 4.0
+	scatter.broadleaf_spacing = 4.0
+	var builder := ScatterBuilder.new()
+	add_child_autofree(builder)
+	builder.build(field, sampler, RoadProfile.new(trail, sampler.length), trail, scatter)
+	assert_gt(builder.broadleaf_count, 100)
+	var clearance := trail.creek_width * 0.5 + ScatterBuilder.CREEK_CLEARANCE
+	var checked := 0
+	for child in builder.get_children():
+		if child is MultiMeshInstance3D:
+			for i in child.multimesh.instance_count:
+				var spot: Vector3 = child.multimesh.get_instance_transform(i).origin
+				assert_gte(field.creek_distance_at(spot.x, spot.z), clearance)
+				checked += 1
+	assert_gt(checked, 300)
+
+
+func test_broadleaf_trees_are_only_placed_when_spaced() -> void:
+	var field := _field()
+	var builder := ScatterBuilder.new()
+	add_child_autofree(builder)
+	builder.build(field, sampler, RoadProfile.new(trail, sampler.length), trail, ScatterDef.new())
+	assert_eq(builder.broadleaf_count, 0, "Rally Road's default: none")

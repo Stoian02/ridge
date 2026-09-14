@@ -39,3 +39,15 @@ func test_rocks_differ_by_seed() -> void:
 	var a: PackedVector3Array = LowPolyMeshes.rock(Color.GRAY, 1).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 	var b: PackedVector3Array = LowPolyMeshes.rock(Color.GRAY, 2).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 	assert_ne(a, b)
+
+
+func test_broadleaf_tree_has_a_trunk_and_leaves_and_stays_cheap() -> void:
+	var mesh := LowPolyMeshes.broadleaf(Color(0.38, 0.5, 0.22), Color(0.33, 0.25, 0.18), 4)
+	var arrays := mesh.surface_get_arrays(0)
+	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var colors: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
+	assert_between(vertices.size() / 3, 20, 150, "about as cheap as a pine")
+	var top: float = Array(vertices).map(func(v: Vector3) -> float: return v.y).max()
+	assert_between(top, 4.0, 6.5, "about 5 m tall")
+	var trunk := Vector3(0.33, 0.25, 0.18)
+	assert_true(Array(colors).any(func(c: Color) -> bool: return Vector3(c.r, c.g, c.b).distance_to(trunk) < 0.01), "trunk colour present")

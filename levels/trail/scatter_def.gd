@@ -4,6 +4,8 @@ extends Resource
 
 ## Average distance between pines (m); 12.2 m is about one per 150 m².
 @export var pine_spacing: float = 12.2
+## Average distance between broadleaf trees (m); 0 = none.
+@export var broadleaf_spacing: float = 0.0
 ## Average distance between rocks (m); 17.3 m is about one per 300 m².
 @export var rock_spacing: float = 17.3
 ## Nothing is placed closer than this to a shoulder edge (m).
@@ -12,6 +14,8 @@ extends Resource
 @export var max_slope_deg: float = 35.0
 ## Pines further than this from the camera are not drawn (m).
 @export var pine_view_distance: float = 300.0
+## Broadleaf trees further than this from the camera are not drawn (m).
+@export var broadleaf_view_distance: float = 300.0
 ## Rocks further than this from the camera are not drawn (m).
 @export var rock_view_distance: float = 150.0
 ## Distance between roadside posts (m).
@@ -21,6 +25,7 @@ extends Resource
 ## Rocks within this distance of a shoulder edge get collision (m).
 @export var rock_collision_distance: float = 30.0
 @export var foliage_color: Color = Color(0.33, 0.4, 0.24)
+@export var broadleaf_color: Color = Color(0.38, 0.5, 0.22)
 @export var trunk_color: Color = Color(0.36, 0.26, 0.18)
 @export var rock_color: Color = Color(0.55, 0.45, 0.38)
 @export var post_color: Color = Color(0.93, 0.92, 0.88)

@@ -1,19 +1,22 @@
 class_name ScatterBuilder
 extends Node3D
-## Places pines, rocks and roadside posts around a trail. Pines and rocks are
-## scattered one per grid cell with a random offset, kept clear of the road and
-## off steep slopes; posts line shoulders where the ground drops away. Each kind
-## is drawn as one MultiMesh per terrain chunk.
+## Places pines, rocks, roadside posts and broadleaf trees around a trail. Trees
+## and rocks are scattered one per grid cell with a random offset, kept clear of
+## the road and any creek, and off steep slopes; posts line shoulders where the
+## ground drops away. Each kind is drawn as one MultiMesh per terrain chunk.
 
 const DIRT := preload("res://surfaces/dirt.tres")
 
 ## How far outward from the shoulder edge the ground is checked for a drop (m).
 const DROP_CHECK_DISTANCE := 10.0
+## Nothing is placed closer than this to a creek's edge (m).
+const CREEK_CLEARANCE := 2.0
 
 ## Counts of placed items, for tests and build reports.
 var pine_count := 0
 var rock_count := 0
 var post_count := 0
+var broadleaf_count := 0
 
 
 func build(field: TerrainField, sampler: RoadSampler, profile: RoadProfile, trail: TrailDef, def: ScatterDef) -> void:
@@ -23,24 +26,26 @@ func build(field: TerrainField, sampler: RoadSampler, profile: RoadProfile, trai
 	pine_count = 0
 	rock_count = 0
 	post_count = 0
+	broadleaf_count = 0
 	var rng := RandomNumberGenerator.new()
 	rng.seed = def.seed
 	var material := StandardMaterial3D.new()
 	material.vertex_color_use_as_albedo = true
 	material.vertex_color_is_srgb = true
 	material.roughness = 0.9
+	var creek_clearance := trail.creek_width * 0.5 + CREEK_CLEARANCE
 
 	var rock_collision := StaticBody3D.new()
 	rock_collision.name = "RockCollision"
 	rock_collision.set_meta(SurfaceLookup.META_KEY, DIRT)
 	add_child(rock_collision)
 
-	var pines := _scatter(field, def, def.pine_spacing, Vector2(0.8, 1.3), 0.0, rng)
+	var pines := _scatter(field, def, def.pine_spacing, Vector2(0.8, 1.3), 0.0, creek_clearance, rng)
 	pine_count = pines.size()
 	_add_multimeshes(field, pines, LowPolyMeshes.pine(def.foliage_color, def.trunk_color), material,
 			def.pine_view_distance, true)
 
-	var rocks := _scatter(field, def, def.rock_spacing, Vector2(0.6, 1.6), 0.25, rng)
+	var rocks := _scatter(field, def, def.rock_spacing, Vector2(0.6, 1.6), 0.25, creek_clearance, rng)
 	rock_count = rocks.size()
 	_add_multimeshes(field, rocks, LowPolyMeshes.rock(def.rock_color, def.seed), material,
 			def.rock_view_distance, false)
@@ -58,11 +63,17 @@ func build(field: TerrainField, sampler: RoadSampler, profile: RoadProfile, trai
 	_add_multimeshes(field, posts, LowPolyMeshes.post(def.post_color, def.reflector_color), material,
 			def.rock_view_distance, false)
 
+	if def.broadleaf_spacing > 0.0:
+		var trees := _scatter(field, def, def.broadleaf_spacing, Vector2(0.8, 1.3), 0.0, creek_clearance, rng)
+		broadleaf_count = trees.size()
+		_add_multimeshes(field, trees, LowPolyMeshes.broadleaf(def.broadleaf_color, def.trunk_color, def.seed),
+				material, def.broadleaf_view_distance, true)
+
 
 ## One transform per grid cell of `spacing`, jittered, skipping cells too close
-## to the road or too steep. `sink` lowers each item by that share of its scale.
+## to the road or a creek, or too steep. `sink` lowers each item by that share of its scale.
 func _scatter(field: TerrainField, def: ScatterDef, spacing: float, scale_range: Vector2, sink: float,
-		rng: RandomNumberGenerator) -> Array[Transform3D]:
+		creek_clearance: float, rng: RandomNumberGenerator) -> Array[Transform3D]:
 	var transforms: Array[Transform3D] = []
 	var width := (field.columns - 1) * field.spacing
 	var depth := (field.rows - 1) * field.spacing
@@ -77,6 +88,8 @@ func _scatter(field: TerrainField, def: ScatterDef, spacing: float, scale_range:
 			var scale := rng.randf_range(scale_range.x, scale_range.y)
 			x += spacing
 			if field.edge_distance_at(world_x, world_z) < def.road_clearance:
+				continue
+			if field.creek_distance_at(world_x, world_z) < creek_clearance:
 				continue
 			if acos(clampf(field.normal_at(world_x, world_z).y, -1.0, 1.0)) > max_slope:
 				continue
