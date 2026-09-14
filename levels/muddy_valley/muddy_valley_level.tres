@@ -7,5 +7,6 @@ script = ExtResource("1_level")
 id = &"muddy_valley"
 display_name = "Muddy Valley"
 scene_path = "res://levels/muddy_valley/muddy_valley.tscn"
+surfaces = "Dirt, mud, creek"
 two_star_time = 95.0
 three_star_time = 85.0

@@ -43,7 +43,8 @@ func test_main_menu_play_and_free_drive_open_their_scenes() -> void:
 	add_child_autofree(menu)
 	_button(menu, "Play").pressed.emit()
 	_button(menu, "Free Drive").pressed.emit()
-	assert_eq(SaveSandbox.requested_scenes, [state.LEVEL_SELECT, state.FREE_DRIVE])
+	assert_eq(SaveSandbox.requested_scenes, [state.LEVEL_SELECT, state.CAR_SELECT])
+	assert_eq(state.pending_scene, state.FREE_DRIVE, "car select then starts Free Drive")
 
 
 func test_main_menu_shows_total_stars() -> void:
@@ -53,7 +54,7 @@ func test_main_menu_shows_total_stars() -> void:
 	assert_has(_labels(menu), "2 / 6 stars")
 
 
-func test_level_select_opens_an_unlocked_level() -> void:
+func test_level_select_opens_car_select_for_an_unlocked_level() -> void:
 	var select: Control = LEVEL_SELECT.instantiate()
 	add_child_autofree(select)
 	var card: Button = select.find_child("rally_road", true, false)
@@ -61,7 +62,8 @@ func test_level_select_opens_an_unlocked_level() -> void:
 	assert_has(_labels(card), "Rally Road")
 	assert_has(_labels(card), "No time yet")
 	card.pressed.emit()
-	assert_eq(SaveSandbox.requested_scenes, ["res://levels/rally_road/rally_road.tscn"])
+	assert_eq(SaveSandbox.requested_scenes, [state.CAR_SELECT])
+	assert_eq(state.pending_scene, "res://levels/rally_road/rally_road.tscn")
 
 
 func test_level_select_shows_best_time_and_stars() -> void:

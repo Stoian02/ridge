@@ -1,6 +1,6 @@
 extends Control
 ## The first screen (spec §3.2): the title, the player's total stars, Play (level
-## select) and Free Drive (the Test Ground). The back gesture closes the app, as it
+## select) and Free Drive (car select, then the Test Ground). The back gesture closes the app, as it
 ## does on any Android app's first screen.
 
 
@@ -9,7 +9,7 @@ func _ready() -> void:
 	column.add_child(UiKit.label("RIDGE", UiKit.TITLE_FONT))
 	column.add_child(UiKit.label(stars_text()))
 	column.add_child(UiKit.button("Play", GameState.change_scene.bind(GameState.LEVEL_SELECT)))
-	column.add_child(UiKit.button("Free Drive", GameState.change_scene.bind(GameState.FREE_DRIVE)))
+	column.add_child(UiKit.button("Free Drive", GameState.choose_car_for.bind(GameState.FREE_DRIVE)))
 
 
 func _notification(what: int) -> void:

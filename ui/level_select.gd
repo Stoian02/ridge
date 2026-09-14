@@ -1,6 +1,6 @@
 extends Control
 ## Level select (spec §3.3): one card per catalog level with its best time and stars,
-## or a lock saying which level to finish first. Back, Escape or the back gesture
+## or a lock saying which level to finish first. A card opens car select for its level. Back, Escape or the back gesture
 ## return to the main menu.
 
 const CARD_SIZE := Vector2(560.0, 340.0)
@@ -39,7 +39,7 @@ func _card(level: LevelDef) -> Button:
 	card.custom_minimum_size = CARD_SIZE
 	card.focus_mode = Control.FOCUS_NONE
 	card.disabled = not unlocked
-	card.pressed.connect(GameState.change_scene.bind(level.scene_path))
+	card.pressed.connect(GameState.choose_car_for.bind(level.scene_path))
 	var content := VBoxContainer.new()
 	content.set_anchors_preset(Control.PRESET_FULL_RECT)
 	content.alignment = BoxContainer.ALIGNMENT_CENTER
