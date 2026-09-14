@@ -39,7 +39,7 @@ The road carries on 60 m past the finish gate on both levels, so a finishing car
 ## 4. Architecture
 
 ### 4.1 Surface sections
-- **`SurfaceStretch`** (new `Resource`, `levels/trail/surface_stretch.gd`): `start: float`, `length: float`, `surface: SurfaceDef`, `color: Color`, `rut_depth: float`, `rut_spacing: float`, `blend_length: float` (colour and rut fade at each end, default 2 m).
+- **`SurfaceStretch`** (new `Resource`, `levels/trail/surface_stretch.gd`): `start: float`, `length: float`, `surface: SurfaceDef`, `color: Color`, `rut_depth: float`, `rut_spacing: float`, `rut_width: float` (0.8 m), `blend_length: float` (colour and rut fade at each end, default 2 m). RoadBuilder puts five cross-section stations across each rut, so the groove keeps its shape.
 - **`TrailDef`** gains:
   - `base_surface: SurfaceDef` (default: asphalt)
   - `painted_lines: bool` (default: true)
@@ -68,8 +68,13 @@ The segment-building and separation check move from `tools/generate_rally_road_c
   - `creek_start`, `creek_length`: 0 length means no creek.
   - `creek_offset`: signed lateral distance from the road centre to the creek centre, in m; + is right.
   - `creek_width` (4 m), `creek_depth` (0.7 m), `creek_color`.
-- **`TerrainField`:** after carving the corridor, it lowers samples within `creek_width / 2 + bank` of the creek centre line into a smooth channel `creek_depth` below the surrounding ground. The bank slope is gentle enough to drive out, and the channel ends taper to nothing.
-- **`CreekBuilder`** (new, `levels/trail/creek_builder.gd`): one flat ribbon mesh per terrain chunk the creek crosses, 0.15 m below the channel's rim. The material is glossy blue-grey. The ribbon has no collision.
+- **`TerrainField`:** after carving the corridor, it cuts a channel along the creek's centre line:
+  - The bed is `creek_depth` below the lowest ground across the channel. It is flat across `creek_width`, with banks rising to the ground over 3 m.
+  - The ends taper to nothing over 10 m.
+  - On an uphill side the cut is never deeper than 1.5 × `creek_depth`, so the bank stays drivable.
+  - The water level is the lowest ground within 5 m either side, less 0.15 m. The water never steps up and never tops a rim.
+  - A cut that followed a sloping hillside would leave the downhill rim below the channel floor, and no water could be laid. That is why the bed is measured from the lowest ground.
+- **`CreekBuilder`** (new, `levels/trail/creek_builder.gd`): one flat ribbon mesh along the whole creek, at the field's water level, laid wherever the water is at least 0.1 m above the channel floor. The material is glossy blue-grey. The ribbon has no collision.
 - **`ScatterBuilder`:** skips any item within `creek_width / 2 + 2 m` of the creek centre line.
 
 ### 4.5 Scenery and look
@@ -132,7 +137,7 @@ Distances are targets. The generated curve's actual stretch and checkpoint dista
 | Ruts in mud | — | 2 grooves, ~8 cm deep, ~1.55 m apart, centred on the road |
 
 ### 5.3 Checkpoints and stars
-4 checkpoints at about 300, 650, 950 and 1200 m. `LevelDef` id `muddy_valley`, name "Muddy Valley". Placeholder star times come from the scripted driver: 2 stars at driver time × 0.95 and 3 stars at × 0.85, rounded to whole seconds. The user replaces them after phone runs.
+4 checkpoints at 270, 650, 950 and 1230 m (300 m would fall on the jump at 330 m). `LevelDef` id `muddy_valley`, name "Muddy Valley". Placeholder star times come from the scripted driver: 2 stars at driver time × 0.95 and 3 stars at × 0.85, rounded to whole seconds. The user replaces them after phone runs.
 
 ## 6. Performance budgets
 The same as Rally Road (M2A spec §8): 60 fps held, < 300k triangles on screen, < 150 draw calls, < 4 ms physics, < 3 s level load after a fresh app start. Desktop build time, triangles and draw calls are recorded for Muddy Valley during plan writing and at the end. The repeat-load slowdown (`docs/notes/performance-m2a.md`) is investigated separately, after B2.
