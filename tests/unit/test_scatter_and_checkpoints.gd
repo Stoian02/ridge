@@ -86,3 +86,14 @@ func test_gate_reports_a_body_entering_it() -> void:
 	add_child_autofree(ball)
 	await wait_physics_frames(10)
 	assert_signal_emitted_with_parameters(placer, "gate_entered", [2, ball])
+
+
+func test_gate_text_reads_correctly_from_an_approaching_car() -> void:
+	var placer := CheckpointPlacer.new()
+	add_child_autofree(placer)
+	placer.build(sampler, profile, trail)
+	for i in placer.gate_distances.size():
+		var label: Label3D = placer.get_node("Gate%d" % i).find_children("*", "Label3D", false, false)[0]
+		# A Label3D reads correctly from its +Z side. The car arrives from behind the gate,
+		# driving along the road, so the label's +Z must point back against the road direction.
+		assert_lt(label.global_basis.z.dot(sampler.forward(placer.gate_distances[i])), -0.999, "gate %d" % i)

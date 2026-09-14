@@ -83,7 +83,6 @@ func build(sampler: RoadSampler, profile: RoadProfile, def: TrailDef) -> void:
 		text.font_size = 96
 		text.pixel_size = 0.01
 		text.position = Vector3(0.0, POST_HEIGHT - 0.4, 0.06)
-		text.rotation_degrees = Vector3(0.0, 180.0, 0.0)  # readable when driving toward it
 		gate.add_child(text)
 
 
