@@ -84,6 +84,16 @@ enum DriveType { FWD, RWD, AWD }
 @export var drive_type: DriveType = DriveType.AWD
 ## AWD only: share of drive torque sent to the front axle.
 @export_range(0.0, 1.0) var front_torque_split: float = 0.35
+@export_group("Differentials")
+## How strongly each differential ties its two sides together: 0 = open, each
+## wheel spins freely (the default); about 0.3-0.6 = limited slip; 1 = locked.
+## A lock moves up to lock x diff_lock_max_torque from the faster side to the slower.
+@export_range(0.0, 1.0) var front_diff_lock: float = 0.0
+@export_range(0.0, 1.0) var rear_diff_lock: float = 0.0
+## AWD only: ties the front axle to the rear axle.
+@export_range(0.0, 1.0) var centre_diff_lock: float = 0.0
+## Torque a fully locked differential can move between its sides (Nm).
+@export var diff_lock_max_torque: float = 3000.0
 
 @export_group("Brakes")
 ## Total brake torque for the whole car at full pedal (Nm).

@@ -127,6 +127,22 @@ static func split_brake(total: float, front_bias: float) -> PackedFloat32Array:
 	return PackedFloat32Array([front * 0.5, front * 0.5, rear * 0.5, rear * 0.5])
 
 
+## Differential lock (spec §4.1): the torque (Nm) to move from side A to side B this
+## tick; negative moves it from B to A. It is the torque that would bring both sides
+## to the same speed within the tick, limited to lock x max_torque, so it never
+## reverses their difference and stays stable at any physics rate.
+## side_inertia: the rotational inertia of each side (kg*m^2).
+static func lock_transfer(a_speed: float, b_speed: float, lock: float, max_torque: float,
+		side_inertia: float, delta: float) -> float:
+	if lock <= 0.0 or delta <= 0.0:
+		return 0.0
+	# Moving T from A to B changes each side by T * delta / I in opposite
+	# directions, so the gap closes by 2 * T * delta / I.
+	var equalising := (a_speed - b_speed) * side_inertia / (2.0 * delta)
+	var limit := max_torque * lock
+	return clampf(equalising, -limit, limit)
+
+
 func _choose_direction(throttle: float, brake: float, forward_speed: float) -> void:
 	if absf(forward_speed) > stats.direction_change_speed:
 		return

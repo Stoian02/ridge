@@ -156,3 +156,56 @@ func test_split_torque_fwd_and_rwd() -> void:
 
 func test_split_brake_uses_front_bias() -> void:
 	_assert_wheels(Drivetrain.split_brake(1000.0, 0.65), [325, 325, 175, 175])
+
+
+func test_an_open_differential_moves_no_torque() -> void:
+	assert_eq(Drivetrain.lock_transfer(30.0, 10.0, 0.0, 3000.0, 1.2, 1.0 / 120.0), 0.0)
+
+
+func test_a_lock_moves_torque_from_the_faster_side_to_the_slower() -> void:
+	var delta := 1.0 / 120.0
+	assert_gt(Drivetrain.lock_transfer(12.0, 10.0, 1.0, 3000.0, 1.2, delta), 0.0, "A faster: from A to B")
+	assert_lt(Drivetrain.lock_transfer(10.0, 12.0, 1.0, 3000.0, 1.2, delta), 0.0, "B faster: from B to A")
+	assert_almost_eq(Drivetrain.lock_transfer(10.0, 10.0, 1.0, 3000.0, 1.2, delta), 0.0, 0.0001, "equal speeds")
+
+
+func test_a_lock_moves_at_most_its_share_of_the_limit() -> void:
+	var delta := 1.0 / 120.0
+	assert_almost_eq(Drivetrain.lock_transfer(60.0, 0.0, 1.0, 3000.0, 2.0, delta), 3000.0, 0.001, "locked")
+	assert_almost_eq(Drivetrain.lock_transfer(60.0, 0.0, 0.3, 3000.0, 2.0, delta), 900.0, 0.001, "limited slip")
+
+
+func test_a_lock_never_reverses_the_speed_difference_in_one_tick() -> void:
+	var delta := 1.0 / 120.0
+	var inertia := 2.0
+	for gap: float in [0.01, 0.5, 3.0, 40.0]:
+		var transfer := Drivetrain.lock_transfer(10.0 + gap, 10.0, 1.0, 3000.0, inertia, delta)
+		var a := 10.0 + gap - transfer * delta / inertia
+		var b := 10.0 + transfer * delta / inertia
+		assert_gte(a - b, -0.0001, "a gap of %.2f rad/s closes without reversing" % gap)
+
+
+func test_a_locked_pair_stays_stable_when_only_one_side_grips() -> void:
+	# Both sides get the same drive torque; side B's tire pushes back in proportion
+	# to its speed, side A has no grip. A full lock must hold them close together,
+	# and the gap must not grow over 1,000 ticks.
+	var delta := 1.0 / 120.0
+	var inertia := 2.0
+	var a := 0.0
+	var b := 0.0
+	var early_gap := 0.0
+	var late_gap := 0.0
+	for tick in 1000:
+		var transfer := Drivetrain.lock_transfer(a, b, 1.0, 3000.0, inertia, delta)
+		a += (800.0 - transfer) / inertia * delta
+		b += (800.0 + transfer - b * 60.0) / inertia * delta
+		if tick >= 100 and tick < 500:
+			early_gap = maxf(early_gap, absf(a - b))
+		elif tick >= 500:
+			late_gap = maxf(late_gap, absf(a - b))
+	gut.p("locked pair: gap up to %.3f rad/s, then %.3f rad/s; speeds %.1f and %.1f rad/s" % [early_gap, late_gap, a, b])
+	assert_true(is_finite(a) and is_finite(b))
+	# A lock acts on last tick's speeds, so each tick's difference in tire force
+	# opens a small gap before it closes; the gap must stay bounded, not grow.
+	assert_lt(early_gap, 10.0, "the sides stay together")
+	assert_lte(late_gap, early_gap + 0.001, "the gap does not grow")

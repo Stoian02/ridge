@@ -34,6 +34,7 @@ func _physics_process(delta: float) -> void:
 
 	drivetrain.update(delta, input.throttle, input.brake, _driven_wheel_speed(), speed, _driven_slip())
 	var drive := Drivetrain.split_torque(drivetrain.drive_torque, stats.drive_type, stats.front_torque_split)
+	drive = _apply_diff_locks(drive, delta)
 	var brakes := Drivetrain.split_brake(drivetrain.brake_input * stats.brake_torque, stats.brake_front_bias)
 
 	var wheels_in_contact := 0
@@ -124,6 +125,33 @@ func _apply_stats() -> void:
 	cabin_mesh.size = Vector3(stats.body_size.x * 0.85, stats.body_size.y * 0.8, stats.body_size.z * 0.45)
 	$CabinMesh.mesh = cabin_mesh
 	$CabinMesh.position = Vector3(0.0, (stats.body_size.y + cabin_mesh.size.y) * 0.5, stats.body_size.z * 0.08)
+
+
+## Moves drive torque between the wheels each differential lock ties together
+## (spec §4.1): left and right on a driven axle, and front and rear on AWD. With
+## every lock at 0 the torques come back unchanged.
+func _apply_diff_locks(drive: PackedFloat32Array, delta: float) -> PackedFloat32Array:
+	var limit := stats.diff_lock_max_torque
+	var inertia := stats.wheel_inertia
+	var axle_locks: Array[float] = [stats.front_diff_lock, stats.rear_diff_lock]
+	for axle in 2:
+		var left := axle * 2
+		if axle_locks[axle] <= 0.0 or not _is_driven(left):
+			continue
+		var transfer := Drivetrain.lock_transfer(wheels[left].spin_speed, wheels[left + 1].spin_speed,
+				axle_locks[axle], limit, inertia, delta)
+		drive[left] -= transfer
+		drive[left + 1] += transfer
+	if stats.drive_type == CarStats.DriveType.AWD and stats.centre_diff_lock > 0.0:
+		var front := (wheels[0].spin_speed + wheels[1].spin_speed) * 0.5
+		var rear := (wheels[2].spin_speed + wheels[3].spin_speed) * 0.5
+		# Each axle is two wheels: twice the inertia, and its torque shared between them.
+		var transfer := Drivetrain.lock_transfer(front, rear, stats.centre_diff_lock, limit, inertia * 2.0, delta) * 0.5
+		drive[0] -= transfer
+		drive[1] -= transfer
+		drive[2] += transfer
+		drive[3] += transfer
+	return drive
 
 
 func _is_driven(wheel_index: int) -> bool:
