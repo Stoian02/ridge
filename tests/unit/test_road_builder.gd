@@ -90,3 +90,56 @@ func test_collision_surfaces_under_road_and_shoulder() -> void:
 func test_potholes_dip_the_surface_and_darken_it() -> void:
 	var pothole := profile.potholes[0]
 	assert_lt(profile.height(pothole.x, pothole.y), -0.03)
+
+
+func _muddy_def() -> TrailDef:
+	var muddy := TrailDef.new()
+	muddy.undulation_amplitude = 0.0
+	muddy.road_width = 9.0
+	muddy.base_surface = preload("res://surfaces/dirt.tres")
+	muddy.painted_lines = false
+	var stretch := SurfaceStretch.new()
+	stretch.start = 120.0
+	stretch.length = 50.0
+	stretch.surface = preload("res://surfaces/mud.tres")
+	stretch.rut_depth = 0.08
+	muddy.surface_stretches = [stretch]
+	return muddy
+
+
+func test_a_road_without_painted_lines_has_no_line_stations() -> void:
+	var stations := RoadBuilder.cross_section(_muddy_def())
+	assert_false(stations.any(func(s: Vector2) -> bool: return int(s.y) == RoadBuilder.Part.LINE))
+	assert_almost_eq(stations[0].x, -7.0, 0.0001, "9 m road plus 2.5 m shoulders")
+	assert_almost_eq(stations[-1].x, 7.0, 0.0001)
+	for i in stations.size():
+		assert_almost_eq(stations[i].x, -stations[-1 - i].x, 0.0001, "station %d mirrors" % i)
+
+
+func test_ruts_get_their_own_cross_section_stations() -> void:
+	var laterals := RoadBuilder.cross_section(_muddy_def()).map(func(s: Vector2) -> float: return s.x)
+	for rut_station: float in [0.375, 0.575, 0.775, 0.975, 1.175]:
+		for side: float in [-1.0, 1.0]:
+			assert_true(laterals.any(func(x: float) -> bool: return absf(x - rut_station * side) < 0.0001),
+					"station at %.3f m" % (rut_station * side))
+
+
+func test_rows_land_exactly_on_stretch_ends() -> void:
+	var muddy := _muddy_def()
+	var distances := RoadBuilder.row_distances(sampler.length, RoadProfile.new(muddy, sampler.length), muddy)
+	assert_true(distances.has(120.0))
+	assert_true(distances.has(170.0))
+
+
+func test_collision_follows_the_surface_stretch() -> void:
+	var muddy := _muddy_def()
+	builder.build(sampler, RoadProfile.new(muddy, sampler.length), muddy)
+	var bodies := _children_of("StaticBody3D")
+	assert_eq(bodies.size(), 7, "two bodies per chunk, plus mud in the middle chunk")
+	assert_eq(bodies.filter(func(b: Node) -> bool: return b.get_meta(SurfaceLookup.META_KEY).id == &"mud").size(), 1)
+	await wait_physics_frames(2)
+	var space := builder.get_world_3d().direct_space_state
+	for check in [[1.0, -100.0, &"dirt"], [1.0, -145.0, &"mud"], [1.0, -190.0, &"dirt"], [5.5, -145.0, &"dirt"]]:
+		var from := Vector3(check[0], 5.0, check[1])
+		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 10.0))
+		assert_eq(SurfaceLookup.surface_of(hit["collider"]).id, check[2], "at x %.1f, z %.0f" % [check[0], check[1]])
