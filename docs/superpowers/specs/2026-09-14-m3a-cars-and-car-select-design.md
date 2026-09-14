@@ -86,12 +86,11 @@ Today drive torque is split front/rear (`Drivetrain.split_torque`), then half go
 
 **New pure function:**
 
-`Drivetrain.lock_transfer(fast_speed, slow_speed, lock, max_torque, wheel_inertia, delta) -> float`
+`Drivetrain.lock_transfer(a_speed, b_speed, lock, max_torque, side_inertia, delta) -> float`
 
-It returns the torque to take from the faster side and give to the slower one:
-- proportional to their spin-speed difference, scaled by `lock`
-- capped by `max_torque`
-- capped so that one tick never reverses the difference, which keeps it stable at 120 Hz
+It returns the torque to move from side A to side B (negative moves it from B to A):
+- the torque that would bring both sides to the same speed within the tick, so it grows with their spin-speed difference and never reverses it, which keeps it stable at 120 Hz
+- capped at `lock × max_torque`, so a 0.3 lock can move at most 30% of what a full lock can
 
 **Where it's applied:** in `Car._physics_process`, after `split_torque` and before the wheels update. Each tick it uses the wheels' current spin speeds:
 - front pair: left ↔ right, by `front_diff_lock`
@@ -120,11 +119,11 @@ The transfer is added to each wheel's `drive_torque`.
 | Group | Values |
 |---|---|
 | Body | mass 1380 kg; centre of mass (0, −0.18, 0) |
-| Suspension | length 0.30 m; springs 35400; damping 2680 / 4020; anti-roll 6700 / 10700 (all about +20%) |
+| Suspension | length 0.35 m, as stock (0.30 m bottomed out on Muddy Valley's rutted mud); springs 35400; damping 2680 / 4020; anti-roll 6700 / 10700 (all about +20%) |
 | Tires | grip 1.3 |
 | Engine | torque ×1.3: 416, 533, 572, 546, 481, 390 Nm; launch 4000 |
 | Gearbox | shift time 0.09 s |
-| Drivetrain | front split 0.41; front lock 0.15, rear 0.35, centre 0 |
+| Drivetrain | front split 0.41; all locks 0, as stock (mild limited-slip locks of 0.15 front and 0.35 rear made it run wide out of Muddy Valley's first mud stretch and wedge against the creek bank; revisit when tuning on the phone) |
 
 The stock Rally Car keeps every current value, with all locks at 0.
 
