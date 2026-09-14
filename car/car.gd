@@ -5,6 +5,8 @@ extends RigidBody3D
 
 @export var stats: CarStats
 @export var grip_table: GripTable
+## The car's low-poly look (spec §6); without one it is drawn as gray boxes.
+@export var body_def: CarBodyDef
 
 @onready var input: CarInput = $CarInput
 ## Always ordered front-left, front-right, rear-left, rear-right.
@@ -18,6 +20,8 @@ var air_control: AirControl
 func _ready() -> void:
 	_apply_stats()
 	for wheel in wheels:
+		if body_def != null:
+			wheel.rim_color = body_def.rim_color
 		wheel.setup(stats, grip_table, self)
 	steering = Steering.new(stats)
 	drivetrain = Drivetrain.new(stats)
@@ -115,6 +119,12 @@ func _apply_stats() -> void:
 	var body_box := BoxShape3D.new()
 	body_box.size = stats.body_size
 	$BodyShape.shape = body_box
+
+	if body_def != null:
+		$BodyMesh.mesh = CarBodyBuilder.build(body_def, stats)
+		$BodyMesh.material_override = CarBodyBuilder.material()
+		$CabinMesh.free()  # the cabin is part of the built body
+		return
 
 	var body_mesh := BoxMesh.new()
 	body_mesh.size = stats.body_size

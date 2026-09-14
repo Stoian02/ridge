@@ -30,6 +30,8 @@ var spin_speed: float = 0.0
 ## Set by the car each tick (Nm).
 var drive_torque: float = 0.0
 var brake_torque: float = 0.0
+## Colour of the hub bar across the wheel face; the car sets it from its body before setup().
+var rim_color := Color(0.75, 0.75, 0.78)
 ## Vertical load this wheel carries (N).
 var tire_load: float = 0.0
 var slip_ratio: float = 0.0
@@ -198,7 +200,7 @@ func _build_visual() -> void:
 	var bar := BoxMesh.new()
 	bar.size = Vector3(stats.wheel_width + 0.02, stats.wheel_radius * 1.6, 0.08)
 	hub.mesh = bar
-	hub.material_override = _flat_material(Color(0.75, 0.75, 0.78))
+	hub.material_override = _flat_material(rim_color)
 	_spin_pivot.add_child(hub)
 
 
