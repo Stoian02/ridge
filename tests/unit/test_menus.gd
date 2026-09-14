@@ -47,7 +47,7 @@ func test_main_menu_play_and_free_drive_open_their_scenes() -> void:
 
 
 func test_main_menu_shows_total_stars() -> void:
-	state.record_finish(state.catalog.levels[0], 80.0, {})
+	state.record_finish(state.catalog.levels[0], 75.0, {})
 	var menu: Control = MAIN_MENU.instantiate()
 	add_child_autofree(menu)
 	assert_has(_labels(menu), "2 / 3 stars")

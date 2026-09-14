@@ -7,5 +7,5 @@ script = ExtResource("1_gme3o")
 id = &"rally_road"
 display_name = "Rally Road"
 scene_path = "res://levels/rally_road/rally_road.tscn"
-two_star_time = 85.0
-three_star_time = 74.0
+two_star_time = 80.0
+three_star_time = 72.0

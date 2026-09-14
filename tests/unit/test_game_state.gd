@@ -26,10 +26,10 @@ func test_finds_rally_road_by_its_scene() -> void:
 
 func test_record_finish_saves_to_the_file() -> void:
 	var rally: LevelDef = state.catalog.levels[0]
-	var result: Dictionary = state.record_finish(rally, 80.0, {1: 15.0})
+	var result: Dictionary = state.record_finish(rally, 75.0, {1: 15.0})
 	assert_eq(result["stars"], 2)
 	var saved := SaveSystem.read(SaveSandbox.PATH)
-	assert_almost_eq(float(saved["levels"]["rally_road"]["best_time"]), 80.0, 0.0001)
+	assert_almost_eq(float(saved["levels"]["rally_road"]["best_time"]), 75.0, 0.0001)
 
 
 func test_progress_survives_a_reload() -> void:
