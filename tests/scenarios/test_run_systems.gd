@@ -36,8 +36,7 @@ func test_driving_through_every_gate_finishes_the_run() -> void:
 	assert_eq(level.run.clock.stage, RunClock.Stage.FINISHED)
 	gut.p("400 m straight finished in %s" % RunHud.format_time(level.run.clock.elapsed))
 	assert_between(level.run.clock.elapsed, 10.0, 40.0)
-	await _seconds(RunLevel.RESULTS_DELAY + 0.1)
-	assert_true(level.results.is_showing(), "results appear after the finish")
+	assert_true(level.results.is_showing(), "results appear at the finish")
 
 
 func test_reset_button_returns_to_the_last_checkpoint_with_the_clock_running() -> void:

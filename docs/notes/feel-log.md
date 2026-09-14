@@ -85,4 +85,24 @@ Open, for the next drive:
 2. Rolling pull is a little down on the old lighter car; if it feels flat, raise mid-range torque before touching mass.
 3. Gas-held jump nose-dive still open (Task 16 test pending).
 
+## Session 4 (2026-09-14) — phone, game flow (Milestone 2 Part B1)
+
+Notes from the user:
+- "Everything works fine."
+- "I do not like the delay after the finish, so let's not have that." → Results now appear immediately at the finish; the pedals still lock.
+- Load time for Rally Road "about 3 seconds", the Test Ground "about 1 second"; "nowhere I saw below 60 fps".
+- Measured load times and the repeat-load slowdown: `docs/notes/performance-m2a.md`.
+
+Recording `runs/run_2026-09-14T09-31-33.csv` (phone, Rally Road, analysed against the road curve):
+- **Result:** start→finish gate **71.4 s**, the best run so far (desktop best 71.6 s). Max 114 km/h, shifts at 55 / 80 / 107 km/h. Throttle on 78% of the time, brake 2%. Past the shoulder only 1.2% of the time. No resets or spins.
+- **Steering:** analog touch steering, with partial inputs (+0.72, +0.92) rather than full lock.
+- **Slides:** two controlled power-on slides in the esses and hairpins, 20° at 39 km/h and 26° at 27 km/h. Rear tyres were at 24–31°, fronts at 1°.
+- **Jumps:** 1.13 s airborne at 446 m, 0.88 s at 1385 m.
+- **After the finish:** the car coasted on the locked pedals and flew off the end of the road, 10 m past the finish gate at 65 km/h. This is hidden behind the results overlay.
+
+Open, for the next session:
+1. **Rally Road star times.** They are still the 85 / 74 s placeholders; this run earned 3 stars. Set real times with the user.
+2. **Repeat level loads take 4.4–5.2 s on the phone**, against 2.83 s after a fresh app start (performance note).
+3. The road ends 10 m past the finish gate, so a finishing car drives off the end.
+
 Not done on purpose: narrowing the scenario-test ranges in `tests/scenarios/feel_baseline.gd` around this tune (plan Task 22 Step 5) — the feel is still expected to change, so the ranges stay wide until a tune is locked.

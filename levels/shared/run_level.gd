@@ -7,9 +7,7 @@ extends Node3D
 ## runs before this one.
 ## Its LevelDef comes from the catalog by scene path; a level that isn't in the
 ## catalog (one built by a test) runs without stars or saving.
-
-## How long after the finish line the results appear (s), while the car coasts.
-const RESULTS_DELAY := 1.0
+## At the finish the pedals lock and the results appear straight away.
 
 @onready var trail: TrailLevel = $Trail
 @onready var rig: DrivingRig = $DrivingRig
@@ -86,15 +84,7 @@ func _on_run_finished(time: float, splits: Dictionary) -> void:
 		new_best = result["new_best"]
 		var next := GameState.catalog.next_after(level)
 		has_next = next != null and GameState.progress.is_unlocked(GameState.catalog, next)
-	# The timer pauses with the game, so a pause during the coast delays the results too.
-	get_tree().create_timer(RESULTS_DELAY, false).timeout.connect(
-			_show_results.bind(time, earned, best, new_best, has_next))
-
-
-func _show_results(time: float, earned: int, best: float, new_best: bool, has_next: bool) -> void:
-	# A restart during the delay starts a new run; its results must not appear.
-	if run.clock.stage == RunClock.Stage.FINISHED:
-		results.show_results(time, earned, level, best, new_best, has_next)
+	results.show_results(time, earned, level, best, new_best, has_next)
 
 
 func _retry() -> void:

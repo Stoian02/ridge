@@ -61,29 +61,23 @@ func test_the_back_gesture_opens_the_pause_menu_during_a_run() -> void:
 	assert_false(level.pause_menu.is_open())
 
 
-func test_results_appear_a_moment_after_the_finish_and_block_pausing() -> void:
+func test_results_appear_at_the_finish_and_block_pausing() -> void:
 	var level := _straight_level()
 	await _drive_to_finish(level)
 	assert_true(level.tracker.is_finished())
 	assert_true(level.rig.car.input.locked, "the pedals lock at the finish")
-	assert_false(level.results.is_showing(), "not straight away")
-	var ticks := 0
-	while not level.results.is_showing() and ticks < ScenarioHelper.ticks(3.0):
-		await get_tree().physics_frame
-		ticks += 1
-	assert_true(level.results.is_showing())
-	assert_almost_eq(ticks / float(Engine.physics_ticks_per_second), RunLevel.RESULTS_DELAY, 0.1)
+	assert_true(level.results.is_showing(), "results appear straight away")
 	level.rig.pause_requested.emit()
 	assert_false(get_tree().paused, "no pausing over the results")
 	level.pause_menu.handle_back()
 	assert_eq(SaveSandbox.requested_scenes, [SaveSandbox.game_state().LEVEL_SELECT])
 
 
-func test_a_restart_during_the_delay_does_not_show_old_results() -> void:
+func test_a_restart_after_the_finish_hides_the_results() -> void:
 	var level := _straight_level()
 	await _drive_to_finish(level)
+	assert_true(level.results.is_showing())
 	level.run.restart()
-	await _seconds(RunLevel.RESULTS_DELAY + 0.5)
 	assert_false(level.results.is_showing())
 	assert_eq(level.run.clock.stage, RunClock.Stage.COUNTDOWN)
 

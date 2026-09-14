@@ -28,7 +28,7 @@ Part B2 (a separate spec) adds Muddy Valley and the trail-builder changes for di
 | On-screen during a run | **Reset** and **Pause** only; steering style, Telemetry and Rec move into the pause menu; Track button removed |
 | Split comparison | Against the saved **all-time best run** on that level |
 | Structure | Separate scenes for menus; pause and results as overlays in the level; one `GameState` autoload |
-| Results timing | A short delay after the finish line (~1 s) with the pedals locked, so the car coasts past the gate |
+| Results timing | A short delay after the finish line (~1 s) with the pedals locked, so the car coasts past the gate. **Changed after the phone session (2026-09-14): the user did not like the delay — results now appear immediately at the finish; the pedals still lock.** |
 
 ## 3. Player experience
 
@@ -57,7 +57,7 @@ Opened by the Pause button, the phone's back gesture, or Escape on desktop; the 
 - **Telemetry: on/off** and **Rec: on/off** — show the current state.
 
 ### 3.6 Results
-When the car enters the finish gate the pedals lock and the car coasts; after `RESULTS_DELAY` (1.0 s) the results overlay appears:
+When the car enters the finish gate the pedals lock and the results overlay appears straight away (changed 2026-09-14 after the phone session; it first appeared after a 1.0 s `RESULTS_DELAY`):
 - the run time, large;
 - stars earned this run, with the targets: "★ finish · ★★ under 1:25.0 · ★★★ under 1:14.0";
 - the all-time best time, and **New best!** when this run set it;
