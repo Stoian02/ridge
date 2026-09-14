@@ -143,3 +143,19 @@ func test_collision_follows_the_surface_stretch() -> void:
 		var from := Vector3(check[0], 5.0, check[1])
 		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 10.0))
 		assert_eq(SurfaceLookup.surface_of(hit["collider"]).id, check[2], "at x %.1f, z %.0f" % [check[0], check[1]])
+
+
+func test_stretches_with_the_same_ruts_share_their_stations() -> void:
+	var one_stretch := RoadBuilder.cross_section(_muddy_def()).size()
+	var muddy := _muddy_def()
+	var second := SurfaceStretch.new()
+	second.start = 200.0
+	second.length = 30.0
+	second.surface = preload("res://surfaces/mud.tres")
+	second.rut_depth = 0.08
+	muddy.surface_stretches.append(second)
+	var stations := RoadBuilder.cross_section(muddy)
+	assert_eq(stations.size(), one_stretch, "a second stretch with the same ruts adds no stations")
+	for i in stations.size() - 1:
+		var same_part := int(stations[i].y) == int(stations[i + 1].y)
+		assert_false(same_part and is_equal_approx(stations[i].x, stations[i + 1].x), "no repeated station at %.3f m" % stations[i].x)

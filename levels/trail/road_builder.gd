@@ -89,7 +89,7 @@ static func row_distances(length: float, profile: RoadProfile, def: TrailDef) ->
 
 
 ## Road stations strictly between -limit and limit: a lateral_step grid, plus
-## five stations across each wheel rut of any stretch.
+## five stations across each wheel rut, shared by stretches with the same ruts.
 static func _interior_laterals(def: TrailDef, limit: float) -> Array[float]:
 	var laterals: Array[float] = []
 	var lateral := -floorf(limit / def.lateral_step) * def.lateral_step
@@ -105,8 +105,10 @@ static func _interior_laterals(def: TrailDef, limit: float) -> Array[float]:
 		var half_width := stretch.rut_width * 0.5
 		for centre: float in [-stretch.rut_spacing * 0.5, stretch.rut_spacing * 0.5]:
 			for offset: float in [-half_width, -half_width * 0.5, 0.0, half_width * 0.5, half_width]:
-				if absf(centre + offset) < limit - MIN_STATION_GAP:
-					ruts.append(centre + offset)
+				var station := centre + offset
+				if absf(station) < limit - MIN_STATION_GAP \
+						and not ruts.any(func(existing: float) -> bool: return absf(existing - station) < MIN_STATION_GAP):
+					ruts.append(station)
 	if ruts.is_empty():
 		return laterals
 	var merged: Array[float] = ruts.duplicate()
