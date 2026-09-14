@@ -85,3 +85,21 @@ func test_scripted_driver_completes_rally_road() -> void:
 	assert_eq(saved["best_splits"].size(), 4, "with its four checkpoint splits")
 	level.results.retry_pressed.emit()
 	assert_eq(SaveSandbox.requested_scenes, [level.scene_file_path], "Retry reloads Rally Road")
+
+
+func test_the_road_carries_on_past_the_finish() -> void:
+	var level := _load()
+	var sampler := level.trail.sampler
+	var car := level.rig.car
+	await TrailScenarios.wait_for_go(level)
+	var finish := level.trail.checkpoints.gate_distances[-1]
+	await TrailScenarios.place_on_road(level, finish - 150.0)
+	await TrailScenarios.full_throttle_until(level, 30.0,
+			func() -> bool: return sampler.closest_distance(car.global_position) >= finish)
+	var speed := car.forward_speed()
+	await TrailScenarios.brake_to_stop(level)
+	var stopped_at := sampler.closest_distance(car.global_position)
+	gut.p("crossed the finish at %.0f km/h and stopped %.0f m past it (road ends %.0f m past it)" % [
+		speed * 3.6, stopped_at - finish, sampler.length - finish])
+	assert_lt(stopped_at, sampler.length - 5.0, "stops on the run-off")
+	assert_lt(absf(sampler.lateral_offset(car.global_position)), level.trail.trail.half_total_width())
