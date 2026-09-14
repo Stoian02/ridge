@@ -9,7 +9,7 @@ extends Resource
 @export var line_width: float = 0.15
 ## Painted edge lines sit this far inside each road edge.
 @export var line_inset: float = 0.3
-## Spacing of vertices across the asphalt.
+## Spacing of vertices across the road.
 @export var lateral_step: float = 0.5
 ## Distance between cross-sections outside rough ranges.
 @export var sample_step: float = 1.0
@@ -17,6 +17,14 @@ extends Resource
 @export var detail_step: float = 0.25
 ## Length of road built as one mesh and collision chunk.
 @export var chunk_length: float = 100.0
+
+@export_group("Surface")
+## The road's surface outside any stretch. Shoulders are always dirt.
+@export var base_surface: SurfaceDef = preload("res://surfaces/asphalt.tres")
+## Painted edge lines along the road.
+@export var painted_lines: bool = true
+## Stretches of another surface (such as mud with ruts). They must not overlap.
+@export var surface_stretches: Array[SurfaceStretch] = []
 
 @export_group("Undulation")
 ## Peak height of the gentle waves along the whole road.
@@ -47,7 +55,18 @@ extends Resource
 ## and finish (road length) gates are added automatically.
 @export var checkpoint_distances: PackedFloat32Array = PackedFloat32Array()
 
+@export_group("Creek")
+## A creek runs beside the road from creek_start for creek_length (m); 0 length = no creek.
+@export var creek_start: float = 0.0
+@export var creek_length: float = 0.0
+## Lateral distance from the road centre to the creek's centre line (m, + = right).
+@export var creek_offset: float = 17.0
+@export var creek_width: float = 4.0
+@export var creek_depth: float = 0.7
+@export var creek_color: Color = Color(0.3, 0.4, 0.42)
+
 @export_group("Colours")
+## The road's own colour: asphalt, or dirt on a dirt trail.
 @export var asphalt_color: Color = Color(0.24, 0.23, 0.24)
 @export var patch_color: Color = Color(0.3, 0.29, 0.28)
 @export var line_color: Color = Color(0.92, 0.9, 0.84)
@@ -60,3 +79,7 @@ extends Resource
 ## Half the width of road plus both shoulders.
 func half_total_width() -> float:
 	return road_width * 0.5 + shoulder_width
+
+
+func has_creek() -> bool:
+	return creek_length > 0.0

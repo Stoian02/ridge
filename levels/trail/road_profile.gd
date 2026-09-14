@@ -1,9 +1,9 @@
 class_name RoadProfile
 extends RefCounted
 ## Surface height offsets along a trail: gentle undulation everywhere, potholes
-## and patched tarmac in rough ranges, and jump crests. Built once from a
-## TrailDef. All randomness comes from its seed, so the same settings always
-## give the same road.
+## (and patched tarmac on asphalt) in rough ranges, jump crests, and wheel ruts
+## in surface stretches. Built once from a TrailDef. All randomness comes from
+## its seed, so the same settings always give the same road.
 
 ## Patched tarmac is raised this much above the surrounding asphalt (m).
 const PATCH_RAISE := 0.012
@@ -33,19 +33,24 @@ func _init(trail_def: TrailDef, length: float) -> void:
 	rng.seed = def.seed
 	_phases = Vector2(rng.randf() * TAU, rng.randf() * TAU)
 
+	var patched := def.base_surface == null or def.base_surface.id == &"asphalt"
 	var ranges: Array[Vector2] = []
 	for section in def.rough_sections:
 		var start := section.x
 		var end := section.x + section.y
 		for i in roundi(section.y / 100.0 * section.z):
 			_add_random_pothole(rng, start + def.rough_margin, end - def.rough_margin)
-		for i in int(section.y / 12.0):
-			_add_random_patch(rng, start + def.rough_margin, end - def.rough_margin)
+		if patched:
+			for i in int(section.y / 12.0):
+				_add_random_patch(rng, start + def.rough_margin, end - def.rough_margin)
 		ranges.append(Vector2(start, end))
 	for cluster in def.pothole_clusters:
 		for i in int(cluster.y):
 			_add_random_pothole(rng, cluster.x - CLUSTER_SPREAD, cluster.x + CLUSTER_SPREAD)
 		ranges.append(Vector2(cluster.x - CLUSTER_DETAIL, cluster.x + CLUSTER_DETAIL))
+	for stretch in def.surface_stretches:
+		for end: float in [stretch.start, stretch.end()]:
+			ranges.append(Vector2(end - stretch.blend_length, end + stretch.blend_length))
 
 	potholes.sort_custom(func(a: Vector4, b: Vector4) -> bool: return a.x < b.x)
 	for pothole in potholes:
@@ -56,7 +61,8 @@ func _init(trail_def: TrailDef, length: float) -> void:
 
 ## Total surface offset at a point of the road (m).
 func height(distance: float, lateral: float) -> float:
-	return undulation(distance) + jump_height(distance) + rough_height(distance, lateral)
+	return undulation(distance) + jump_height(distance) + rough_height(distance, lateral) \
+			+ rut_height(distance, lateral)
 
 
 func undulation(distance: float) -> float:
@@ -109,6 +115,43 @@ func in_detail_range(distance: float) -> bool:
 		if distance >= range.x and distance <= range.y:
 			return true
 	return false
+
+
+## The surface stretch covering `distance`, or null where the road has its base surface.
+func stretch_at(distance: float) -> SurfaceStretch:
+	for stretch in def.surface_stretches:
+		if stretch.contains(distance):
+			return stretch
+	return null
+
+
+## The road's surface at `distance`: a stretch's surface, or the trail's base surface.
+func surface_at(distance: float) -> SurfaceDef:
+	var stretch := stretch_at(distance)
+	return stretch.surface if stretch != null else def.base_surface
+
+
+## Every stretch start and end on the road, sorted.
+func surface_boundaries() -> PackedFloat32Array:
+	var boundaries := PackedFloat32Array()
+	for stretch in def.surface_stretches:
+		for end: float in [stretch.start, stretch.end()]:
+			if end > 0.0 and end < road_length:
+				boundaries.append(end)
+	boundaries.sort()
+	return boundaries
+
+
+## The two wheel ruts of a stretch, fading in and out with the stretch.
+func rut_height(distance: float, lateral: float) -> float:
+	var stretch := stretch_at(distance)
+	if stretch == null or stretch.rut_depth <= 0.0:
+		return 0.0
+	var depth := stretch.rut_depth * stretch.weight(distance)
+	var half_spacing := stretch.rut_spacing * 0.5
+	var half_width := stretch.rut_width * 0.5
+	return RoughShapes.rut(lateral + half_spacing, half_width, depth) \
+			+ RoughShapes.rut(lateral - half_spacing, half_width, depth)
 
 
 func _add_random_pothole(rng: RandomNumberGenerator, from: float, to: float) -> void:

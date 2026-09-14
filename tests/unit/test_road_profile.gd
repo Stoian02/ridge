@@ -91,3 +91,54 @@ func test_detail_ranges_cover_rough_ground_and_merge() -> void:
 	assert_true(profile.in_detail_range(200.0))
 	assert_true(profile.in_detail_range(400.0))
 	assert_false(profile.in_detail_range(320.0))
+
+
+func _muddy_def() -> TrailDef:
+	var muddy := TrailDef.new()
+	muddy.undulation_amplitude = 0.0
+	muddy.base_surface = preload("res://surfaces/dirt.tres")
+	var stretch := SurfaceStretch.new()
+	stretch.start = 200.0
+	stretch.length = 100.0
+	stretch.surface = preload("res://surfaces/mud.tres")
+	stretch.rut_depth = 0.08
+	muddy.surface_stretches = [stretch]
+	return muddy
+
+
+func test_ruts_reach_their_depth_inside_a_stretch_only() -> void:
+	var profile := RoadProfile.new(_muddy_def(), 1000.0)
+	var half_spacing: float = profile.def.surface_stretches[0].rut_spacing * 0.5
+	assert_almost_eq(profile.rut_height(250.0, half_spacing), -0.08, 0.0001, "right rut mid-stretch")
+	assert_almost_eq(profile.rut_height(250.0, -half_spacing), -0.08, 0.0001, "left rut mid-stretch")
+	assert_almost_eq(profile.rut_height(250.0, 0.0), 0.0, 0.0001, "between the ruts")
+	assert_almost_eq(profile.rut_height(150.0, half_spacing), 0.0, 0.0001, "before the stretch")
+	assert_almost_eq(profile.rut_height(350.0, half_spacing), 0.0, 0.0001, "after it")
+	assert_almost_eq(profile.height(250.0, half_spacing), -0.08, 0.0001, "the road height includes the ruts")
+
+
+func test_ruts_fade_in_and_out_over_the_blend_length() -> void:
+	var profile := RoadProfile.new(_muddy_def(), 1000.0)
+	var half_spacing: float = profile.def.surface_stretches[0].rut_spacing * 0.5
+	assert_almost_eq(profile.rut_height(200.0, half_spacing), 0.0, 0.0001, "at the start")
+	assert_almost_eq(profile.rut_height(201.0, half_spacing), -0.04, 0.0001, "halfway into the blend")
+	assert_almost_eq(profile.rut_height(202.0, half_spacing), -0.08, 0.0001, "full depth after 2 m")
+	assert_almost_eq(profile.rut_height(299.0, half_spacing), -0.04, 0.0001, "fading out at the end")
+
+
+func test_surface_follows_the_stretches() -> void:
+	var profile := RoadProfile.new(_muddy_def(), 1000.0)
+	assert_eq(profile.surface_at(199.9).id, &"dirt")
+	assert_eq(profile.surface_at(200.0).id, &"mud")
+	assert_eq(profile.surface_at(299.9).id, &"mud")
+	assert_eq(profile.surface_at(300.0).id, &"dirt", "a stretch's end is back on the base surface")
+	assert_eq(profile.surface_boundaries(), PackedFloat32Array([200.0, 300.0]))
+	assert_eq(profile.detail_ranges, [Vector2(198.0, 202.0), Vector2(298.0, 302.0)] as Array[Vector2])
+
+
+func test_a_dirt_road_has_potholes_but_no_tarmac_patches() -> void:
+	var muddy := _muddy_def()
+	muddy.rough_sections = [Vector3(400.0, 120.0, 20.0)]
+	var profile := RoadProfile.new(muddy, 1000.0)
+	assert_eq(profile.potholes.size(), 24)
+	assert_true(profile.patches.is_empty())
