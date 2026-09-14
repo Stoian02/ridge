@@ -3,11 +3,22 @@ extends RefCounted
 ## The mountainside around a trail as a grid of height samples, generated once.
 ## The natural ground is a plane fitted to the road's overall climb plus noise.
 ## Near the road, the ground follows a smoothed road elevation and is carved to
-## meet the shoulders (see Corridor).
+## meet the shoulders (see Corridor). A creek, if the trail has one, is cut as a
+## shallow channel beside the road.
 ## Grid rows run along +Z and columns along +X; index = row * columns + column.
 
 ## Sentinel edge distance for samples far from any road.
 const FAR := 1.0e6
+## A creek's banks rise from its floor to the ground over this width (m).
+const CREEK_BANK := 3.0
+## A creek's channel deepens from nothing over this distance at each end (m).
+const CREEK_TAPER := 10.0
+## A creek's bed is kept level with its lowest point within this distance either side (m).
+const CREEK_SMOOTHING := 5.0
+## The creek's water sits this far below the lowest ground across its channel (m).
+const CREEK_BELOW_GROUND := 0.15
+## Beyond a creek's banks, raised ground falls back to the natural ground over this width (m).
+const CREEK_LEVEE := 4.0
 
 var def: TerrainDef
 ## World X/Z of sample (column 0, row 0).
@@ -20,6 +31,11 @@ var cells_per_chunk := 64
 var heights := PackedFloat32Array()
 ## Metres outside the nearest shoulder edge (negative under the road).
 var edge_distances := PackedFloat32Array()
+## Metres from the creek's centre line; FAR away from any creek.
+var creek_distances := PackedFloat32Array()
+## The creek's water heights, one per metre along the road from creek_start.
+var creek_start := 0.0
+var creek_levels := PackedFloat32Array()
 var lowest_height := 0.0
 
 
@@ -46,7 +62,15 @@ static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef)
 	field._size_grid(stamps, terrain.margin)
 	field._fill_natural(stamps, terrain)
 	field._carve(stamps, rights, bank_slopes, trail, terrain)
+	field._cut_creek(sampler, trail)
 	return field
+
+
+## World X/Z of the creek's centre line beside the road at `distance`.
+static func creek_point(sampler: RoadSampler, trail: TrailDef, distance: float) -> Vector2:
+	var point := sampler.position(distance)
+	var across := sampler.right(distance)
+	return Vector2(point.x, point.z) + Vector2(across.x, across.z).normalized() * trail.creek_offset
 
 
 func chunk_count() -> Vector2i:
@@ -77,6 +101,11 @@ func height_at(x: float, z: float) -> float:
 ## Edge distance at the nearest sample to a world X/Z.
 func edge_distance_at(x: float, z: float) -> float:
 	return edge_distances[index(roundi((x - origin.x) / spacing), roundi((z - origin.y) / spacing))]
+
+
+## Distance from the creek's centre line at the nearest sample to a world X/Z.
+func creek_distance_at(x: float, z: float) -> float:
+	return creek_distances[index(roundi((x - origin.x) / spacing), roundi((z - origin.y) / spacing))]
 
 
 ## Surface normal at a sample, from its neighbours.
@@ -110,6 +139,8 @@ func _size_grid(stamps: Array[Vector3], margin: float) -> void:
 	rows = chunks.y * cells_per_chunk + 1
 	heights.resize(columns * rows)
 	edge_distances.resize(columns * rows)
+	creek_distances.resize(columns * rows)
+	creek_distances.fill(FAR)
 
 
 ## Natural ground: a plane fitted to the road's elevations, plus fractal noise.
@@ -198,3 +229,81 @@ func _carve(stamps: Array[Vector3], rights: Array[Vector2], bank_slopes: PackedF
 			heights[i] = Corridor.carved_height(road_height, heights[i], edge_distances[i],
 					terrain.corridor_blend, terrain.under_road_drop)
 		lowest_height = minf(lowest_height, heights[i])
+
+
+## Shapes the ground along the creek. Each nearby sample takes its shape from the
+## nearest point on the creek's centre line:
+## - across creek_width, a floor creek_depth below the higher of the centre-line
+##   ground and its own ground, so the floor is level where the ground falls away
+##   and follows the ground up a slope;
+## - banks rising over CREEK_BANK to at least the centre-line ground, so a
+##   downhill side gets a low raised bank that holds the water;
+## - beyond the banks, raised ground falls back to the natural ground over CREEK_LEVEE.
+## The ends taper to nothing. The water level is the lowest centre-line ground
+## within CREEK_SMOOTHING either side, less CREEK_BELOW_GROUND, so it never steps
+## up and never tops a bank.
+func _cut_creek(sampler: RoadSampler, trail: TrailDef) -> void:
+	if not trail.has_creek():
+		return
+	var half_width := trail.creek_width * 0.5
+	var radius := half_width + CREEK_BANK
+	var outer := radius + CREEK_LEVEE
+	var start := trail.creek_start
+	var end := minf(trail.creek_start + trail.creek_length, sampler.length)
+	var steps := int(end - start) + 1
+	var centres: Array[Vector2] = []
+	var grounds := PackedFloat32Array()
+	var tapers := PackedFloat32Array()
+	for step in steps:
+		var distance := start + step
+		var centre := creek_point(sampler, trail, distance)
+		centres.append(centre)
+		grounds.append(height_at(centre.x, centre.y))
+		tapers.append(minf(smoothstep(start, start + CREEK_TAPER, distance), 1.0 - smoothstep(end - CREEK_TAPER, end, distance)))
+	creek_start = start
+	creek_levels.resize(steps)
+	for step in steps:
+		var ground := grounds[step]
+		for other in range(maxi(0, step - int(CREEK_SMOOTHING)), mini(steps, step + int(CREEK_SMOOTHING) + 1)):
+			ground = minf(ground, grounds[other])
+		creek_levels[step] = ground - CREEK_BELOW_GROUND
+
+	var nearest := PackedInt32Array()
+	nearest.resize(columns * rows)
+	nearest.fill(-1)
+	var touched := PackedInt32Array()
+	var reach := ceili(outer / spacing) + 1
+	for step in steps:
+		var centre := centres[step]
+		var centre_column := roundi((centre.x - origin.x) / spacing)
+		var centre_row := roundi((centre.y - origin.y) / spacing)
+		for row in range(maxi(0, centre_row - reach), mini(rows, centre_row + reach + 1)):
+			for column in range(maxi(0, centre_column - reach), mini(columns, centre_column + reach + 1)):
+				var i := row * columns + column
+				var from_centre := Vector2(origin.x + column * spacing, origin.y + row * spacing).distance_to(centre)
+				if from_centre < creek_distances[i]:
+					if nearest[i] < 0:
+						touched.append(i)
+					creek_distances[i] = from_centre
+					nearest[i] = step
+
+	for i in touched:
+		var from_centre := creek_distances[i]
+		if from_centre >= outer:
+			continue
+		var step := nearest[i]
+		var natural := heights[i]
+		var depth := trail.creek_depth * tapers[step]
+		var top := lerpf(natural, grounds[step], tapers[step])
+		if from_centre < radius:
+			var floor := maxf(grounds[step], natural) - depth
+			heights[i] = lerpf(floor, maxf(natural, top), smoothstep(half_width, radius, from_centre))
+		else:
+			heights[i] = maxf(natural, lerpf(top, natural, smoothstep(radius, outer, from_centre)))
+		lowest_height = minf(lowest_height, heights[i])
+
+
+## The creek's water height at `distance` along the road, or -INF where there is no creek.
+func creek_water_level(distance: float) -> float:
+	var step := roundi(distance - creek_start)
+	return creek_levels[step] if step >= 0 and step < creek_levels.size() else -INF

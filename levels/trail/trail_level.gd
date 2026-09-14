@@ -2,8 +2,8 @@
 class_name TrailLevel
 extends Node3D
 ## Generates a whole trail from its "Road" Path3D child and its settings: road
-## surface, terrain, scenery and checkpoint gates. It builds on load in the
-## game. In the editor, tick Rebuild to preview after moving the road's curve
+## surface, terrain, creek, scenery and checkpoint gates. It builds on load in
+## the game. In the editor, tick Rebuild to preview after moving the road's curve
 ## points. The Road child must keep an identity transform: the curve's points
 ## are used as positions in this node's space.
 
@@ -23,6 +23,7 @@ var profile: RoadProfile
 var field: TerrainField
 var road_builder: RoadBuilder
 var terrain_builder: TerrainBuilder
+var creek_builder: CreekBuilder
 var scatter_builder: ScatterBuilder
 var checkpoints: CheckpointPlacer
 ## How long the last build took (s).
@@ -58,6 +59,11 @@ func build() -> void:
 	terrain_builder.name = "Terrain"
 	generated.add_child(terrain_builder)
 	terrain_builder.build(field)
+
+	creek_builder = CreekBuilder.new()
+	creek_builder.name = "Creek"
+	generated.add_child(creek_builder)
+	creek_builder.build(field, sampler, trail)
 
 	scatter_builder = ScatterBuilder.new()
 	scatter_builder.name = "Scatter"
