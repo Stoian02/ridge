@@ -79,7 +79,10 @@ func _add_mesh(field: TerrainField, first_column: int, first_row: int, size: int
 			normals.append(normal)
 			var slope_deg := rad_to_deg(acos(clampf(normal.y, -1.0, 1.0)))
 			var rockiness := smoothstep(rock_deg - COLOR_BLEND_DEG, rock_deg + COLOR_BLEND_DEG, slope_deg)
-			colors.append(field.def.dirt_color.lerp(field.def.rock_color, rockiness))
+			var color := field.def.dirt_color.lerp(field.def.rock_color, rockiness)
+			if not field.wear.is_empty():
+				color = color.lerp(field.wear_color, field.wear[field.index(grid_column, grid_row)])
+			colors.append(color)
 
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)

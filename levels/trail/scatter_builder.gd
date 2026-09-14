@@ -91,6 +91,8 @@ func _scatter(field: TerrainField, def: ScatterDef, spacing: float, scale_range:
 				continue
 			if field.creek_distance_at(world_x, world_z) < creek_clearance:
 				continue
+			if field.wear_at(world_x, world_z) > 0.0:
+				continue
 			if acos(clampf(field.normal_at(world_x, world_z).y, -1.0, 1.0)) > max_slope:
 				continue
 			var ground := field.height_at(world_x, world_z) - sink * scale

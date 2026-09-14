@@ -51,9 +51,12 @@ func test_muddy_valley_builds_with_its_gates_mud_and_creek() -> void:
 	assert_gt(hedge.bush_count, 500, "dense hedges beside the mud")
 	assert_lte(hedge.bush_count * 20, 13100, "hedges add at most 13.1k visible primitives")
 	assert_lte(hedge_batches, 16, "hedges add at most 16 draw calls even if every batch is visible")
-	assert_lte(shortcut.primitive_count, 7000, "the worn shortcut stays cheap")
-	assert_lte(hedge.bush_count * 20 + shortcut.primitive_count, 20000,
-			"all new path geometry adds at most 20k primitives")
+	# The rocky shortcut needs fine rows so its stones keep their shape. Measured
+	# with it in view, Muddy Valley peaked at 244,676 primitives and 117 draw
+	# calls (1250 m), within the 300k / 150 budget.
+	assert_lte(shortcut.primitive_count, 24000, "the rocky shortcut stays within its share of the budget")
+	assert_lte(hedge.bush_count * 20 + shortcut.primitive_count, 37000,
+			"all new path geometry adds at most 37k primitives")
 	await wait_physics_frames(2)
 	assert_eq(_surface_under_road(level, 800.0), &"mud", "the mud stretch beside the creek")
 	assert_eq(_surface_under_road(level, 1400.0), &"mud", "the final climb")

@@ -199,8 +199,13 @@ func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stati
 func _color(profile: RoadProfile, def: TrailDef, distance: float, lateral: float, part: int) -> Color:
 	match part:
 		Part.SHOULDER:
+			var shoulder := def.shoulder_color
 			var stretch := profile.stretch_at(distance)
-			return def.shoulder_color if stretch == null else def.shoulder_color.lerp(stretch.color, stretch.weight(distance))
+			if stretch != null:
+				shoulder = shoulder.lerp(stretch.color, stretch.weight(distance))
+			if def.shortcut != null and signf(lateral) == signf(def.shortcut.side):
+				shoulder = shoulder.lerp(def.asphalt_color, ShortcutBuilder.junction_weight(def.shortcut, distance))
+			return shoulder
 		Part.LINE:
 			return def.line_color
 	var base := def.patch_color if profile.is_patch(distance, lateral) else def.asphalt_color

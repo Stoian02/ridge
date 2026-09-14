@@ -62,3 +62,25 @@ machine with a display.
 
 ## Budgets still to check on the phone
 60 fps, < 300k triangles, < 150 draw calls, < 4 ms physics, < 3 s load after a fresh app start.
+
+## Revision 3: seamless joins and a rocky shortcut (desktop, 2026-09-14)
+
+Measured with `tools/level_shots.tscn` after the shortcut rework. The worn middle has 0.33 m rows, so its stones keep their shape. The shortcut mesh is ~20k triangles in one draw call, plus one batch of rocks.
+
+| Level | Spot (m) | Primitives | Draw calls | Objects |
+|---|---|---|---|---|
+| Muddy Valley | 15 | 263692 | 133 | 605 |
+| Muddy Valley | 320 | 276876 | 127 | 597 |
+| Muddy Valley | 560 | 286336 | 130 | 602 |
+| Muddy Valley | 760 | 273168 | 125 | 621 |
+| Muddy Valley | 1000 | 284888 | 113 | 581 |
+| Muddy Valley | 1250 | 243468 | 115 | 591 |
+| Muddy Valley | 1300 | 242632 | 113 | 609 |
+| Muddy Valley | 1400 | 203848 | 115 | 583 |
+| Muddy Valley | 1450 | 175236 | 100 | 568 |
+| Muddy Valley | 1480 | 177836 | 99 | 567 |
+
+- Build time: 1.83–1.88 s.
+- The peak is 286,336 primitives at 560 m, away from the shortcut, beside the hedges; that's 95% of the 300k budget. Check this spot first on the phone.
+- With the shortcut in view (1250–1480 m) the peak is 243,468.
+- Scenario trace: the car drives the whole shortcut and rejoins the road in 26.7 s. Its sideways tilt stays under 23° at the path's 13.5 m offset. At 17 m it reached 33° and slid down the hillside at the exit.

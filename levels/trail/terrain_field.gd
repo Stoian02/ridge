@@ -36,6 +36,9 @@ var creek_distances := PackedFloat32Array()
 ## The creek's water heights, one per metre along the road from creek_start.
 var creek_start := 0.0
 var creek_levels := PackedFloat32Array()
+## How strongly each sample is tinted toward wear_color (0..1); empty where nothing wears the ground.
+var wear := PackedFloat32Array()
+var wear_color := Color.WHITE
 var lowest_height := 0.0
 
 
@@ -106,6 +109,13 @@ func edge_distance_at(x: float, z: float) -> float:
 ## Distance from the creek's centre line at the nearest sample to a world X/Z.
 func creek_distance_at(x: float, z: float) -> float:
 	return creek_distances[index(roundi((x - origin.x) / spacing), roundi((z - origin.y) / spacing))]
+
+
+## Wear at the nearest sample to a world X/Z; 0 where nothing wears the ground.
+func wear_at(x: float, z: float) -> float:
+	if wear.is_empty():
+		return 0.0
+	return wear[index(roundi((x - origin.x) / spacing), roundi((z - origin.y) / spacing))]
 
 
 ## Surface normal at a sample, from its neighbours.
