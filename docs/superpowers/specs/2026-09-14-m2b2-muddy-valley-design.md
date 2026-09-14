@@ -68,12 +68,13 @@ The segment-building and separation check move from `tools/generate_rally_road_c
   - `creek_start`, `creek_length`: 0 length means no creek.
   - `creek_offset`: signed lateral distance from the road centre to the creek centre, in m; + is right.
   - `creek_width` (4 m), `creek_depth` (0.7 m), `creek_color`.
-- **`TerrainField`:** after carving the corridor, it cuts a channel along the creek's centre line:
-  - The bed is `creek_depth` below the lowest ground across the channel. It is flat across `creek_width`, with banks rising to the ground over 3 m.
-  - The ends taper to nothing over 10 m.
-  - On an uphill side the cut is never deeper than 1.5 × `creek_depth`, so the bank stays drivable.
-  - The water level is the lowest ground within 5 m either side, less 0.15 m. The water never steps up and never tops a rim.
-  - A cut that followed a sloping hillside would leave the downhill rim below the channel floor, and no water could be laid. That is why the bed is measured from the lowest ground.
+- **`TerrainField`:** after carving the corridor, it shapes the ground along the creek. Each nearby sample takes its shape from the nearest point on the creek's centre line:
+  - **Floor:** across `creek_width`, `creek_depth` below the higher of the centre-line ground and the sample's own ground. It is level where the ground falls away from the road, and follows the ground up a slope, so the road-side bank stays a shallow, drivable cut.
+  - **Banks:** they rise over 3 m to at least the centre-line ground. On a downhill side this makes a low raised bank that holds the water.
+  - **Beyond the banks:** raised ground falls back to the natural ground over 4 m.
+  - **Ends:** everything tapers to nothing over 10 m at each end.
+  - **Water level:** the lowest centre-line ground within 5 m either side, less 0.15 m. The water never steps up and never tops a bank.
+  - Both simpler cuts failed on Muddy Valley's sloping valley floor. Cutting a fixed depth into sloping ground left the downhill rim below the channel floor. Cutting to a level bed made the road-side bank too deep to drive out of.
 - **`CreekBuilder`** (new, `levels/trail/creek_builder.gd`): one flat ribbon mesh along the whole creek, at the field's water level, laid wherever the water is at least 0.1 m above the channel floor. The material is glossy blue-grey. The ribbon has no collision.
 - **`ScatterBuilder`:** skips any item within `creek_width / 2 + 2 m` of the creek centre line.
 
@@ -118,7 +119,7 @@ The segment-building and separation check move from `tools/generate_rally_road_c
 |---|---|---|---|
 | Ridge start | 0–80 m | ~0% | View over the valley |
 | Descent | 80–650 m | −6 to −10% | Sweepers, then tighter esses and one medium hairpin; the jump (~1 m, ~10 m long) on a straight around 350 m |
-| Valley floor | 650–1150 m | 0 to +2% | Mud stretch 1 (~70 m); creek beside the road for ~250 m with mud stretch 2 (~90 m) alongside it |
+| Valley floor | 650–1150 m | 0 to +2% | The creek runs on the right for 150 m (745–895 m), where the ground is lower than the road, beside mud stretch 1 (760–850 m). Mud stretch 2 is at 980–1050 m. On the left the valley side rises 4–9 m above the road from 940 m, so a creek there would sit on the hillside. |
 | Final climb | 1150–1500 m | +7 to +9% | The last ~200 m to the finish is mud |
 | Run-off | +60 m | ~0% | Past the finish |
 
@@ -167,7 +168,10 @@ The same as Rally Road (M2A spec §8): 60 fps held, < 300k triangles on screen, 
 - **Drive the whole road:** the pure-pursuit driver completes Muddy Valley with every checkpoint in order, no resets, in 60–150 s.
 - **Pull away on the climb:** a car stopped in mud halfway up the final climb reaches the finish at full throttle within 30 s.
 - **Mud slows:** over the same distance on the valley floor at full throttle, the car is slower on mud than on dirt.
-- **Out of the creek:** a car placed in the creek channel, facing the road, drives back onto the road within 10 s.
+- **Out of the creek:** a car placed in the creek channel, facing along it, drives out of the channel within 10 s.
+  - Checked by heading in scratch: out in about 6 s along the creek and 3 s away from the road.
+  - Straight at the road it stalls. The road-side bank (about 28°) adds to the road's roughly 4 m embankment above the valley floor. A player who drives in there turns along the creek, or uses Reset.
+  - The steepness of that bank is a feel item for the phone session.
 - **Run-off:** on both levels, a car that crosses the finish at speed and brakes stays on the road.
 - **Build determinism:** building Muddy Valley twice gives identical chunk counts and checkpoint positions; build time is printed.
 - **Game flow:** after a Rally Road finish, Next level opens Muddy Valley.
