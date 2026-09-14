@@ -20,6 +20,22 @@ static func place_on_road(level: RunLevel, distance: float) -> void:
 	await place(level, level.trail.sampler.transform_at(distance, CheckpointPlacer.RESET_HEIGHT, level.trail.profile))
 
 
+## Puts the car at rest at a lateral offset from the road, facing along it.
+## Road and shoulder offsets use the generated road height; positions beyond
+## the shoulder use the terrain height.
+static func place_at_offset(level: RunLevel, distance: float, lateral: float) -> void:
+	var sampler := level.trail.sampler
+	var along := sampler.forward(distance)
+	var surface_up := sampler.up(distance)
+	var origin := sampler.position(distance) + sampler.right(distance) * lateral
+	if absf(lateral) <= level.trail.trail.half_total_width():
+		origin = sampler.surface_point(distance, lateral, level.trail.profile)
+	else:
+		origin.y = level.trail.field.height_at(origin.x, origin.z)
+	origin += surface_up * CheckpointPlacer.RESET_HEIGHT
+	await place(level, Transform3D(Basis.looking_at(along, surface_up), origin))
+
+
 ## Puts the car at rest at `transform` and lets it settle for half a second.
 static func place(level: RunLevel, transform: Transform3D) -> void:
 	level.rig.place_car(transform)
@@ -42,6 +58,21 @@ static func full_throttle_until(level: RunLevel, seconds: float, done: Callable)
 		car.input.virtual_brake = 0.0
 		await _tree().physics_frame
 	return seconds
+
+
+## Drives toward a world-space point at a restrained target speed. Useful for
+## off-road scenario paths where TrailDriver would steer back to the centre line.
+static func drive_toward(car: Car, target: Vector3, wanted_speed: float = 10.0) -> void:
+	var to_target := target - car.global_position
+	var heading := -car.global_basis.z
+	var flat_heading := Vector2(heading.x, heading.z).normalized()
+	var flat_target := Vector2(to_target.x, to_target.z).normalized()
+	var angle := flat_heading.angle_to(flat_target)
+	var max_angle := Steering.max_angle_for_speed(car.forward_speed(), car.stats)
+	car.input.virtual_steer = clampf(angle / maxf(max_angle, 0.05), -1.0, 1.0)
+	var speed := car.forward_speed()
+	car.input.virtual_throttle = 1.0 if speed < wanted_speed - 0.5 else 0.0
+	car.input.virtual_brake = 1.0 if speed > wanted_speed + 1.5 else 0.0
 
 
 ## Brakes hard while steering along the road until the car stops (or 10 s pass).

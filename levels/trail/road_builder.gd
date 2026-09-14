@@ -2,7 +2,7 @@ class_name RoadBuilder
 extends Node3D
 ## Builds the road surface along a trail in chunks: a mesh with optional painted
 ## edge lines, shaded potholes and ruts, and collision tagged with each stretch's
-## surface (the trail's base surface elsewhere, dirt under the shoulders).
+## surface. Shoulders share a stretch's surface and are dirt elsewhere.
 
 const DIRT := preload("res://surfaces/dirt.tres")
 
@@ -119,20 +119,18 @@ static func _interior_laterals(def: TrailDef, limit: float) -> Array[float]:
 	return merged
 
 
-## Collision faces of the road quads in rows whose surface is `surface`, or of
-## every shoulder quad when `surface` is null.
+## Collision faces whose road or shoulder surface matches `surface`.
 static func _faces(vertices: PackedVector3Array, stations: Array[Vector2], row_surfaces: Array[SurfaceDef],
-		surface: SurfaceDef) -> PackedVector3Array:
+		shoulder_surfaces: Array[SurfaceDef], surface: SurfaceDef) -> PackedVector3Array:
 	var width := stations.size()
 	var faces := PackedVector3Array()
 	for row in row_surfaces.size():
-		if surface != null and row_surfaces[row] != surface:
-			continue
 		for column in width - 1:
 			var left := stations[column]
 			if is_equal_approx(left.x, stations[column + 1].x):
 				continue
-			if (int(left.y) == Part.SHOULDER) != (surface == null):
+			var face_surface := shoulder_surfaces[row] if int(left.y) == Part.SHOULDER else row_surfaces[row]
+			if face_surface != surface:
 				continue
 			var i := row * width + column
 			for corner in [i, i + width, i + 1, i + 1, i + width, i + width + 1]:
@@ -158,12 +156,21 @@ func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stati
 	var width := stations.size()
 	var indices := PackedInt32Array()
 	var row_surfaces: Array[SurfaceDef] = []
+	var shoulder_surfaces: Array[SurfaceDef] = []
 	var surfaces: Array[SurfaceDef] = [def.base_surface]
+	if not surfaces.has(DIRT):
+		surfaces.append(DIRT)
 	for row in distances.size() - 1:
-		var surface := profile.surface_at((distances[row] + distances[row + 1]) * 0.5)
+		var midpoint := (distances[row] + distances[row + 1]) * 0.5
+		var stretch := profile.stretch_at(midpoint)
+		var surface := stretch.surface if stretch != null else def.base_surface
+		var shoulder_surface: SurfaceDef = stretch.surface if stretch != null else DIRT
 		row_surfaces.append(surface)
+		shoulder_surfaces.append(shoulder_surface)
 		if not surfaces.has(surface):
 			surfaces.append(surface)
+		if not surfaces.has(shoulder_surface):
+			surfaces.append(shoulder_surface)
 		for column in width - 1:
 			if is_equal_approx(stations[column].x, stations[column + 1].x):
 				continue  # zero-width boundary between parts
@@ -184,16 +191,16 @@ func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stati
 	add_child(mesh_instance)
 
 	for surface in surfaces:
-		var faces := _faces(vertices, stations, row_surfaces, surface)
+		var faces := _faces(vertices, stations, row_surfaces, shoulder_surfaces, surface)
 		if not faces.is_empty():
 			add_child(_collision_body(faces, surface))
-	add_child(_collision_body(_faces(vertices, stations, row_surfaces, null), DIRT))
 
 
 func _color(profile: RoadProfile, def: TrailDef, distance: float, lateral: float, part: int) -> Color:
 	match part:
 		Part.SHOULDER:
-			return def.shoulder_color
+			var stretch := profile.stretch_at(distance)
+			return def.shoulder_color if stretch == null else def.shoulder_color.lerp(stretch.color, stretch.weight(distance))
 		Part.LINE:
 			return def.line_color
 	var base := def.patch_color if profile.is_patch(distance, lateral) else def.asphalt_color

@@ -42,6 +42,15 @@ static func rock(color: Color, seed: int) -> ArrayMesh:
 	return _finish(tool)
 
 
+## A dense, low bush about 2 m wide and 1.3 m tall for a hedgerow.
+static func hedge_bush(color: Color, seed: int) -> ArrayMesh:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	var tool := _begin()
+	_add_lumpy_ball(tool, Vector3(0.0, 0.65, 0.0), 1.0, 0.65, color, rng)
+	return _finish(tool)
+
+
 ## A roadside post 1 m tall with a reflector band near the top.
 static func post(body: Color, band: Color) -> ArrayMesh:
 	var tool := _begin()

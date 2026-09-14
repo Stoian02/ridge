@@ -41,6 +41,14 @@ func test_rocks_differ_by_seed() -> void:
 	assert_ne(a, b)
 
 
+func test_hedge_bush_is_low_and_cheap() -> void:
+	var mesh := LowPolyMeshes.hedge_bush(Color.DARK_GREEN, 4)
+	var vertices: PackedVector3Array = mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	assert_eq(vertices.size() / 3, 20, "one lumpy icosahedron")
+	var top: float = Array(vertices).map(func(v: Vector3) -> float: return v.y).max()
+	assert_between(top, 1.1, 1.5, "about 1.3 m tall")
+
+
 func test_broadleaf_tree_has_a_trunk_and_leaves_and_stays_cheap() -> void:
 	var mesh := LowPolyMeshes.broadleaf(Color(0.38, 0.5, 0.22), Color(0.33, 0.25, 0.18), 4)
 	var arrays := mesh.surface_get_arrays(0)

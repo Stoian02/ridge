@@ -65,6 +65,16 @@ extends Resource
 @export var creek_depth: float = 0.7
 @export var creek_color: Color = Color(0.3, 0.4, 0.42)
 
+@export_group("Hedges")
+## Dense hedge runs as Vector3(start distance, length, side), with -1 on the
+## left and +1 on the right.
+@export var hedges: Array[Vector3] = []
+## Openings in hedge runs as Vector3(start distance, length, side).
+@export var hedge_gaps: Array[Vector3] = []
+## Outward hedge segments as Vector3(distance, length, side).
+@export var hedge_returns: Array[Vector3] = []
+@export var hedge_color: Color = Color(0.16, 0.25, 0.11)
+
 @export_group("Colours")
 ## The road's own colour: asphalt, or dirt on a dirt trail.
 @export var asphalt_color: Color = Color(0.24, 0.23, 0.24)

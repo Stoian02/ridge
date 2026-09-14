@@ -135,14 +135,23 @@ func test_collision_follows_the_surface_stretch() -> void:
 	var muddy := _muddy_def()
 	builder.build(sampler, RoadProfile.new(muddy, sampler.length), muddy)
 	var bodies := _children_of("StaticBody3D")
-	assert_eq(bodies.size(), 7, "two bodies per chunk, plus mud in the middle chunk")
+	assert_eq(bodies.size(), 4, "dirt road and shoulders share a body; the middle chunk also has mud")
 	assert_eq(bodies.filter(func(b: Node) -> bool: return b.get_meta(SurfaceLookup.META_KEY).id == &"mud").size(), 1)
 	await wait_physics_frames(2)
 	var space := builder.get_world_3d().direct_space_state
-	for check in [[1.0, -100.0, &"dirt"], [1.0, -145.0, &"mud"], [1.0, -190.0, &"dirt"], [5.5, -145.0, &"dirt"]]:
+	for check in [[1.0, -100.0, &"dirt"], [1.0, -145.0, &"mud"], [1.0, -190.0, &"dirt"],
+			[5.5, -100.0, &"dirt"], [5.5, -145.0, &"mud"], [5.5, -190.0, &"dirt"]]:
 		var from := Vector3(check[0], 5.0, check[1])
 		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 10.0))
 		assert_eq(SurfaceLookup.surface_of(hit["collider"]).id, check[2], "at x %.1f, z %.0f" % [check[0], check[1]])
+
+
+func test_shoulder_colour_blends_into_a_surface_stretch() -> void:
+	var muddy := _muddy_def()
+	var muddy_profile := RoadProfile.new(muddy, sampler.length)
+	var stretch := muddy.surface_stretches[0]
+	assert_eq(builder._color(muddy_profile, muddy, 100.0, 5.5, RoadBuilder.Part.SHOULDER), muddy.shoulder_color)
+	assert_true(builder._color(muddy_profile, muddy, 145.0, 5.5, RoadBuilder.Part.SHOULDER).is_equal_approx(stretch.color))
 
 
 func test_stretches_with_the_same_ruts_share_their_stations() -> void:
