@@ -11,7 +11,13 @@ You drive hand-built trails over asphalt, dirt, mud and creeks, and try to reach
 - **Levels**
   - **Rally Road:** a fast asphalt road. 2 stars under 1:20, 3 stars under 1:12.
   - **Muddy Valley:** a bumpy dirt trail with rutted mud, a creek and a hidden shortcut. 2 stars under 1:35, 3 stars under 1:25.
-  - **Test Ground:** free drive on an open test area. It has an asphalt runway with cones and a kicker jump, dirt and asphalt hills up to 30°, mud strips, and a rough lane with potholes and speed bumps.
+  - **Test Ground:** free drive on an open test area for comparing cars. It has:
+    - an asphalt runway with cones, a kicker jump and distance boards every 10 m
+    - dirt and asphalt hills up to 30°, mud strips, and a rough lane with potholes and speed bumps
+    - two side slopes (asphalt and dirt) whose tilt grows from flat to 40°, marked every 5°, to see where each car slides down
+    - a suspension course: an axle twister, whoops, and curb steps of 10–40 cm
+    - ground clearance logs of 15, 25 and 35 cm
+    - a skidpad: a 30 m asphalt circle
 - **Cars**
   - **Rally Car:** balanced all-wheel drive, quick and forgiving everywhere.
   - **Off-road 4x4:** unlocks at 3 ★. A red, Bronco Raptor-style truck with big tyres, 32 cm of ground clearance and locking differentials. Loves mud, slow on asphalt.

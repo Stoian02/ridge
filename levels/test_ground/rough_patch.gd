@@ -6,7 +6,7 @@ extends StaticBody3D
 ## the features (potholes, bumps, ruts...) are carved into that raised base.
 ## Local axes: x across the strip, z along it. Cars enter at the +Z end.
 
-enum Profile { ROUGH_ASPHALT, RUTTED_MUD }
+enum Profile { ROUGH_ASPHALT, RUTTED_MUD, SIDE_SLOPE, TWISTER, WHOOPS }
 
 ## Metres between height samples.
 const SPACING := 0.25
@@ -40,6 +40,28 @@ const RUT_HALF_WIDTH := 0.35
 const RUT_DEPTH := 0.1
 const MUD_WAVE_HEIGHT := 0.04
 
+# Side slope: drive along it; the ground rises across the strip toward -X, and its
+# tilt grows from flat to SLOPE_MAX_DEG, to see where each car starts sliding down.
+## Flat distance at the entry end (m).
+const SLOPE_FLAT := 10.0
+## Distance at the far end held at the steepest tilt (m).
+const SLOPE_HOLD := 20.0
+const SLOPE_MAX_DEG := 40.0
+
+# Axle twister: round humps on alternating wheel lines, so one wheel at a time
+# climbs while the others stay down.
+const TWISTER_START := 8.0
+const TWISTER_SPACING := 4.0
+## Humps sit this far either side of the centre line, on a wheel line (m).
+const TWISTER_OFFSET := 0.8
+const TWISTER_HEIGHT := 0.35
+const TWISTER_RADIUS := 1.4
+
+# Whoops: rollers across the whole width, for bouncing and damping at speed.
+const WHOOPS_START := 10.0
+const WHOOP_WAVELENGTH := 5.0
+const WHOOP_HEIGHT := 0.4
+
 ## How strongly features are shaded: colour x (1 + offset x this), so dips read
 ## darker and crests lighter from the driver's seat.
 const SHADE_PER_METRE := 4.0
@@ -48,12 +70,14 @@ const SHADE_PER_METRE := 4.0
 @export var profile: Profile = Profile.ROUGH_ASPHALT
 ## Width (x) and length (z) in metres.
 @export var size := Vector2(10.0, 200.0)
+## Metres between height samples; long, smooth strips can use coarser samples.
+@export var spacing := SPACING
 
 
 func _ready() -> void:
 	set_meta(SurfaceLookup.META_KEY, surface)
-	var columns := int(size.x / SPACING) + 1
-	var rows := int(size.y / SPACING) + 1
+	var columns := int(size.x / spacing) + 1
+	var rows := int(size.y / spacing) + 1
 	var heights := PackedFloat32Array()
 	heights.resize(columns * rows)
 	for row in rows:
@@ -67,16 +91,57 @@ func _ready() -> void:
 static func height_at(which: Profile, point: Vector2, patch_size: Vector2) -> float:
 	var along := patch_size.y * 0.5 - point.y  # distance from the entry end
 	var ramp := smoothstep(0.0, TAPER, minf(along, patch_size.y - along))
-	return maxf(0.0, (BASE_HEIGHT + feature_offset(which, point.x, along)) * ramp)
+	return maxf(0.0, (BASE_HEIGHT + feature_offset(which, point.x, along, patch_size)) * ramp)
 
 
 ## How far the features raise (+) or lower (-) the strip from BASE_HEIGHT.
-static func feature_offset(which: Profile, x: float, along: float) -> float:
+static func feature_offset(which: Profile, x: float, along: float, patch_size: Vector2) -> float:
 	match which:
 		Profile.RUTTED_MUD:
 			return rutted_mud_offset(x, along)
+		Profile.SIDE_SLOPE:
+			return (patch_size.x * 0.5 - x) * tan(deg_to_rad(slope_angle_deg(along, patch_size.y)))
+		Profile.TWISTER:
+			return twister_offset(x, along, patch_size.y)
+		Profile.WHOOPS:
+			return whoops_offset(along, patch_size.y)
 		_:
 			return rough_asphalt_offset(x, along)
+
+
+## The side slope's tilt (degrees) `along` metres from the entry end of a strip `length` long.
+static func slope_angle_deg(along: float, length: float) -> float:
+	var rise := length - SLOPE_HOLD - SLOPE_FLAT
+	return clampf((along - SLOPE_FLAT) / rise, 0.0, 1.0) * SLOPE_MAX_DEG
+
+
+## Where along a side slope `length` long its tilt reaches `degrees` (for markers).
+static func slope_distance_for(degrees: float, length: float) -> float:
+	return SLOPE_FLAT + degrees / SLOPE_MAX_DEG * (length - SLOPE_HOLD - SLOPE_FLAT)
+
+
+## Axle twister: domes on alternating wheel lines, left first, TWISTER_SPACING apart,
+## kept TWISTER_START clear of both ends.
+static func twister_offset(x: float, along: float, length: float) -> float:
+	var nearest := roundi((along - TWISTER_START) / TWISTER_SPACING)
+	var offset := 0.0
+	for index in range(nearest - 1, nearest + 2):
+		var hump_along := TWISTER_START + index * TWISTER_SPACING
+		if index < 0 or hump_along > length - TWISTER_START:
+			continue
+		var side := -1.0 if index % 2 == 0 else 1.0
+		var distance := Vector2(x - side * TWISTER_OFFSET, along - hump_along).length()
+		offset += RoughShapes.pothole(distance, TWISTER_RADIUS, -TWISTER_HEIGHT)
+	return offset
+
+
+## Whoops: whole rollers from WHOOPS_START, ending at least WHOOPS_START before the far end.
+static func whoops_offset(along: float, length: float) -> float:
+	var rollers := floori((length - 2.0 * WHOOPS_START) / WHOOP_WAVELENGTH)
+	var into := along - WHOOPS_START
+	if into < 0.0 or into > rollers * WHOOP_WAVELENGTH:
+		return 0.0
+	return WHOOP_HEIGHT * 0.5 * (1.0 - cos(TAU * into / WHOOP_WAVELENGTH))
 
 
 ## Rough asphalt: potholes, then speed bumps, then washboard ripples.
@@ -101,7 +166,7 @@ static func rutted_mud_offset(x: float, along: float) -> float:
 
 
 func _sample_position(column: int, row: int) -> Vector2:
-	return Vector2(column * SPACING - size.x * 0.5, row * SPACING - size.y * 0.5)
+	return Vector2(column * spacing - size.x * 0.5, row * spacing - size.y * 0.5)
 
 
 func _add_collision(columns: int, rows: int, heights: PackedFloat32Array) -> void:
@@ -112,7 +177,7 @@ func _add_collision(columns: int, rows: int, heights: PackedFloat32Array) -> voi
 	var collision := CollisionShape3D.new()
 	collision.shape = shape
 	# The shape puts samples 1 m apart; scaling the node sets the real spacing.
-	collision.scale = Vector3(SPACING, 1.0, SPACING)
+	collision.scale = Vector3(spacing, 1.0, spacing)
 	add_child(collision)
 
 
@@ -124,7 +189,9 @@ func _add_mesh(columns: int, rows: int, heights: PackedFloat32Array) -> void:
 		for column in columns:
 			var point := _sample_position(column, row)
 			var along := size.y * 0.5 - point.y
-			var shade := clampf(1.0 + feature_offset(profile, point.x, along) * SHADE_PER_METRE, 0.5, 1.3)
+			# A side slope's height is its tilt, not a feature, so it isn't shaded by it.
+			var feature := 0.0 if profile == Profile.SIDE_SLOPE else feature_offset(profile, point.x, along, size)
+			var shade := clampf(1.0 + feature * SHADE_PER_METRE, 0.5, 1.3)
 			tool.set_color(Color(base_color.r * shade, base_color.g * shade, base_color.b * shade))
 			tool.add_vertex(Vector3(point.x, heights[row * columns + column], point.y))
 	for row in rows - 1:
