@@ -62,6 +62,14 @@ const WHOOPS_START := 10.0
 const WHOOP_WAVELENGTH := 5.0
 const WHOOP_HEIGHT := 0.4
 
+## Side walls reach this far below the ground (m), so no gap shows where they meet it.
+const WALL_DEPTH := 0.05
+## Side walls are the surface colour darkened by this factor.
+const WALL_SHADE := 0.6
+## A wall quad's corners are top a, top b, bottom a, bottom b; its triangles, facing each way.
+const WALL_FRONT: Array[int] = [0, 1, 2, 1, 3, 2]
+const WALL_BACK: Array[int] = [0, 2, 1, 1, 2, 3]
+
 ## How strongly features are shaded: colour x (1 + offset x this), so dips read
 ## darker and crests lighter from the driver's seat.
 const SHADE_PER_METRE := 4.0
@@ -203,6 +211,8 @@ func _add_mesh(columns: int, rows: int, heights: PackedFloat32Array) -> void:
 			tool.add_index(i + 1)
 			tool.add_index(i + columns + 1)
 			tool.add_index(i + columns)
+	_add_walls(tool, columns, rows, heights, Color(base_color.r * WALL_SHADE, base_color.g * WALL_SHADE,
+			base_color.b * WALL_SHADE))
 	tool.generate_normals()
 
 	var mesh := MeshInstance3D.new()
@@ -213,3 +223,41 @@ func _add_mesh(columns: int, rows: int, heights: PackedFloat32Array) -> void:
 	material.roughness = 0.9
 	mesh.material_override = material
 	add_child(mesh)
+
+
+## Solid walls down every raised edge of the strip, from its top to just below the
+## ground, so its sides never show a gap. Each wall is built facing both ways, with
+## its own vertices, so it is lit from either side.
+func _add_walls(tool: SurfaceTool, columns: int, rows: int, heights: PackedFloat32Array, color: Color) -> void:
+	var next_vertex := columns * rows
+	var edges: Array[Array] = []
+	for row: int in [0, rows - 1]:
+		var edge: Array[Vector2i] = []
+		for column in columns:
+			edge.append(Vector2i(column, row))
+		edges.append(edge)
+	for column: int in [0, columns - 1]:
+		var edge: Array[Vector2i] = []
+		for row in rows:
+			edge.append(Vector2i(column, row))
+		edges.append(edge)
+	for edge: Array in edges:
+		for k in edge.size() - 1:
+			var a: Vector2i = edge[k]
+			var b: Vector2i = edge[k + 1]
+			var a_height := heights[a.y * columns + a.x]
+			var b_height := heights[b.y * columns + b.x]
+			if a_height <= 0.001 and b_height <= 0.001:
+				continue
+			var a_point := _sample_position(a.x, a.y)
+			var b_point := _sample_position(b.x, b.y)
+			var corners: Array[Vector3] = [Vector3(a_point.x, a_height, a_point.y), Vector3(b_point.x, b_height, b_point.y),
+					Vector3(a_point.x, -WALL_DEPTH, a_point.y), Vector3(b_point.x, -WALL_DEPTH, b_point.y)]
+			# One quad per facing: top a, top b, bottom a, bottom b.
+			for facing in 2:
+				for corner in corners:
+					tool.set_color(color)
+					tool.add_vertex(corner)
+				for offset: int in (WALL_FRONT if facing == 0 else WALL_BACK):
+					tool.add_index(next_vertex + offset)
+				next_vertex += 4

@@ -134,3 +134,28 @@ func test_a_strip_can_use_coarser_samples() -> void:
 	assert_eq(shape.map_width, 29)
 	assert_eq(shape.map_depth, 361)
 	assert_almost_eq(collision.scale.x, 0.5, 0.0001)
+
+
+func test_a_raised_strip_has_side_walls_down_into_the_ground() -> void:
+	var patch := RoughPatch.new()
+	patch.surface = ASPHALT
+	patch.profile = WHOOPS
+	patch.size = Vector2(4.0, 40.0)
+	add_child_autofree(patch)
+	var mesh_instance: MeshInstance3D = patch.get_children().filter(func(n): return n is MeshInstance3D)[0]
+	var vertices: PackedVector3Array = mesh_instance.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	var grid := (int(patch.size.x / patch.spacing) + 1) * (int(patch.size.y / patch.spacing) + 1)
+	assert_gt(vertices.size(), grid, "wall vertices beyond the top grid")
+	assert_lt(mesh_instance.mesh.get_aabb().position.y, 0.0, "walls reach below the ground, so no gap shows")
+	# A wall on the left edge, halfway along a roller crest, from the top down past the ground.
+	var edge := -patch.size.x * 0.5
+	var along := RoughPatch.WHOOPS_START + RoughPatch.WHOOP_WAVELENGTH * 0.5
+	var z := patch.size.y * 0.5 - along
+	var top := RoughPatch.height_at(WHOOPS, Vector2(edge, z), patch.size)
+	var has_top := false
+	var has_bottom := false
+	for vertex in vertices.slice(grid):
+		if absf(vertex.x - edge) < 0.001 and absf(vertex.z - z) < 0.001:
+			has_top = has_top or absf(vertex.y - top) < 0.001
+			has_bottom = has_bottom or vertex.y < 0.0
+	assert_true(has_top and has_bottom, "the left edge wall spans the roller's full height")
