@@ -104,3 +104,11 @@ func test_menus_only_use_characters_the_font_has() -> void:
 	for text in ["RIDGE", "0 / 3 stars", "Select level", "Finish Rally Road to unlock", "No time yet", "Best  1:11.6"]:
 		for character in text:
 			assert_true(font.has_char(character.unicode_at(0)), "font has '%s'" % character)
+
+
+func test_the_benchmark_argument_is_recognised_only_when_given() -> void:
+	var main_menu: GDScript = load("res://ui/main_menu.gd")
+	assert_true(main_menu.wants_benchmark(PackedStringArray(["--benchmark"])))
+	assert_true(main_menu.wants_benchmark(PackedStringArray(["--path", ".", "--benchmark"])))
+	assert_false(main_menu.wants_benchmark(PackedStringArray([])))
+	assert_false(main_menu.wants_benchmark(PackedStringArray(["res://debug/load_benchmark.tscn"])))

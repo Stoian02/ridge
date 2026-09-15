@@ -36,7 +36,7 @@ func _ready() -> void:
 	run.run_finished.connect(_on_run_finished)
 	run.countdown_started.connect(results.hide_results)
 	run.setup(rig, tracker, resets, trail.start_transform())
-	print("%s built in %.2f s" % [name, trail.build_seconds])
+	print("%s built in %.2f s (%s)" % [name, trail.build_seconds, trail.phase_summary()])
 
 
 ## True for a level saved as a scene but not listed in the catalog. Levels built

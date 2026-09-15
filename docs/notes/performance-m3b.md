@@ -42,3 +42,35 @@ Headless runs that play sound end with "N ObjectDB instances were leaked at exit
 - 60 fps with all four wheels spraying.
 - Sound: loudness balance, engine pitch, whether the loops sound seamless.
 - Load time after a fresh app start (< 3 s).
+
+## Level load time on the phone (2026-09-15)
+
+**Tool.** `debug/load_benchmark.tscn` loads Rally Road and Muddy Valley three times in a row and prints each load. `TrailLevel.build` now records each phase, and the "built in" line prints them.
+- **Phone:** Android doesn't pass launch arguments on to the game, so the main menu runs the benchmark when a `benchmark` file is in `user://` (debug builds only):
+  ```
+  adb shell run-as com.ridge.game touch files/benchmark
+  adb shell am start -n com.ridge.game/com.godot.game.GodotAppLauncher
+  adb logcat -v time -s godot
+  ```
+- **Desktop:** `godot --path . -- --benchmark`
+
+| Load | Rally Road (phone) | Muddy Valley (phone) | Desktop |
+|---|---|---|---|
+| 1st (phone cool, CPU 42 °C) | 2.86 s | 4.66 s | RR 1.12 s, MV 1.80 s |
+| 2nd | 3.42 s | 5.30 s | same |
+| 3rd (CPU 53.5 °C after) | 3.54 s | 8.21 s | same |
+
+Muddy Valley phases on the phone, 1st → 3rd load:
+
+| Phase | 1st load | 3rd load |
+|---|---|---|
+| terrain | 2.45 s | 4.24 s |
+| road | 0.98 s | 1.81 s |
+| field | 0.65 s | 1.04 s |
+| shortcut | 0.39 s | 0.76 s |
+| scatter | 0.17 s | 0.33 s |
+
+**Findings:**
+- **Uniform slowdown.** Every phase slows together from load to load, so it is the CPU getting slower as the phone heats up (frequency scaling), not one phase or memory. Memory available stayed at 2.1–2.6 GB. The earlier 8–9 s loads were a warm phone.
+- **Over budget even when cool.** A cool phone builds 2.6× slower than the desktop. Muddy Valley (4.7 s) is over the 3 s budget; Rally Road (2.9 s) only just makes it.
+- **Single-threaded.** Terrain mesh and collision generation is over half of every build, and all of it runs on the main thread on one core (the phone has 8).
