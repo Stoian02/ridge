@@ -14,6 +14,11 @@ const DEFAULT_CAR := "rally"
 var steer_mode: String = STEER_ANALOG
 ## Id of the car the player last chose in car select.
 var selected_car: String = DEFAULT_CAR
+## The Sound setting (M3B spec §7): one of SOUND_STEPS, 0 = off.
+var sound_volume: float = 1.0
+
+## The values the Sound setting steps through, loudest first.
+const SOUND_STEPS: Array[float] = [1.0, 0.75, 0.5, 0.25, 0.0]
 
 ## Level id (String) -> {"best_time": float, "best_splits": {int: float}, "stars": int}.
 var _levels := {}
@@ -75,7 +80,8 @@ func to_dictionary() -> Dictionary:
 		for index in record["best_splits"]:
 			splits[str(index)] = record["best_splits"][index]
 		levels[id] = {"best_time": record["best_time"], "best_splits": splits, "stars": record["stars"]}
-	return {"version": VERSION, "settings": {"steer_mode": steer_mode, "selected_car": selected_car}, "levels": levels}
+	return {"version": VERSION, "settings": {"steer_mode": steer_mode, "selected_car": selected_car,
+			"sound_volume": sound_volume}, "levels": levels}
 
 
 ## Reads save data. Unknown keys are ignored; missing or wrongly typed values take
@@ -88,6 +94,9 @@ static func from_dictionary(data: Dictionary) -> Progress:
 	var car_id = settings.get("selected_car") if settings is Dictionary else null
 	if car_id is String and car_id != "":
 		progress.selected_car = car_id
+	var volume = settings.get("sound_volume") if settings is Dictionary else null
+	if _is_number(volume) and SOUND_STEPS.has(float(volume)):
+		progress.sound_volume = float(volume)
 	var levels = data.get("levels")
 	if not levels is Dictionary:
 		return progress

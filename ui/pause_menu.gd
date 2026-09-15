@@ -22,6 +22,7 @@ var show_restart := true
 var rig: DrivingRig
 
 var _steering: Button
+var _sound: Button
 var _telemetry: Button
 var _recording: Button
 
@@ -101,6 +102,14 @@ func _on_steering() -> void:
 	_refresh_labels()
 
 
+## Steps the Sound setting to the next quieter step, wrapping from Off to 100%.
+func _on_sound() -> void:
+	var steps := Progress.SOUND_STEPS
+	var index := steps.find(GameState.progress.sound_volume)
+	GameState.set_sound_volume(steps[(index + 1) % steps.size()])
+	_refresh_labels()
+
+
 func _on_telemetry() -> void:
 	rig.telemetry.toggle()
 	_refresh_labels()
@@ -112,6 +121,8 @@ func _on_recording() -> void:
 
 
 func _refresh_labels() -> void:
+	var volume := GameState.progress.sound_volume
+	_sound.text = "Sound: %s" % ("Off" if volume <= 0.0 else "%d%%" % roundi(volume * 100.0))
 	if rig == null:
 		return
 	var buttons_mode := rig.touch_controls.steer_mode == TouchSteerLogic.Mode.BUTTONS
@@ -134,6 +145,8 @@ func _build_ui() -> void:
 	column.add_child(UiKit.button("Main menu", main_menu_pressed.emit))
 	_steering = UiKit.button("Steering", _on_steering)
 	column.add_child(_steering)
+	_sound = UiKit.button("Sound", _on_sound)
+	column.add_child(_sound)
 	var dev_row := HBoxContainer.new()
 	dev_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	dev_row.add_theme_constant_override("separation", 20)

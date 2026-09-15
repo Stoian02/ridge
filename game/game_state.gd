@@ -27,9 +27,10 @@ func _ready() -> void:
 	reload()
 
 
-## Reads progress from save_path, replacing what is in memory.
+## Reads progress from save_path, replacing what is in memory, and applies its Sound setting.
 func reload() -> void:
 	progress = Progress.from_dictionary(SaveSystem.read(save_path))
+	apply_sound_volume()
 
 
 func save() -> Error:
@@ -54,6 +55,20 @@ func record_finish(level: LevelDef, time: float, splits: Dictionary) -> Dictiona
 func set_steer_mode(mode: String) -> void:
 	progress.steer_mode = mode
 	save()
+
+
+## The Sound setting (M3B spec §7): stores, applies and saves it.
+func set_sound_volume(value: float) -> void:
+	progress.sound_volume = clampf(value, 0.0, 1.0)
+	apply_sound_volume()
+	save()
+
+
+## Sets the Master bus from the Sound setting; 0 mutes it.
+func apply_sound_volume() -> void:
+	var master := AudioServer.get_bus_index(&"Master")
+	AudioServer.set_bus_mute(master, progress.sound_volume <= 0.0)
+	AudioServer.set_bus_volume_db(master, linear_to_db(maxf(progress.sound_volume, 0.0001)))
 
 
 ## The car to drive: the player's last choice while it exists and is unlocked,

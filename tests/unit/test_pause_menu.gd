@@ -91,6 +91,20 @@ func test_steering_switches_style_and_saves_it() -> void:
 	assert_eq(saved["settings"]["steer_mode"], Progress.STEER_BUTTONS)
 
 
+func test_sound_steps_down_to_off_and_back_and_saves() -> void:
+	_add_menu()
+	menu.open()
+	var sound := _button_starting("Sound")
+	assert_eq(sound.text, "Sound: 100%")
+	var labels: Array[String] = []
+	for i in 5:
+		sound.pressed.emit()
+		labels.append(sound.text)
+	assert_eq(labels, ["Sound: 75%", "Sound: 50%", "Sound: 25%", "Sound: Off", "Sound: 100%"])
+	sound.pressed.emit()
+	assert_eq(SaveSystem.read(SaveSandbox.PATH)["settings"]["sound_volume"], 0.75)
+
+
 func test_telemetry_and_rec_show_their_state() -> void:
 	_add_menu()
 	rig.telemetry.visible = false

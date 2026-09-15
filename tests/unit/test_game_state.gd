@@ -83,3 +83,17 @@ func test_a_finish_reports_the_cars_it_unlocks() -> void:
 	assert_eq(result["new_cars"].map(func(car: CarDef) -> StringName: return car.id), [&"offroad_4x4"])
 	var again: Dictionary = state.record_finish(state.catalog.levels[0], 59.0, {})
 	assert_true(again["new_cars"].is_empty(), "the 4x4 was already unlocked")
+
+
+func test_the_sound_setting_sets_the_master_bus_and_is_saved() -> void:
+	var master := AudioServer.get_bus_index(&"Master")
+	state.set_sound_volume(0.5)
+	assert_almost_eq(AudioServer.get_bus_volume_db(master), linear_to_db(0.5), 0.01)
+	assert_false(AudioServer.is_bus_mute(master))
+	assert_eq(SaveSystem.read(SaveSandbox.PATH)["settings"]["sound_volume"], 0.5)
+	state.set_sound_volume(0.0)
+	assert_true(AudioServer.is_bus_mute(master), "Off mutes")
+	state.reload()
+	assert_true(AudioServer.is_bus_mute(master), "a reload applies the saved setting")
+	state.set_sound_volume(1.0)
+	assert_false(AudioServer.is_bus_mute(master))

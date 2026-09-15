@@ -125,3 +125,13 @@ func test_the_selected_car_is_saved_and_defaults_to_the_rally_car() -> void:
 	assert_eq(Progress.from_dictionary(progress.to_dictionary()).selected_car, "offroad_4x4")
 	assert_eq(Progress.from_dictionary({"settings": {"steer_mode": "analog"}}).selected_car, "rally", "an older save")
 	assert_eq(Progress.from_dictionary({"settings": {"selected_car": 7}}).selected_car, "rally", "a wrongly typed value")
+
+
+func test_the_sound_setting_is_saved_and_only_takes_its_steps() -> void:
+	assert_eq(progress.sound_volume, 1.0)
+	progress.sound_volume = 0.25
+	assert_eq(Progress.from_dictionary(progress.to_dictionary()).sound_volume, 0.25)
+	assert_eq(Progress.from_dictionary({"settings": {"sound_volume": 0}}).sound_volume, 0.0, "JSON may give an int")
+	assert_eq(Progress.from_dictionary({"settings": {"sound_volume": 0.3}}).sound_volume, 1.0, "not a step")
+	assert_eq(Progress.from_dictionary({"settings": {"sound_volume": "loud"}}).sound_volume, 1.0)
+	assert_eq(Progress.from_dictionary({"settings": {"steer_mode": "analog"}}).sound_volume, 1.0, "an older save")
