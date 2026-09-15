@@ -32,7 +32,7 @@ func test_sounds_have_their_length_and_loop_mode() -> void:
 		assert_eq(wav.format, AudioStreamWAV.FORMAT_16_BITS, sound_name)
 		assert_eq(wav.loop_mode, AudioStreamWAV.LOOP_FORWARD, sound_name)
 		assert_almost_eq(wav.get_length(), LOOP_SECONDS[sound_name], 0.01, sound_name)
-		assert_eq(wav.loop_end, wav.data.size() / 2, sound_name)
+		assert_eq(wav.loop_end, wav.data.size() / 2 - SoundSynth.LOOP_PAD, "%s: the loop ends before a padded tail" % sound_name)
 	for sound_name: StringName in ONE_SHOT_SECONDS:
 		var wav := SoundSynth.sound(sound_name)
 		assert_eq(wav.loop_mode, AudioStreamWAV.LOOP_DISABLED, sound_name)
@@ -54,11 +54,12 @@ func test_sounds_are_audible_and_not_clipped() -> void:
 
 func test_loops_join_without_a_click() -> void:
 	for sound_name: StringName in LOOP_SECONDS:
-		var samples := _samples(SoundSynth.sound(sound_name))
+		var wav := SoundSynth.sound(sound_name)
+		var samples := _samples(wav)
 		var biggest_step := 0.0
-		for i in range(1, samples.size()):
+		for i in range(1, wav.loop_end):
 			biggest_step = maxf(biggest_step, absf(samples[i] - samples[i - 1]))
-		var join := absf(samples[0] - samples[samples.size() - 1])
+		var join := absf(samples[0] - samples[wav.loop_end - 1])
 		assert_lte(join, biggest_step * 1.05, "%s: the join is no bigger a step than the loop's own" % sound_name)
 
 
@@ -83,3 +84,20 @@ func test_rolling_on_asphalt_is_a_low_rumble_not_a_hiss() -> void:
 	gut.p("hiss: road %.3f, gravel %.3f" % [road, gravel])
 	assert_lt(road, 0.12, "the old filtered-noise road loop measured 0.34")
 	assert_lt(road, gravel * 0.2, "far smoother than gravel")
+
+
+
+## On the phone the audio thread crashed (SIGSEGV) exactly when the 4 s wind loop first
+## wrapped: the mixer reads a few frames past loop_end, and a loop ending at the very
+## end of its data overran the buffer. Every sound now carries a padded tail.
+func test_every_sound_has_a_padded_tail_the_mixer_can_read_past_its_end() -> void:
+	assert_gte(SoundSynth.LOOP_PAD, 16)
+	for sound_name in SoundSynth.NAMES:
+		var wav := SoundSynth.sound(sound_name)
+		var samples := _samples(wav)
+		var end: int = wav.loop_end if wav.loop_mode == AudioStreamWAV.LOOP_FORWARD else samples.size() - SoundSynth.LOOP_PAD
+		assert_eq(samples.size(), end + SoundSynth.LOOP_PAD, "%s: exactly LOOP_PAD frames after the end" % sound_name)
+		for k in SoundSynth.LOOP_PAD:
+			var expected: float = samples[k] if wav.loop_mode == AudioStreamWAV.LOOP_FORWARD else 0.0
+			assert_almost_eq(samples[end + k], expected, 0.0001,
+					"%s: a loop's tail repeats its start, a one-shot's is silence" % sound_name)

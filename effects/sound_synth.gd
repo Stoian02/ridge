@@ -11,6 +11,11 @@ const LOOP_PEAK := 0.7
 const ONE_SHOT_PEAK := 0.9
 ## Noise loops cross-fade over this long (s).
 const FADE_SECONDS := 0.1
+## Every sound carries this many frames past its end: a copy of a loop's first frames,
+## or silence after a one-shot. The mixer reads a few frames past loop_end while it
+## interpolates; on the phone a loop ending at the very end of its data read past the
+## buffer and crashed the audio thread when the 4 s wind loop first wrapped.
+const LOOP_PAD := 32
 const NAMES: Array[StringName] = [&"engine_low", &"engine_high", &"road", &"gravel", &"mud", &"skid", &"wind",
 		&"bird", &"thump"]
 
@@ -222,10 +227,14 @@ static func _normalized(samples: PackedFloat32Array, peak: float) -> PackedFloat
 
 
 static func _wav(samples: PackedFloat32Array, looping: bool) -> AudioStreamWAV:
+	var frames := samples.size()
 	var data := PackedByteArray()
-	data.resize(samples.size() * 2)
-	for i in samples.size():
+	data.resize((frames + LOOP_PAD) * 2)
+	for i in frames:
 		data.encode_s16(i * 2, int(clampf(samples[i], -1.0, 1.0) * 32767.0))
+	for k in LOOP_PAD:
+		var tail: float = samples[k % frames] if looping else 0.0
+		data.encode_s16((frames + k) * 2, int(clampf(tail, -1.0, 1.0) * 32767.0))
 	var wav := AudioStreamWAV.new()
 	wav.format = AudioStreamWAV.FORMAT_16_BITS
 	wav.mix_rate = RATE
@@ -234,5 +243,5 @@ static func _wav(samples: PackedFloat32Array, looping: bool) -> AudioStreamWAV:
 	if looping:
 		wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		wav.loop_begin = 0
-		wav.loop_end = samples.size()
+		wav.loop_end = frames
 	return wav
