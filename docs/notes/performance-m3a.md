@@ -26,15 +26,18 @@ tools/screenshot.sh res://ui/car_select.tscn 3
 
 Both cars measured there come in **over** the 300,000-primitive budget: the
 Off-road 4x4 at 319,420 and the Rally Car at 319,064 (draw calls, 131, stay
-comfortably under the 150 budget). The previous measurement at this same spot
-(Revision 3 in `performance-m2b2.md`) was 286,336 primitives, 95% of budget,
-with the stock Rally Car and no car-select scenery changes — so the ~33k
-increase tracks with scene/content added since that pass rather than with
-which car is driven (the two cars measured here differ by only 356
-primitives, i.e. body geometry is a small share of the total). This spot
-should be re-checked and, if still over budget on the phone, trimmed; it is
-flagged here rather than fixed, since trimming Muddy Valley's geometry is
-outside this task.
+comfortably under the 150 budget). The earlier measurement at this spot
+(Revision 3 in `performance-m2b2.md`) was 286,336 primitives, 95% of budget.
+
+This is not an M3A regression. Measured the same day on the same desktop:
+- master before any M3A code (5b4ed79, stock Rally Car): 318,816 primitives
+- the M3A scratch clone, which earlier read 286,944: 319,416
+
+The level hasn't changed. Today's desktop measurement reads about 32k higher
+than the earlier passes, and the car barely matters (the two cars differ by
+356 primitives). Muddy Valley at 560 m is the first spot to check on the
+phone. If it is over budget there, trim it: the hedges and scatter near
+560 m are the likely place.
 
 ## Car select screenshot
 
