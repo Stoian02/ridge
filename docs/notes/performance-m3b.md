@@ -74,3 +74,22 @@ Muddy Valley phases on the phone, 1st → 3rd load:
 - **Uniform slowdown.** Every phase slows together from load to load, so it is the CPU getting slower as the phone heats up (frequency scaling), not one phase or memory. Memory available stayed at 2.1–2.6 GB. The earlier 8–9 s loads were a warm phone.
 - **Over budget even when cool.** A cool phone builds 2.6× slower than the desktop. Muddy Valley (4.7 s) is over the 3 s budget; Rally Road (2.9 s) only just makes it.
 - **Single-threaded.** Terrain mesh and collision generation is over half of every build, and all of it runs on the main thread on one core (the phone has 8).
+
+### After the fix: terrain built on worker threads, and a loading screen (2026-09-15)
+
+**What changed:**
+- `TerrainBuilder` builds each chunk's mesh and collision arrays on worker threads, then makes the nodes on the main thread in chunk order, so the terrain is identical.
+- **The first attempt barely helped** (phone terrain 2.45 → 2.48 s). Probes showed that calling a shared GDScript object's methods from worker threads serializes the tasks: 1.18× on 4 threads, against 2.82× for the same maths on local variables. The chunk code called `field.index`, `normal_at_index` and `sample_position` for every point. It now copies the field's data into locals and inlines that maths.
+- **Terrain data:** 0.79 s on one thread before → 0.17 s on one thread, 0.044 s threaded (desktop).
+- **Loading screen:** `GameState.change_scene` now shows a loading screen ("Loading Muddy Valley...") for a level or Free Drive, lets it draw, changes scene, then hides it.
+
+| Load (phone) | Rally Road before → after | Muddy Valley before → after |
+|---|---|---|
+| 1st | 2.86 → **1.52 s** | 4.66 → **2.41 s** |
+| 2nd | 3.42 → **1.39 s** | 5.30 → **2.53 s** |
+| 3rd | 3.54 → **1.38 s** | 8.21 → **2.63 s** |
+
+**Results:**
+- **Desktop:** Rally Road 1.12 → 0.62 s, Muddy Valley 1.80 → 1.04 s.
+- **Within budget:** both levels are now under the 3 s budget on the phone, and back-to-back loads no longer climb (CPU7 43.6 °C after).
+- **Next to speed up:** Muddy Valley's remaining phone phases are road 1.0 s, field 0.65 s, shortcut 0.4 s. The same inlining should help these when needed.

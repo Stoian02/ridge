@@ -97,3 +97,34 @@ func test_the_sound_setting_sets_the_master_bus_and_is_saved() -> void:
 	assert_true(AudioServer.is_bus_mute(master), "a reload applies the saved setting")
 	state.set_sound_volume(1.0)
 	assert_false(AudioServer.is_bus_mute(master))
+
+
+func test_going_to_a_level_shows_a_loading_screen_first_and_hides_it_after() -> void:
+	assert_false(state.show_loading, "the sandbox turns the loading screen off, so scene changes are immediate")
+	state.show_loading = true
+	var rally_road: String = state.catalog.levels[0].scene_path
+	state.change_scene(rally_road)
+	assert_true(state.loading_screen.visible, "shown straight away")
+	assert_string_contains(state.loading_screen.text(), state.catalog.levels[0].display_name)
+	assert_true(SaveSandbox.requested_scenes.is_empty(), "the level waits until the loading screen has been drawn")
+	for i in 3:
+		await get_tree().process_frame
+	assert_eq(SaveSandbox.requested_scenes, [rally_road])
+	for i in 3:
+		await get_tree().process_frame
+	assert_false(state.loading_screen.visible, "hidden once the level is in")
+
+
+func test_menus_change_without_a_loading_screen() -> void:
+	state.show_loading = true
+	state.change_scene(state.LEVEL_SELECT)
+	assert_eq(SaveSandbox.requested_scenes, [state.LEVEL_SELECT], "menus are cheap: no wait")
+	assert_false(state.loading_screen.visible)
+	state.change_scene(state.FREE_DRIVE)
+	assert_true(state.loading_screen.visible, "Free Drive builds a level too")
+	assert_string_contains(state.loading_screen.text(), "Free Drive")
+	# Let the delayed change finish here, while the sandbox's recording changer is in place.
+	for i in 6:
+		await get_tree().process_frame
+	assert_eq(SaveSandbox.requested_scenes, [state.LEVEL_SELECT, state.FREE_DRIVE])
+	assert_false(state.loading_screen.visible)

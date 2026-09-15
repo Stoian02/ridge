@@ -22,6 +22,7 @@ static func enter() -> void:
 	_real_catalog = state.catalog
 	_real_car_catalog = state.car_catalog
 	state.pending_scene = ""
+	state.show_loading = false
 	state.save_path = PATH
 	state.scene_changer = func(path: String) -> void: requested_scenes.append(path)
 	state.reload()
@@ -34,6 +35,8 @@ static func leave() -> void:
 	state.catalog = _real_catalog
 	state.car_catalog = _real_car_catalog
 	state.pending_scene = ""
+	state.show_loading = true
+	state.loading_screen.visible = false
 	state.save_path = state.DEFAULT_SAVE_PATH
 	state.reload()
 	clear_files()

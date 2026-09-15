@@ -88,3 +88,45 @@ func test_collision_matches_the_field() -> void:
 		assert_false(hit.is_empty(), "ray hits the terrain at %s" % point)
 		var hit_position: Vector3 = hit["position"]
 		assert_almost_eq(hit_position.y, field.height_at(point.x, point.y), 0.05, "at %s" % point)
+
+
+func test_building_on_worker_threads_gives_the_same_terrain_as_one_thread() -> void:
+	var serial := TerrainBuilder.new()
+	serial.threaded = false
+	add_child_autofree(serial)
+	serial.build(field)
+	assert_true(builder.threaded, "levels build their terrain on worker threads by default")
+	var threaded_meshes := builder.get_children().filter(func(n: Node) -> bool: return n is MeshInstance3D)
+	var serial_meshes := serial.get_children().filter(func(n: Node) -> bool: return n is MeshInstance3D)
+	assert_eq(threaded_meshes.size(), serial_meshes.size())
+	for i in serial_meshes.size():
+		var a: Array = (threaded_meshes[i] as MeshInstance3D).mesh.surface_get_arrays(0)
+		var b: Array = (serial_meshes[i] as MeshInstance3D).mesh.surface_get_arrays(0)
+		for slot: int in [Mesh.ARRAY_VERTEX, Mesh.ARRAY_NORMAL, Mesh.ARRAY_COLOR, Mesh.ARRAY_INDEX]:
+			assert_eq(a[slot], b[slot], "mesh %d, array %d" % [i, slot])
+		assert_eq(threaded_meshes[i].name, serial_meshes[i].name)
+	var threaded_bodies := builder.get_children().filter(func(n: Node) -> bool: return n is StaticBody3D)
+	var serial_bodies := serial.get_children().filter(func(n: Node) -> bool: return n is StaticBody3D)
+	assert_eq(threaded_bodies.size(), serial_bodies.size())
+	for i in serial_bodies.size():
+		assert_eq(threaded_bodies[i].position, serial_bodies[i].position)
+		var a_shape: HeightMapShape3D = threaded_bodies[i].get_child(0).shape
+		var b_shape: HeightMapShape3D = serial_bodies[i].get_child(0).shape
+		assert_eq(a_shape.map_data, b_shape.map_data, "collision %d" % i)
+
+
+func test_mesh_positions_and_normals_match_the_field() -> void:
+	var arrays: Array = (_near_meshes()[5] as MeshInstance3D).mesh.surface_get_arrays(0)
+	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+	var size := field.cells_per_chunk + 1
+	var chunks := field.chunk_count()
+	var first_column := (5 % chunks.x) * field.cells_per_chunk
+	var first_row := (5 / chunks.x) * field.cells_per_chunk
+	for sample: Vector2i in [Vector2i(0, 0), Vector2i(3, 7), Vector2i(size - 1, size - 1), Vector2i(10, 0)]:
+		var out := sample.y * size + sample.x
+		var column := first_column + sample.x
+		var row := first_row + sample.y
+		assert_eq(vertices[out], field.sample_position(column, row), "position at %s" % sample)
+		# Meshes store normals compressed, so they come back slightly rounded.
+		assert_lt(normals[out].distance_to(field.normal_at_index(column, row)), 0.01, "normal at %s" % sample)

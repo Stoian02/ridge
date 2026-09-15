@@ -12,7 +12,18 @@ const COLOR_BLEND_DEG := 5.0
 ## The far mesh uses every this-many-th height sample.
 const COARSE_STEP := 2
 
+## Build the chunks' mesh and collision data on worker threads (the phone has 8 cores
+## and terrain is over half of a level's build). The nodes are still made on the main
+## thread, in chunk order, so the result is the same either way.
+@export var threaded := true
+
+## Seconds the last build spent on each part: "data" (mesh and collision arrays),
+## "meshes" (ArrayMesh and MeshInstance3D nodes) and "collision" (shapes and bodies).
+var last_timings := {}
+
 var _index_cache := {}
+var _mesh_usec := 0
+var _collision_usec := 0
 
 
 func build(field: TerrainField) -> void:
@@ -25,26 +36,72 @@ func build(field: TerrainField) -> void:
 	material.vertex_color_is_srgb = true
 	material.roughness = 0.95
 	var cells := field.cells_per_chunk
+	var size := cells + 1
 	var chunks := field.chunk_count()
+	var origins: Array[Vector2i] = []
 	for chunk_row in chunks.y:
 		for chunk_column in chunks.x:
-			_add_chunk(field, chunk_column * cells, chunk_row * cells, cells + 1, material)
+			origins.append(Vector2i(chunk_column * cells, chunk_row * cells))
+	var data_started := Time.get_ticks_usec()
+	# Fill the index cache first, so the worker threads only ever read it.
+	_grid_indices(size)
+	_grid_indices((size - 1) / COARSE_STEP + 1)
+	# One Dictionary per chunk, each filled by a single task.
+	var results: Array[Dictionary] = []
+	for i in origins.size():
+		results.append({})
+	var work := func(i: int) -> void:
+		_chunk_data(field, origins[i].x, origins[i].y, size, results[i])
+	if threaded:
+		var task := WorkerThreadPool.add_group_task(work, origins.size(), -1, true, "Terrain chunks")
+		WorkerThreadPool.wait_for_group_task_completion(task)
+	else:
+		for i in origins.size():
+			work.call(i)
+	var data_usec := Time.get_ticks_usec() - data_started
+	_mesh_usec = 0
+	_collision_usec = 0
+	for i in origins.size():
+		_add_chunk(field, origins[i].x, origins[i].y, size, results[i], material)
+	last_timings = {"data": data_usec / 1000000.0, "meshes": _mesh_usec / 1000000.0,
+			"collision": _collision_usec / 1000000.0}
 
 
-func _add_chunk(field: TerrainField, first_column: int, first_row: int, size: int,
+## A chunk's near and far mesh arrays and its collision heights, into `into`. Reads the
+## field only, so it is safe on a worker thread. The field's data is copied into locals
+## rather than read through its methods: calling a shared object's methods from worker
+## threads made them wait on each other (a probe measured 1.2x on 4 threads, against 2.8x
+## for the same maths on locals).
+func _chunk_data(field: TerrainField, first_column: int, first_row: int, size: int, into: Dictionary) -> void:
+	into["near"] = _mesh_arrays(field, first_column, first_row, size, 1)
+	into["far"] = _mesh_arrays(field, first_column, first_row, size, COARSE_STEP)
+	var heights := field.heights
+	var columns := field.columns
+	var last_column := columns - 1
+	var last_row := field.rows - 1
+	var collision_heights := PackedFloat32Array()
+	collision_heights.resize(size * size)
+	for row in size:
+		var row_offset := clampi(first_row + row, 0, last_row) * columns
+		for column in size:
+			collision_heights[row * size + column] = heights[row_offset + clampi(first_column + column, 0, last_column)]
+	into["collision"] = collision_heights
+
+
+func _add_chunk(field: TerrainField, first_column: int, first_row: int, size: int, data: Dictionary,
 		material: StandardMaterial3D) -> void:
-	var near := _add_mesh(field, first_column, first_row, size, 1, material)
+	var mesh_started := Time.get_ticks_usec()
+	var near := _add_mesh(data["near"], material)
 	near.name = "Near"
 	near.visibility_range_end = field.def.detail_distance
-	var far := _add_mesh(field, first_column, first_row, size, COARSE_STEP, material)
+	var far := _add_mesh(data["far"], material)
 	far.name = "Far"
 	far.visibility_range_begin = field.def.detail_distance
 	far.visibility_range_end = field.def.view_distance
+	var collision_started := Time.get_ticks_usec()
+	_mesh_usec += collision_started - mesh_started
 
-	var collision_heights := PackedFloat32Array()
-	for row in size:
-		for column in size:
-			collision_heights.append(field.heights[field.index(first_column + column, first_row + row)])
+	var collision_heights: PackedFloat32Array = data["collision"]
 	var shape := HeightMapShape3D.new()
 	shape.map_width = size
 	shape.map_depth = size
@@ -60,36 +117,67 @@ func _add_chunk(field: TerrainField, first_column: int, first_row: int, size: in
 			field.origin.y + (first_row + middle) * field.spacing)
 	body.add_child(collision)
 	add_child(body)
+	_collision_usec += Time.get_ticks_usec() - collision_started
 
 
-## Adds a mesh of one chunk built from every `step`-th sample.
-func _add_mesh(field: TerrainField, first_column: int, first_row: int, size: int, step: int,
-		material: StandardMaterial3D) -> MeshInstance3D:
+## The mesh arrays of one chunk built from every `step`-th sample. Reads the field and
+## the pre-filled index cache only, so it is safe on a worker thread. The field's data
+## is copied into locals and its index, position and normal maths is done inline (see
+## _chunk_data for why); the results match TerrainField's own methods.
+func _mesh_arrays(field: TerrainField, first_column: int, first_row: int, size: int, step: int) -> Array:
+	var heights := field.heights
+	var wear := field.wear
+	var has_wear := not wear.is_empty()
+	var columns := field.columns
+	var last_column := columns - 1
+	var last_row := field.rows - 1
+	var spacing := field.spacing
+	var origin := field.origin
+	var rock_deg := field.def.rock_slope_deg
+	var dirt_color := field.def.dirt_color
+	var rock_color := field.def.rock_color
+	var wear_color := field.wear_color
+	var mesh_size := (size - 1) / step + 1
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var colors := PackedColorArray()
-	var rock_deg := field.def.rock_slope_deg
-	var mesh_size := (size - 1) / step + 1
+	vertices.resize(mesh_size * mesh_size)
+	normals.resize(mesh_size * mesh_size)
+	colors.resize(mesh_size * mesh_size)
 	for row in mesh_size:
+		var grid_row := first_row + row * step
+		var row_offset := clampi(grid_row, 0, last_row) * columns
+		var above := clampi(grid_row - 1, 0, last_row) * columns
+		var below := clampi(grid_row + 1, 0, last_row) * columns
 		for column in mesh_size:
 			var grid_column := first_column + column * step
-			var grid_row := first_row + row * step
-			var normal := field.normal_at_index(grid_column, grid_row)
-			vertices.append(field.sample_position(grid_column, grid_row))
-			normals.append(normal)
+			var center := clampi(grid_column, 0, last_column)
+			var dx := heights[row_offset + clampi(grid_column - 1, 0, last_column)] \
+					- heights[row_offset + clampi(grid_column + 1, 0, last_column)]
+			var dz := heights[above + center] - heights[below + center]
+			var normal := Vector3(dx, 2.0 * spacing, dz).normalized()
+			var out := row * mesh_size + column
+			vertices[out] = Vector3(origin.x + grid_column * spacing, heights[row_offset + center],
+					origin.y + grid_row * spacing)
+			normals[out] = normal
 			var slope_deg := rad_to_deg(acos(clampf(normal.y, -1.0, 1.0)))
 			var rockiness := smoothstep(rock_deg - COLOR_BLEND_DEG, rock_deg + COLOR_BLEND_DEG, slope_deg)
-			var color := field.def.dirt_color.lerp(field.def.rock_color, rockiness)
-			if not field.wear.is_empty():
-				color = color.lerp(field.wear_color, field.wear[field.index(grid_column, grid_row)])
-			colors.append(color)
+			var color := dirt_color.lerp(rock_color, rockiness)
+			if has_wear:
+				color = color.lerp(wear_color, wear[row_offset + center])
+			colors[out] = color
 
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_COLOR] = colors
-	arrays[Mesh.ARRAY_INDEX] = _grid_indices(mesh_size)
+	arrays[Mesh.ARRAY_INDEX] = _index_cache[mesh_size]
+	return arrays
+
+
+## Adds a mesh made from `arrays` (see _mesh_arrays).
+func _add_mesh(arrays: Array, material: StandardMaterial3D) -> MeshInstance3D:
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 

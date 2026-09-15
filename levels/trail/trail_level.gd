@@ -112,7 +112,10 @@ func phase_summary() -> String:
 	var parts := PackedStringArray()
 	for phase: StringName in build_phases:
 		parts.append("%s %.2f s" % [phase, build_phases[phase]])
-	return ", ".join(parts)
+	var split := PackedStringArray()
+	for part: String in terrain_builder.last_timings if terrain_builder != null else {}:
+		split.append("%s %.2f" % [part, terrain_builder.last_timings[part]])
+	return ", ".join(parts) + ("; terrain: " + ", ".join(split) if not split.is_empty() else "")
 
 
 ## Records the time since the previous lap as `phase`.

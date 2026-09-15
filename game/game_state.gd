@@ -20,10 +20,17 @@ var scene_changer: Callable
 var car_catalog: CarCatalog = CAR_CATALOG
 ## The scene car select starts once a car is chosen: a level, or Free Drive.
 var pending_scene := ""
+## Show a loading screen while a level (or Free Drive) builds. Tests turn it off
+## (SaveSandbox) so their scene changes are immediate.
+var show_loading := true
+var loading_screen: LoadingScreen
 
 
 func _ready() -> void:
 	scene_changer = Callable(get_tree(), "change_scene_to_file")
+	loading_screen = LoadingScreen.new()
+	loading_screen.name = "LoadingScreen"
+	add_child(loading_screen)
 	reload()
 
 
@@ -95,7 +102,28 @@ func choose_car_for(scene_path: String) -> void:
 	change_scene(CAR_SELECT)
 
 
-## Leaves the current scene for `path`, unpausing first so the next scene runs.
+## Leaves the current scene for `path`, unpausing first so the next scene runs. A level
+## or Free Drive gets a loading screen: it is drawn before the level's build holds up
+## the main thread, and hidden once the level is in.
 func change_scene(path: String) -> void:
 	get_tree().paused = false
+	var title := loading_title(path)
+	var covered := show_loading and title != ""
+	if covered:
+		loading_screen.show_for(title)
+		await get_tree().process_frame
+		await get_tree().process_frame
 	scene_changer.call(path)
+	if covered:
+		await get_tree().process_frame
+		await get_tree().process_frame
+		loading_screen.visible = false
+
+
+## What a loading screen for `path` says: a level's name, "Free Drive", or "" for a
+## menu, which needs none.
+func loading_title(path: String) -> String:
+	if path == FREE_DRIVE:
+		return "Free Drive"
+	var level := level_for_scene(path)
+	return level.display_name if level != null else ""
