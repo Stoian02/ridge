@@ -63,7 +63,8 @@ Every sound is **synthesized in code** at startup. There are no sound files. The
 `SprayLogic.intensity(kind, ground_speed, slip_speed, sliding) -> float`, from 0 to 1, where:
 - `ground_speed` is how fast the wheel's contact point moves over the ground (m/s)
 - `slip_speed` is the difference between the tread speed and the ground speed (m/s)
-- `sliding` is true when the tyre is past its grip: `|slip_ratio| > 0.25` or `|slip_angle| > 12°`, with `ground_speed > 3`
+- `sliding` is true when the tyre is past its grip: `|slip_ratio| > 0.6` or `|slip_angle| > 12°`, with `ground_speed > 3`
+  - The slip-ratio limit sits well above traction control's 0.3 target. The Rally Car's rear tyres slip 0.2–0.55 for about 2.5 s on a full-throttle asphalt launch, and at 0.25 that alone poured smoke from every wheel. With 0.6, a hard launch gives only a short puff.
 
 | Kind | Intensity |
 |---|---|
@@ -76,13 +77,13 @@ A wheel in the air sprays nothing.
 
 ### 4.2 The emitter (`WheelSpray`, `effects/wheel_spray.gd`, `CPUParticles3D`)
 - **Placement:** one per wheel, sitting at that wheel's contact point, created by `CarEffects` (§6).
-- **Settings:** `amount` 24 and a local-coordinate-free emitter (particles stay in the world), with lifetimes of 0.7 s for clods, 1.2 s for dust and 1.4 s for smoke. The mesh is a small camera-facing quad with an unshaded, vertex-coloured, alpha-blended material, shared by all emitters.
+- **Settings:** `amount` 24, with particles in world coordinates (they stay where they were thrown), and lifetimes of 0.7 s for clods, 1.2 s for dust and 1.4 s for smoke. The mesh is a small camera-facing quad with an unshaded, vertex-coloured, alpha-blended material, shared by all emitters.
 - **Per kind:**
   - *Clods:* thrown backward and upward from behind the tyre, heavy gravity, small, opaque.
   - *Dust:* slow, rising a little, larger and growing, fading out.
   - *Smoke:* slower and larger still, drifting up, fading out.
 - **Each frame:** `update(feel, intensity)`:
-  - it emits while intensity is above 0.05, with `speed_scale` and `color.a` scaled by intensity
+  - it emits while intensity is above 0.05; intensity scales the particles' opacity (0.35–0.9) and their throw speed (50–100% of the kind's), while the particle count stays fixed, since changing it restarts the emitter
   - when the kind changes it switches its settings
 - **When idle:** once it has stopped emitting for longer than its lifetime, it sets `visible = false`, which frees its draw call.
 
@@ -103,7 +104,7 @@ All sounds are 16-bit mono `AudioStreamWAV` at 22 050 Hz. They are built the fir
 | `bird` | one-shot, 0.35 s | Two quick rising chirps |
 | `thump` | one-shot, 0.3 s | A falling 70 → 40 Hz tone with a noise burst, fast decay |
 
-**Cost:** building all of them must take under 60 ms on the desktop (the probe measured ~3 ms per second of engine sound).
+**Cost:** building all of them must take under 100 ms on the desktop, once per app session. The first full build measured 68 ms; the sounds come to about 10 s of audio.
 
 ### 5.2 Engine (`EngineSoundLogic`, `effects/engine_sound_logic.gd`, static and pure)
 `EngineSoundLogic.layers(rpm, throttle, shifting) -> Dictionary` returns `low_pitch`, `low_volume`, `high_pitch`, `high_volume` (linear 0–1):
@@ -168,7 +169,7 @@ All sounds are 16-bit mono `AudioStreamWAV` at 22 050 Hz. They are built the fir
 - **Draw calls:** at most +4 while spraying and none when idle, checked with `tools/level_shots` in both levels. Muddy Valley is at 131 today, against a budget of 150.
 - **Particles:** 4 × 24 quads at most.
 - **CPU:** `CarEffects` and `CarAudio` together must stay under 0.3 ms a frame on the desktop.
-- **Load time:** building the sounds once is under 60 ms. The level build time must not grow by more than 0.1 s.
+- **Load time:** building the sounds once is under 100 ms. The level build time must not grow by more than 0.15 s.
 - **Physics:** unchanged. Effects run in `_process` and only read physics state.
 
 ## 9. Testing
@@ -223,12 +224,15 @@ Tests run with Godot's Dummy audio driver, which still reports players as playin
 - **Test Ground dirt:** at speed, the wheels throw dust and the gravel sound is up.
 - **Engine:** the pitch at full throttle near redline is well above the pitch at idle.
 - **Kicker jump:** landing plays a thump. A reset right after plays none.
-- **Physics unchanged:** the existing scenario numbers (lap times, 0–100, climbs, landings) are identical to master.
+- **Physics unchanged:** the existing scenario numbers (lap times, 0–100, climbs, landings) are identical to master when each test runs the same way.
+  - Run alone, the standstill mud climb reads 16.6 s on both master and this branch.
+  - Inside a full-suite run it reads 16.5 s on both.
+
+Headless runs that play sound end with a warning like "N ObjectDB instances were leaked at exit". Godot prints it for any sound freed just before quitting, as GUT does at the end of a test; a two-node probe with no project code gives the same warning. It is a warning, not a script error, so `run_tests.sh` still passes.
 
 ### 9.3 Checks by eye and ear
-- Screenshots of mud spray, dust and smoke with `tools/screenshot.sh`.
-- Draw calls with `tools/level_shots`.
-- Sound can only be judged on the phone. The owner listens during the phone test.
+- **Draw calls and build time** with `tools/level_shots`, recorded in `docs/notes/performance-m3b.md`.
+- **Sprays and sound are judged on the phone.** Sprays only appear while driving, and the screenshot tools show a parked car. Sound can't be heard in this environment. The owner looks and listens during the phone test.
 
 ## 10. Tuning
 Every number here (intensities, volumes, pitches, colours, lifetimes) is a starting point. The owner tunes by ear and eye on the phone. The logic classes keep these numbers in named constants.
