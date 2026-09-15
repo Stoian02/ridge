@@ -2,9 +2,10 @@ extends Node
 ## Renders a level in a window at points along its road, saves a PNG for each
 ## and prints the build time and what was drawn there (primitives, draw calls,
 ## objects). Run from the project root:
-##   godot --path . res://tools/level_shots.tscn -- res://levels/muddy_valley/muddy_valley.tscn 15 320 760
-## The first argument after "--" is the level scene, the rest are distances along
-## the road (m). Shots are saved as build/level_shots/<level>_<distance>.png.
+##   godot --path . res://tools/level_shots.tscn -- res://levels/muddy_valley/muddy_valley.tscn 15 320 760 car=offroad_4x4
+## The first argument after "--" is the level scene; the rest are distances along
+## the road (m), plus an optional car=<id> to drive instead of the selected car.
+## Shots are saved as build/level_shots/<level>[_<car>]_<distance>.png.
 
 const OUT_DIR := "res://build/level_shots"
 ## Frames to wait at each spot so the camera and visibility ranges settle.
@@ -13,18 +14,33 @@ const SETTLE_FRAMES := 45
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
-	if args.size() < 2:
-		push_error("usage: -- <level scene> <distance> [distance...]")
+	var car_id := ""
+	var spots: Array[float] = []
+	for arg in args.slice(1):
+		if arg.begins_with("car="):
+			car_id = arg.trim_prefix("car=")
+		else:
+			spots.append(float(arg))
+	if args.is_empty() or spots.is_empty():
+		push_error("usage: -- <level scene> <distance> [distance...] [car=<id>]")
 		get_tree().quit(1)
 		return
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 	var level: RunLevel = load(args[0]).instantiate()
+	if not car_id.is_empty():
+		var car := GameState.car_catalog.find_by_id(StringName(car_id))
+		if car == null:
+			push_error("unknown car: %s" % car_id)
+			get_tree().quit(1)
+			return
+		(level.get_node("DrivingRig") as DrivingRig).car_override = car
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 	add_child(level)
 	await get_tree().process_frame
 	var tag := args[0].get_file().get_basename()
+	if not car_id.is_empty():
+		tag += "_" + car_id
 	print("%s built in %.2f s" % [tag, level.trail.build_seconds])
-	for arg in args.slice(1):
-		var spot := float(arg)
+	for spot in spots:
 		level.rig.place_car(level.trail.sampler.transform_at(spot, 1.0, level.trail.profile))
 		for i in SETTLE_FRAMES:
 			await get_tree().process_frame

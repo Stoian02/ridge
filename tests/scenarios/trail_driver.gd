@@ -2,7 +2,8 @@ class_name TrailDriver
 extends RefCounted
 ## A scripted driver for scenario tests: steers toward a point a little way up
 ## the road (pure pursuit) and picks a speed from how sharply the road bends
-## ahead. Not a good driver - just a steady one.
+## ahead. Not a good driver - just a steady one. Given the road's profile, it also
+## slows for the grip of the surface ahead (mud, dirt), on straights as in bends.
 
 ## Steer toward the road point this far ahead of the car (m).
 const LOOKAHEAD := 12.0
@@ -15,11 +16,15 @@ const MAX_SPEED := 25.0
 
 var car: Car
 var sampler: RoadSampler
+## When set, the speed also allows for the surface ahead; without it (the default)
+## the driver judges bends by the car's tire grip alone.
+var profile: RoadProfile
 
 
-func _init(driven_car: Car, road: RoadSampler) -> void:
+func _init(driven_car: Car, road: RoadSampler, road_profile: RoadProfile = null) -> void:
 	car = driven_car
 	sampler = road
+	profile = road_profile
 
 
 ## Sets the car's virtual steer, throttle and brake for this tick.
@@ -52,7 +57,21 @@ func target_speed(distance: float) -> float:
 		var turn := Vector2(a.x, a.z).angle_to(Vector2(b.x, b.z))
 		sharpest = maxf(sharpest, absf(turn) / step)
 		ahead += step
+	var surface_grip := _lowest_surface_grip(distance) if profile != null else 1.0
+	var fastest := MAX_SPEED * sqrt(minf(surface_grip, 1.0))
 	if sharpest < 0.0001:
-		return MAX_SPEED
-	var grip_speed := sqrt(car.stats.tire_grip * 9.8 / sharpest)
-	return clampf(grip_speed * CAUTION, MIN_SPEED, MAX_SPEED)
+		return fastest
+	var grip_speed := sqrt(car.stats.tire_grip * surface_grip * 9.8 / sharpest)
+	return clampf(grip_speed * CAUTION, MIN_SPEED, fastest)
+
+
+## The lowest grip of the road surface over the window ahead, as this car feels it
+## (the surface's grip times the car's grip-table multiplier for it).
+func _lowest_surface_grip(distance: float) -> float:
+	var lowest := INF
+	var ahead := 0.0
+	while ahead <= CURVE_WINDOW:
+		var surface := profile.surface_at(distance + ahead)
+		lowest = minf(lowest, surface.grip * car.grip_table.multiplier(car.stats.archetype, surface.id))
+		ahead += 5.0
+	return lowest

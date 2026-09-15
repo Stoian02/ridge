@@ -10,10 +10,12 @@ const APPROACH_KMH := 100.0
 
 ## Drives straight down the runway at APPROACH_KMH, then lifts off or holds the gas
 ## from the foot of the kicker. Returns what happened in the air and just after.
-func _take_kicker(hold_throttle: bool) -> Dictionary:
+## `car` drives instead of the player's selected car when set.
+func _take_kicker(hold_throttle: bool, car_def: CarDef = null) -> Dictionary:
 	var level: Node3D = TEST_GROUND.instantiate()
-	add_child_autofree(level)
 	var rig: DrivingRig = level.get_node("DrivingRig")
+	rig.car_override = car_def
+	add_child_autofree(level)
 	rig.touch_controls.process_mode = Node.PROCESS_MODE_DISABLED
 	var car := rig.car
 	await wait_physics_frames(ScenarioHelper.ticks(0.5))
@@ -48,8 +50,8 @@ func _take_kicker(hold_throttle: bool) -> Dictionary:
 		"landing_yaw": landing_yaw,
 		"upright": ScenarioHelper.is_upright(car),
 	}
-	gut.p("kicker at %.0f km/h, gas %s: %.2f s in the air, worst tilt %.0f deg, peak yaw %.1f deg/s in the 0.5 s after landing, upright %s" % [
-		APPROACH_KMH, "held" if hold_throttle else "lifted", result.air_seconds, result.worst_pitch_deg,
+	gut.p("%s: kicker at %.0f km/h, gas %s: %.2f s in the air, worst tilt %.0f deg, peak yaw %.1f deg/s in the 0.5 s after landing, upright %s" % [
+		rig.car_def.display_name, APPROACH_KMH, "held" if hold_throttle else "lifted", result.air_seconds, result.worst_pitch_deg,
 		result.landing_yaw, result.upright])
 	return result
 
@@ -73,3 +75,10 @@ func test_holding_the_gas_flies_level_and_lands_straight() -> void:
 			result.worst_pitch_deg, result.landing_yaw])
 		return
 	assert_true(result.landed, "the car took off and landed")
+
+
+func test_the_new_cars_land_the_kicker_upright() -> void:
+	for car_def: CarDef in [preload("res://car/cars/rally_tuned.tres"), preload("res://car/cars/offroad_4x4.tres")]:
+		var result := await _take_kicker(false, car_def)
+		assert_true(result.landed, "%s took off and landed" % car_def.display_name)
+		assert_true(result.upright, "%s is upright after landing" % car_def.display_name)
