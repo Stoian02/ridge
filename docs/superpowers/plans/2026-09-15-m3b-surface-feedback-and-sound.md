@@ -53,7 +53,7 @@ The code below was written and run in a scratch clone before this plan was writt
 - **Sounds build in about 68 ms,** so the build limit is 100 ms. This runs once per session.
 - **Players pause with the game.** A probe showed that `AudioStreamPlayer`s under a paused tree pause and resume by themselves, so the pause menu needs no sound code.
 - **An idle spray costs no draw call.** A probe showed that a `CPUParticles3D` keeps its draw call after its particles die, until it is hidden. `WheelSpray` hides itself once it has been idle for longer than its particle lifetime.
-- **The "leaked at exit" warning is not ours.** Freeing a playing sound and quitting one frame later leaks the same way in a bare probe with no project code. Stopping players in `_exit_tree` did not change it, so the code does not do that.
+- **The "leaked at exit" warning is not ours.** Freeing a playing sound and quitting one frame later leaks the same way in a bare probe with no project code. Stopping players in `_exit_tree` did not change that warning. **But the stops are needed:** without them the full suite hung twice at the same point, at the start of the new cars' Muddy Valley test in `test_cars.gd`. With them it passes (435 + 1 pending after Task 4). The Task 4 code below predates this finding; the stops were added in a fix commit after Task 4.
 
 ## Verified results (scratch clone, desktop)
 

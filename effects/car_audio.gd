@@ -53,6 +53,12 @@ func impacts_muted() -> bool:
 	return _impact_wait > 0.0
 
 
+## Stops every player on the way out, so the audio server lets go of their playbacks.
+func _exit_tree() -> void:
+	for player: AudioStreamPlayer in players.values():
+		player.stop()
+
+
 func _process(delta: float) -> void:
 	if car == null or car.drivetrain == null:
 		return

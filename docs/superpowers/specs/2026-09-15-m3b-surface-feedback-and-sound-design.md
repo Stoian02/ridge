@@ -134,6 +134,7 @@ All sounds are 16-bit mono `AudioStreamWAV` at 22 050 Hz. They are built the fir
 - **Smoothing:** volume changes are eased with `move_toward` at 4 per second, so sounds never click.
 - **Pause:** the players are pausable nodes, so sound stops while the game is paused and resumes after, without extra code (verified by a probe).
 - **Reset:** `notify_reset()` starts the 0.5 s impact mute.
+- **Leaving the scene:** `_exit_tree()` stops every player; `LevelAmbience` does the same for its two. Without this, `./run_tests.sh all` hung twice at the same point, spinning on its main thread at the start of the new cars' Muddy Valley test, after earlier tests had freed many playing players. With it, the suite passes. The exact cause inside the engine is unknown.
 
 ### 5.6 Ambience (`LevelAmbience`, `effects/level_ambience.gd`, `Node`)
 - **Where it lives:** added to Rally Road, Muddy Valley and the Test Ground scenes.

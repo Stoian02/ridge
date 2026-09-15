@@ -35,6 +35,12 @@ func _ready() -> void:
 	_until_bird = _rng.randf_range(bird_interval.x, bird_interval.y)
 
 
+## Stops both players on the way out, so the audio server lets go of their playbacks.
+func _exit_tree() -> void:
+	wind.stop()
+	bird.stop()
+
+
 func _process(delta: float) -> void:
 	if not birds:
 		return
