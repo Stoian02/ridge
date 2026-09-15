@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://game/reset_controller.gd" id="10_resets"]
 [ext_resource type="Script" path="res://game/run_controller.gd" id="11_run"]
 [ext_resource type="Script" path="res://ui/run_hud.gd" id="12_hud"]
+[ext_resource type="Script" path="res://effects/level_ambience.gd" id="20_ambience"]
 
 [node name="MuddyValley" type="Node3D"]
 script = ExtResource("1_level")
@@ -48,3 +49,8 @@ script = ExtResource("11_run")
 
 [node name="RunHud" type="CanvasLayer" parent="."]
 script = ExtResource("12_hud")
+
+[node name="Ambience" type="Node" parent="."]
+script = ExtResource("20_ambience")
+wind_volume = 0.3
+bird_interval = Vector2(4, 12)

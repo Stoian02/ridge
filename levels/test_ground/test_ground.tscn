@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://levels/test_ground/test_ground.gd" id="1_ground"]
 [ext_resource type="Script" path="res://levels/shared/golden_hour_mood.gd" id="2_mood"]
 [ext_resource type="PackedScene" path="res://levels/shared/driving_rig.tscn" id="3_rig"]
+[ext_resource type="Script" path="res://effects/level_ambience.gd" id="20_ambience"]
 
 [node name="TestGround" type="Node3D"]
 script = ExtResource("1_ground")
@@ -12,3 +13,8 @@ script = ExtResource("2_mood")
 
 [node name="DrivingRig" parent="." instance=ExtResource("3_rig")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="Ambience" type="Node" parent="."]
+script = ExtResource("20_ambience")
+wind_volume = 0.25
+birds = false

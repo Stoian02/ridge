@@ -19,6 +19,10 @@ var car_def: CarDef
 @onready var telemetry: TelemetryOverlay = $TelemetryOverlay
 @onready var recorder: RunRecorder = $RunRecorder
 
+## The car's wheel sprays and sound (M3B spec §5.5, §6), made in _ready.
+var effects: CarEffects
+var audio: CarAudio
+
 
 ## Runs before the car's own _ready applies its stats: gives the car the chosen
 ## car's stats and body, and names recordings after it.
@@ -33,9 +37,22 @@ func _enter_tree() -> void:
 func _ready() -> void:
 	touch_controls.pause_requested.connect(pause_requested.emit)
 	touch_controls.set_steer_mode(TouchControls.mode_from_name(GameState.progress.steer_mode))
+	effects = CarEffects.new()
+	effects.name = "CarEffects"
+	add_child(effects)
+	effects.setup(car)
+	audio = CarAudio.new()
+	audio.name = "CarAudio"
+	add_child(audio)
+	audio.setup(car)
 
 
 ## Puts the car upright and still at `target`, with the camera straight behind it.
+## Sprays stop and thumps pause for a moment, so a reset makes no trail or bang.
 func place_car(target: Transform3D) -> void:
 	car.reset_to(target)
 	camera.snap_to_target()
+	if effects != null:
+		effects.notify_reset()
+	if audio != null:
+		audio.notify_reset()
