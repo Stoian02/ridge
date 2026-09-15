@@ -39,12 +39,15 @@ func _ready() -> void:
 	touch_controls.set_steer_mode(TouchControls.mode_from_name(GameState.progress.steer_mode))
 	effects = CarEffects.new()
 	effects.name = "CarEffects"
+	# CarAudio reads the wheel motion CarEffects works out each frame, so CarEffects must run first.
+	effects.process_priority = 0
 	add_child(effects)
 	effects.setup(car)
 	audio = CarAudio.new()
 	audio.name = "CarAudio"
+	audio.process_priority = 1
 	add_child(audio)
-	audio.setup(car)
+	audio.setup(car, effects)
 
 
 ## Puts the car upright and still at `target`, with the camera straight behind it.

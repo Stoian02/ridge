@@ -22,7 +22,7 @@ func test_every_sound_builds_quickly_from_scratch() -> void:
 		assert_not_null(SoundSynth.sound(sound_name), sound_name)
 	var milliseconds := (Time.get_ticks_usec() - started) / 1000.0
 	gut.p("building every sound: %.1f ms" % milliseconds)
-	assert_lt(milliseconds, 300.0, "spec §8 aims for 60 ms on desktop; this bound only catches runaways")
+	assert_lt(milliseconds, 300.0, "spec §5.1 sets a 100 ms budget on desktop (measured 68 ms); this bound only catches runaways")
 
 
 func test_sounds_have_their_length_and_loop_mode() -> void:

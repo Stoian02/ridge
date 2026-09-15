@@ -17,6 +17,9 @@ Build: `m3b-feedback`, desktop (Godot 4.7.2, Mobile renderer, `--fixed-fps 120` 
 - Building all nine synthesized sounds takes about 68 ms, once per app session (`test_sound_synth.gd` prints it).
 - Headless test runs use Godot's Dummy audio driver, which still reports players as playing.
 
+## CPU per frame
+- **`CarEffects` + `CarAudio`**, measured by `test_effects_and_audio_stay_under_the_cpu_budget` (Test Ground, Rally Car, full throttle on mud for 3 s): average 0.027 ms, worst 0.054 ms, against the spec §8 budget of 0.3 ms. `WheelMotion` is now computed once per wheel per frame (`CarEffects` fills a shared `wheels` array that `CarAudio` reads) instead of twice.
+
 ## Scenario tests (desktop, `test_car_feedback.gd`)
 
 ```

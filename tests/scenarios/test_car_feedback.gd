@@ -101,6 +101,33 @@ func test_asphalt_is_quiet_cruising_and_smokes_and_squeals_sliding() -> void:
 	assert_gt(slide["loudest"][&"skid"], 0.05)
 
 
+## Spec §8: CarEffects and CarAudio together must stay under 0.3 ms a frame on desktop.
+## This test's own bound is looser, so a busy machine doesn't flake; the 0.3 ms target
+## is recorded in docs/notes/performance-m3b.md, not asserted here.
+func test_effects_and_audio_stay_under_the_cpu_budget() -> void:
+	var rig := _rig(_ground())
+	await _place(rig, Vector3(30.0, 0.8, -20.0))
+	var delta := 1.0 / Engine.physics_ticks_per_second
+	var total_usec := 0
+	var worst_usec := 0
+	var frames := 0
+	for tick in ScenarioHelper.ticks(3.0):
+		rig.car.input.virtual_throttle = 1.0
+		rig.car.input.virtual_steer = 0.0
+		await get_tree().physics_frame
+		var started := Time.get_ticks_usec()
+		rig.effects._process(delta)
+		rig.audio._process(delta)
+		var elapsed := Time.get_ticks_usec() - started
+		total_usec += elapsed
+		worst_usec = maxi(worst_usec, elapsed)
+		frames += 1
+	var average_ms := (total_usec / float(frames)) / 1000.0
+	var worst_ms := worst_usec / 1000.0
+	gut.p("CarEffects + CarAudio per frame: average %.3f ms, worst %.3f ms" % [average_ms, worst_ms])
+	assert_lt(average_ms, 1.0, "spec §8 targets 0.3 ms on desktop; this bound only catches regressions")
+
+
 func test_the_engine_pitch_rises_with_rpm() -> void:
 	var rig := _rig(_ground())
 	await _place(rig, Vector3(-120.0, 0.8, 0.0))
