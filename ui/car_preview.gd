@@ -74,7 +74,8 @@ func _add_car() -> void:
 			var wheel := MeshInstance3D.new()
 			wheel.mesh = tire
 			wheel.material_override = tire_material
-			# Roughly where the wheel rests with the car on its springs.
-			wheel.position = stats.wheel_mount_position(is_front, is_left) - Vector3(0.0, stats.suspension_length * 0.6, 0.0)
+			# Where the wheel rests with the car on its springs.
+			wheel.position = stats.wheel_mount_position(is_front, is_left)
+			wheel.position.y = stats.wheel_rest_height()
 			wheel.rotation_degrees.z = 90.0
 			turntable.add_child(wheel)

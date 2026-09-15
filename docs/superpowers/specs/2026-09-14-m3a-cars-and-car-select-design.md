@@ -105,12 +105,12 @@ The transfer is added to each wheel's `drive_torque`.
 **Off-road 4x4** (`archetype = &"offroad"`):
 | Group | Values |
 |---|---|
-| Body | mass 2150 kg; centre of mass (0, −0.05, 0); inertia (3800, 4300, 1000); body 1.95 × 0.7 × 4.6 m; aero drag 0.6 |
-| Wheels | radius 0.40 m, width 0.30 m; track 1.72 m; wheelbase 2.95 m; mount height 0.2 m; wheel inertia 2.0 |
+| Body | mass 2150 kg; centre of mass (0, −0.05, 0); inertia (3800, 4300, 1000); body 1.95 × 0.6 × 4.6 m; aero drag 0.6 |
+| Wheels | radius 0.45 m, width 0.30 m; track 1.72 m; wheelbase 2.95 m; mount height 0.165 m; wheel inertia 2.5 (jeep ground clearance: 32 cm under the body at rest, where the Bronco Raptor has 33 cm; with the first 0.40 m wheels, 0.7 m body and 0.2 m mounts it was 18.6 cm) |
 | Suspension | length 0.50 m; springs 32000; damping 2800 compress / 4200 rebound; anti-roll 4000 front / 5000 rear |
 | Tires | grip 1.05; rear bias 1.0; peak slip angle 10°; slide grip 0.8 |
 | Engine | torque 480, 560, 580, 540, 470, 380 Nm at 1000, 2000, 3000, 4000, 5000, 5800 rpm; redline 5800; launch 2800 |
-| Gearbox | 4.2, 2.6, 1.75, 1.3, 1.0, 0.8; final drive 4.1; upshift 5400, downshift 2200; shift time 0.2 s |
+| Gearbox | 4.2, 2.6, 1.75, 1.3, 1.0, 0.8; final drive 4.6 (4.1 before the bigger wheels; raised to keep the same pull); upshift 5400, downshift 2200; shift time 0.2 s |
 | Drivetrain | AWD, front split 0.5; centre lock 1.0, rear 0.6, front 0.3 |
 | Brakes / steering | brake torque 14000; max steer 34°; steer rate 120°/s |
 | Grip table | `offroad/asphalt` 0.95, `offroad/dirt` 1.1, `offroad/mud` 1.35 |
@@ -156,14 +156,14 @@ The stock Rally Car keeps every current value, with all locks at 0.
 
 ### 6.1 Body definition and builder
 - **`CarBodyDef`** (`car/car_body_def.gd`, `Resource`) holds:
-  - colours: `body_color`, `window_color`, `trim_color`, `rim_color`
+  - colours: `body_color`, `window_color`, `trim_color`, `rim_color`, `light_color`
   - shape shares of `body_size.z`: `hood_length`, `cabin_length`, `cabin_height` (m), `windscreen_slope`, `rear_window_slope`, `nose_taper`, `tail_taper`
-  - on/off extras: `rear_spoiler`, `big_wing`, `hood_scoop`, `roof_rack`, `bull_bar`, `spare_wheel`, `fender_flares`
+  - on/off extras: `rear_spoiler`, `big_wing`, `hood_scoop`, `roof_rack`, `bull_bar`, `spare_wheel`, `fender_flares` (arches sized to the wheels at rest, from `CarStats.wheel_rest_height()`), `black_roof`, `flat_grille` (with square headlights), `steel_bumpers`, `rock_rails`
 - **`CarBodyBuilder.build(body: CarBodyDef, stats: CarStats) -> ArrayMesh`** (`car/car_body_builder.gd`) makes one flat-shaded, vertex-coloured mesh:
   - a lower body: a box with bevelled edges at `stats.body_size`, its nose and tail tapered
   - a cabin: a tapered block on top with sloped windscreen and rear window, and a darker side-window band
   - extras as small boxes and wedges
-  - It reuses `LowPolyMeshes`' triangle and box helpers. Budget: under 400 triangles.
+  - It reuses `LowPolyMeshes`' triangle and box helpers. Budget: under 400 triangles for a shipped car; under 600 with every extra switched on at once.
 
 ### 6.2 On the car
 - **Mesh:** `Car._apply_stats` sets `$BodyMesh.mesh` from `CarBodyBuilder` when `body_def` is set, and removes `CabinMesh` (the cabin is part of the built mesh). Without a `body_def`, the grey boxes stay, so older tests that build a bare car still work.
@@ -175,7 +175,7 @@ The stock Rally Car keeps every current value, with all locks at 0.
 |---|---|---|---|
 | Rally Car | Compact four-door saloon, sloped windscreen | Orange (0.86, 0.32, 0.16), dark windows | Rear spoiler |
 | Rally Car Tuned | The same saloon, lower | Deep blue, gold rims | Big wing, hood scoop |
-| Off-road 4x4 | Boxy and tall, flat hood, upright windscreen | Sand/olive, black trim | Bull bar, roof rack, spare wheel, fender flares |
+| Off-road 4x4 | An early low-poly take on the Ford Bronco Raptor: boxy and tall, flat nose and tail, upright windscreen, long cabin, big tyres | Red (0.72, 0.07, 0.06), black roof and trim, light blue-grey glass, dark grey rims | Flat black grille with square headlights, steel bumpers, rock rails, wraparound fender flares, spare wheel |
 
 **Preview:** each car select card has a `SubViewportContainer` with its own camera and light. It shows the built body and simple wheels, turning slowly. It exists only on the car select screen.
 

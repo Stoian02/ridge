@@ -8,6 +8,8 @@ extends Resource
 @export var window_color: Color = Color(0.2, 0.24, 0.3)
 @export var trim_color: Color = Color(0.12, 0.12, 0.13)
 @export var rim_color: Color = Color(0.75, 0.75, 0.78)
+## Headlights, on bodies with a flat grille.
+@export var light_color: Color = Color(0.96, 0.94, 0.84)
 
 @export_group("Shape")
 ## Hood in front of the windscreen.
@@ -32,4 +34,13 @@ extends Resource
 @export var roof_rack: bool = false
 @export var bull_bar: bool = false
 @export var spare_wheel: bool = false
+## Arches over the wheels, sized to the wheels as they sit at rest.
 @export var fender_flares: bool = false
+## The roof in the trim colour, like a hardtop.
+@export var black_roof: bool = false
+## A flat trim-coloured grille across the nose with two square headlights.
+@export var flat_grille: bool = false
+## Thick trim-coloured bumpers at the nose and tail.
+@export var steel_bumpers: bool = false
+## Trim-coloured rails along the sills between the wheels.
+@export var rock_rails: bool = false

@@ -183,6 +183,21 @@ func test_the_4x4_does_not_roll_over_at_full_lock() -> void:
 	await _free(ground)
 
 
+func test_the_4x4_rests_with_jeep_ground_clearance() -> void:
+	var ground := ScenarioHelper.make_flat_ground(ASPHALT)
+	add_child(ground)
+	var car: Car = CAR_SCENE.instantiate()
+	car.stats = OFFROAD.stats
+	car.position = Vector3(0.0, 1.5, 0.0)
+	add_child(car)
+	await wait_physics_frames(ScenarioHelper.ticks(3.0))
+	var clearance := car.global_position.y - OFFROAD.stats.body_size.y * 0.5
+	gut.p("4x4 at rest on flat asphalt: %.0f cm under the body" % (clearance * 100.0))
+	assert_between(clearance, 0.30, 0.36, "jeep ground clearance, like a Bronco Raptor's 33 cm")
+	await _free(car)
+	await _free(ground)
+
+
 func test_a_run_drives_the_car_chosen_in_car_select() -> void:
 	var state := SaveSandbox.game_state()
 	state.record_finish(state.catalog.levels[0], 60.0, {})

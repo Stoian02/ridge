@@ -6,22 +6,24 @@
 
 [sub_resource type="Resource" id="Resource_body"]
 script = ExtResource("2_body")
-body_color = Color(0.62, 0.58, 0.4, 1)
-window_color = Color(0.18, 0.22, 0.26, 1)
-trim_color = Color(0.1, 0.1, 0.1, 1)
-rim_color = Color(0.2, 0.2, 0.2, 1)
-hood_length = 0.28
-cabin_length = 0.42
-cabin_height = 0.62
-windscreen_slope = 0.05
-rear_window_slope = 0.02
-nose_taper = 0.06
-tail_taper = 0.02
-bevel = 0.05
-roof_rack = true
-bull_bar = true
+body_color = Color(0.72, 0.07, 0.06, 1)
+window_color = Color(0.26, 0.33, 0.4, 1)
+trim_color = Color(0.08, 0.08, 0.08, 1)
+rim_color = Color(0.25, 0.25, 0.26, 1)
+hood_length = 0.3
+cabin_length = 0.58
+cabin_height = 0.75
+windscreen_slope = 0.04
+rear_window_slope = 0.0
+nose_taper = 0.02
+tail_taper = 0.0
+bevel = 0.04
 spare_wheel = true
 fender_flares = true
+black_roof = true
+flat_grille = true
+steel_bumpers = true
+rock_rails = true
 
 [resource]
 script = ExtResource("1_def")

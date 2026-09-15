@@ -14,6 +14,10 @@ func _every_extra() -> CarBodyDef:
 	body.bull_bar = true
 	body.spare_wheel = true
 	body.fender_flares = true
+	body.black_roof = true
+	body.flat_grille = true
+	body.steel_bumpers = true
+	body.rock_rails = true
 	return body
 
 
@@ -35,7 +39,30 @@ func test_a_body_has_triangles_and_its_colours_and_stays_cheap() -> void:
 	assert_between(_vertices(plain).size() / 3, 40, 400)
 	assert_true(_has_color(plain, body.body_color), "body colour")
 	assert_true(_has_color(plain, body.window_color), "window colour")
-	assert_lt(_vertices(CarBodyBuilder.build(_every_extra(), RALLY_STATS)).size() / 3, 400, "with every extra")
+	assert_lt(_vertices(CarBodyBuilder.build(_every_extra(), RALLY_STATS)).size() / 3, 600, "with every extra")
+
+
+func test_jeep_extras_add_a_black_grille_headlights_and_a_black_roof() -> void:
+	var body := CarBodyDef.new()
+	body.trim_color = Color(0.05, 0.05, 0.05)
+	var plain := CarBodyBuilder.build(body, RALLY_STATS)
+	assert_false(_has_color(plain, body.trim_color), "no trim on a plain body")
+	assert_false(_has_color(plain, body.light_color), "no lights on a plain body")
+	body.black_roof = true
+	body.flat_grille = true
+	body.steel_bumpers = true
+	body.rock_rails = true
+	var jeep := CarBodyBuilder.build(body, RALLY_STATS)
+	assert_true(_has_color(jeep, body.light_color), "headlights")
+	assert_true(_has_color(jeep, body.trim_color), "grille, bumpers and rails")
+	assert_gt(_vertices(jeep).size(), _vertices(plain).size())
+	var vertices := _vertices(jeep)
+	var colors: PackedColorArray = jeep.surface_get_arrays(0)[Mesh.ARRAY_COLOR]
+	var top := 0
+	for i in vertices.size():
+		if vertices[i].y > vertices[top].y:
+			top = i
+	assert_almost_eq(colors[top].r, body.trim_color.r, 0.02, "the roof is black")
 
 
 func test_a_plain_body_fills_the_footprint_and_rises_by_its_cabin() -> void:

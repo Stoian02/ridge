@@ -137,3 +137,10 @@ func wheel_mount_position(is_front: bool, is_left: bool) -> Vector3:
 	var x := -track_width * 0.5 if is_left else track_width * 0.5
 	var z := -wheelbase * 0.5 if is_front else wheelbase * 0.5
 	return Vector3(x, wheel_mount_height, z)
+
+
+## Height of a wheel's centre relative to the body origin with the car at rest on
+## flat ground, each spring carrying a quarter of the weight.
+func wheel_rest_height() -> float:
+	var sag := clampf(mass * 9.8 / 4.0 / spring_stiffness, 0.0, suspension_length)
+	return wheel_mount_height - (suspension_length - sag)

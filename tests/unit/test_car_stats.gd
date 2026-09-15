@@ -39,3 +39,8 @@ func test_static_sag_leaves_suspension_travel_both_ways() -> void:
 	# the middle third of its travel, so it can both compress and extend.
 	var sag := RALLY.mass * 9.8 / 4.0 / RALLY.spring_stiffness
 	assert_between(sag / RALLY.suspension_length, 0.25, 0.5)
+
+
+func test_wheel_rest_height_is_the_mount_less_the_travel_left_after_sag() -> void:
+	var sag := RALLY.mass * 9.8 / 4.0 / RALLY.spring_stiffness
+	assert_almost_eq(RALLY.wheel_rest_height(), RALLY.wheel_mount_height - (RALLY.suspension_length - sag), 0.0001)

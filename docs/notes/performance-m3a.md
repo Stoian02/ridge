@@ -61,6 +61,30 @@ from a standstill at 1400 m up the mud to the finish: Rally Car 16.6 s, 4x4 11.6
 7/7 tests passed. These numbers match the scratch-clone numbers quoted in the
 task brief exactly (the physics is deterministic at a fixed 120 Hz).
 
+### After the Bronco Raptor-style 4x4 (real ground clearance)
+
+The 4x4 was remade to look like an early low-poly Bronco Raptor and given jeep
+ground clearance.
+- **Physics changes:**
+  - wheel radius 0.40 → 0.45 m
+  - body box height 0.70 → 0.60 m
+  - wheel mounts 0.20 → 0.165 m
+  - final drive 4.1 → 4.6, which keeps the pull the same with the bigger tyres
+  - wheel inertia 2.0 → 2.5
+- **Results:** it now rests with 32 cm under the body (it was 18.6 cm), and
+  `test_cars.gd` has a check for that (8/8 pass).
+
+```
+Off-road 4x4 on RallyRoad: 1:40.5, 0 resets        (was 1:40.8)
+Off-road 4x4 on MuddyValley: 1:34.9, 0 resets      (was 1:35.0)
+from a standstill at 1400 m up the mud to the finish: Rally Car 16.6 s, 4x4 11.9 s   (was 11.6 s)
+4 s from rest, left wheels on slick ground: locked 9.9 m, open 1.9 m                 (was 10.0 m)
+4x4 at full lock around 40 km/h on dirt: most tilt 3 deg
+4x4 at rest on flat asphalt: 32 cm under the body
+Off-road 4x4: kicker at 100 km/h, gas lifted: 1.23 s in the air, worst tilt 10 deg (was 1.11 s, 16 deg)
+```
+Muddy Valley at 560 m with the new 4x4: 319,748 primitives, 131 draw calls.
+
 ## Scenario tests (desktop, `test_jump_landing.gd`)
 
 ```

@@ -29,7 +29,8 @@ static func build(body: CarBodyDef, stats: CarStats) -> ArrayMesh:
 	var band := _cabin_outline(body, size, WINDOW_SHARE)
 	var roof := _cabin_outline(body, size, 1.0)
 	_add_cabin_section(tool, base, band, half.y, half.y + body.cabin_height * WINDOW_SHARE, body.window_color)
-	_add_cabin_section(tool, band, roof, half.y + body.cabin_height * WINDOW_SHARE, half.y + body.cabin_height, body.body_color)
+	var roof_color := body.trim_color if body.black_roof else body.body_color
+	_add_cabin_section(tool, band, roof, half.y + body.cabin_height * WINDOW_SHARE, half.y + body.cabin_height, roof_color)
 	_add_extras(tool, body, stats)
 	return tool.commit()
 
@@ -122,10 +123,43 @@ static func _add_extras(tool: SurfaceTool, body: CarBodyDef, stats: CarStats) ->
 		LowPolyMeshes._add_box(tool, Vector3(0.0, -half.y * 0.1, -half.z - 0.1), Vector3(size.x * 0.82, size.y * 0.7, 0.08), body.trim_color)
 		LowPolyMeshes._add_box(tool, Vector3(0.0, half.y * 0.55, -half.z - 0.05), Vector3(size.x * 0.6, 0.08, 0.14), body.trim_color)
 	if body.spare_wheel:
-		LowPolyMeshes._add_box(tool, Vector3(0.0, half.y * 0.2, half.z + 0.12),
+		# Carried above the bumper when there is one.
+		var spare_y := half.y * 0.2 + (size.y * 0.3 if body.steel_bumpers else 0.0)
+		LowPolyMeshes._add_box(tool, Vector3(0.0, spare_y, half.z + 0.12),
 				Vector3(stats.wheel_radius * 1.6, stats.wheel_radius * 1.6, 0.24), body.trim_color)
 	if body.fender_flares:
-		for axle_z: float in [-stats.wheelbase * 0.5, stats.wheelbase * 0.5]:
-			for side: float in [-1.0, 1.0]:
-				LowPolyMeshes._add_box(tool, Vector3(side * (half.x + 0.05), -half.y * 0.35, axle_z),
-						Vector3(0.1, size.y * 0.35, stats.wheel_radius * 2.4), body.trim_color)
+		_add_fender_flares(tool, body, stats)
+	if body.flat_grille:
+		var grille_y := half.y * 0.2
+		LowPolyMeshes._add_box(tool, Vector3(0.0, grille_y, -half.z - 0.015), Vector3(size.x * 0.82, size.y * 0.5, 0.03), body.trim_color)
+		for side: float in [-1.0, 1.0]:
+			LowPolyMeshes._add_box(tool, Vector3(side * size.x * 0.3, grille_y, -half.z - 0.035),
+					Vector3(size.x * 0.14, size.y * 0.26, 0.03), body.light_color)
+	if body.steel_bumpers:
+		for end: float in [-1.0, 1.0]:
+			LowPolyMeshes._add_box(tool, Vector3(0.0, -half.y + size.y * 0.18, end * (half.z + 0.06)),
+					Vector3(size.x * 0.98, size.y * 0.32, 0.14), body.trim_color)
+	if body.rock_rails:
+		for side: float in [-1.0, 1.0]:
+			LowPolyMeshes._add_box(tool, Vector3(side * (half.x - 0.02), -half.y + 0.04, 0.0),
+					Vector3(0.12, 0.1, stats.wheelbase - stats.wheel_radius * 2.6), body.trim_color)
+
+
+## An arch over each wheel as it sits at rest: a top over the tyre and a leg down
+## each side of it to the wheel's centre, just outside the tyre's outer face.
+static func _add_fender_flares(tool: SurfaceTool, body: CarBodyDef, stats: CarStats) -> void:
+	var wheel_y := stats.wheel_rest_height()
+	var arch_top := wheel_y + stats.wheel_radius + 0.08
+	var leg_bottom := wheel_y - stats.wheel_radius * 0.2
+	var reach := stats.wheel_radius * 1.3
+	# From just inside the body's side out past the tyre's outer face.
+	var inner_x := stats.body_size.x * 0.5 - 0.06
+	var outer_x := maxf(stats.body_size.x * 0.5, (stats.track_width + stats.wheel_width) * 0.5) + 0.06
+	var centre_x := (inner_x + outer_x) * 0.5
+	var width := outer_x - inner_x
+	for axle_z: float in [-stats.wheelbase * 0.5, stats.wheelbase * 0.5]:
+		for side: float in [-1.0, 1.0]:
+			LowPolyMeshes._add_box(tool, Vector3(side * centre_x, arch_top - 0.06, axle_z), Vector3(width, 0.12, reach * 2.0), body.trim_color)
+			for end: float in [-1.0, 1.0]:
+				LowPolyMeshes._add_box(tool, Vector3(side * centre_x, (leg_bottom + arch_top) * 0.5, axle_z + end * (reach - 0.1)),
+						Vector3(width, arch_top - leg_bottom, 0.2), body.trim_color)
