@@ -121,3 +121,17 @@ func test_wheel_motion_tells_rolling_from_spinning_and_sliding() -> void:
 	assert_true(sideways["sliding"])
 	var air := WheelMotion.motion(false, Vector3(0.0, 0.0, -10.0), Vector3.UP, forward, 10.0, 0.0, 0.0)
 	assert_eq(air, {"in_contact": false, "ground_speed": 0.0, "slip_speed": 0.0, "sliding": false})
+
+
+func test_rolling_on_asphalt_stays_quiet_even_fast_and_still_grows_with_speed() -> void:
+	var slow: Array[Dictionary] = []
+	var fast: Array[Dictionary] = []
+	var flat_out: Array[Dictionary] = []
+	for i in 4:
+		slow.append(_wheel(ASPHALT, 8.0))
+		fast.append(_wheel(ASPHALT, 25.0))
+		flat_out.append(_wheel(ASPHALT, 60.0))
+	assert_gt(TyreSoundLogic.mix(fast)["road"], TyreSoundLogic.mix(slow)["road"], "louder with speed")
+	assert_lte(TyreSoundLogic.mix(flat_out)["road"], TyreSoundLogic.ROAD_MAX, "capped well below the other sounds")
+	assert_almost_eq(TyreSoundLogic.ROAD_MAX, 0.35, 0.001)
+	assert_gt(TyreSoundLogic.mix(fast)["road"], 0.1, "still audible at speed")

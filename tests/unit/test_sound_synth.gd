@@ -64,3 +64,22 @@ func test_loops_join_without_a_click() -> void:
 
 func test_a_sound_is_built_once() -> void:
 	assert_same(SoundSynth.sound(&"road"), SoundSynth.sound(&"road"))
+
+
+## Mean sample step over RMS: high for bright noise (hiss), low for a smooth rumble.
+func _hiss(samples: PackedFloat32Array) -> float:
+	var energy := 0.0
+	var steps := 0.0
+	for i in samples.size():
+		energy += samples[i] * samples[i]
+		if i > 0:
+			steps += absf(samples[i] - samples[i - 1])
+	return (steps / (samples.size() - 1)) / sqrt(energy / samples.size())
+
+
+func test_rolling_on_asphalt_is_a_low_rumble_not_a_hiss() -> void:
+	var road := _hiss(_samples(SoundSynth.sound(&"road")))
+	var gravel := _hiss(_samples(SoundSynth.sound(&"gravel")))
+	gut.p("hiss: road %.3f, gravel %.3f" % [road, gravel])
+	assert_lt(road, 0.12, "the old filtered-noise road loop measured 0.34")
+	assert_lt(road, gravel * 0.2, "far smoother than gravel")

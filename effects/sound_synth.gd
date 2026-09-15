@@ -74,13 +74,19 @@ static func _engine(firing_hz: float, brightness: float, seed: int) -> PackedFlo
 	return samples
 
 
+## Tyres rolling on asphalt: a low rumble (noise low-passed twice) under a soft 110 Hz
+## tread note that flutters three times a second. Whole cycles of both fit the loop.
 static func _road(seconds: float) -> PackedFloat32Array:
 	var rng := _rng(21)
 	var samples := _padded(seconds)
 	var low := 0.0
+	var lower := 0.0
 	for i in samples.size():
-		low += 0.08 * (rng.randf_range(-1.0, 1.0) - low)
-		samples[i] = low
+		var t := float(i) / RATE
+		low += 0.03 * (rng.randf_range(-1.0, 1.0) - low)
+		lower += 0.15 * (low - lower)
+		var tread := sin(TAU * 110.0 * t) * (0.55 + 0.45 * sin(TAU * 3.0 * t))
+		samples[i] = lower + tread * 0.04
 	return samples
 
 

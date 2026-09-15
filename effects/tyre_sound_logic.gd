@@ -7,6 +7,10 @@ extends RefCounted
 ## One wheel's share of each sound.
 const WHEEL_SHARE := 0.25
 const ROLL_SPEED := 25.0
+## Rolling on asphalt is a quiet hum under the engine: it tops out at this loudness,
+## reached at ROAD_SPEED (m/s), so it grows gently instead of drowning the car out.
+const ROAD_MAX := 0.35
+const ROAD_SPEED := 35.0
 const MUD_SLIP := 8.0
 const SKID_BASE := 0.3
 const SKID_SLIP := 10.0
@@ -25,7 +29,7 @@ static func mix(wheels: Array[Dictionary]) -> Dictionary:
 		var rolling := clampf(ground_speed / ROLL_SPEED, 0.0, 1.0) * WHEEL_SHARE
 		match feel.rolling:
 			SurfaceFeel.RollingSound.ROAD:
-				result["road"] += rolling
+				result["road"] += clampf(ground_speed / ROAD_SPEED, 0.0, 1.0) * WHEEL_SHARE * ROAD_MAX
 			SurfaceFeel.RollingSound.GRAVEL:
 				result["gravel"] += rolling
 			SurfaceFeel.RollingSound.MUD:

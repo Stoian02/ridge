@@ -96,7 +96,7 @@ All sounds are 16-bit mono `AudioStreamWAV` at 22 050 Hz. They are built the fir
 |---|---|---|
 | `engine_low` | loop, 0.4 s | Four-cylinder firing tone for 1500 rpm (50 Hz) with harmonics 2–4, a half-order rumble and a slight per-cycle roughness |
 | `engine_high` | loop, 0.4 s | The same for 4500 rpm (150 Hz), brighter |
-| `road` | loop, 1.0 s | Soft low-passed noise |
+| `road` | loop, 1.0 s | Tyres rolling on asphalt: a low rumble with a soft 110 Hz tread note (changed after the phone test, where the first filtered-noise version hissed and got obnoxious at speed) |
 | `gravel` | loop, 1.0 s | Band-passed noise with random crackle clicks |
 | `mud` | loop, 1.5 s | Low-passed noise with slow wet "bubble" swells |
 | `skid` | loop, 0.8 s | A ~900 Hz squeal with vibrato, over noise |
@@ -115,6 +115,7 @@ All sounds are 16-bit mono `AudioStreamWAV` at 22 050 Hz. They are built the fir
 ### 5.3 Tyres and surfaces (`TyreSoundLogic`, `effects/tyre_sound_logic.gd`, static and pure)
 `TyreSoundLogic.mix(wheels: Array[Dictionary]) -> Dictionary` returns `road`, `gravel`, `mud` and `skid`, each from 0 to 1. Each wheel's Dictionary holds `feel`, `ground_speed`, `slip_speed` and `sliding`:
 - **Rolling sounds:** each wheel on the ground adds `clamp(ground_speed / 25, 0, 1) × 0.25` to its surface's rolling sound. Mud also adds `clamp(slip_speed / 8, 0, 1) × 0.25`.
+  - Asphalt is the exception: each wheel adds `clamp(ground_speed / 35, 0, 1) × 0.25 × 0.35`. That caps the road hum at 0.35 and reaches it only at 126 km/h, because at full loudness it drowned out the car on the phone.
 - **Skid:** each sliding wheel on a skidding surface adds `clamp(0.3 + slip_speed / 10, 0, 1) × 0.25`.
 - **Result:** every total is capped at 1.
 - **Pitch:** `CarAudio` scales the pitch of rolling sounds by `0.8 + 0.4 × clamp(speed / 30, 0, 1)`.
