@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="SurfaceFeelTable" format=3]
+
+[ext_resource type="Script" path="res://effects/surface_feel_table.gd" id="1_table"]
+[ext_resource type="Script" path="res://effects/surface_feel.gd" id="2_feel"]
+
+[sub_resource type="Resource" id="Resource_asphalt"]
+script = ExtResource("2_feel")
+spray = 3
+spray_color = Color(0.82, 0.82, 0.8, 1)
+rolling = 1
+skids = true
+
+[sub_resource type="Resource" id="Resource_dirt"]
+script = ExtResource("2_feel")
+spray = 2
+spray_color = Color(0.62, 0.52, 0.38, 1)
+rolling = 2
+
+[sub_resource type="Resource" id="Resource_mud"]
+script = ExtResource("2_feel")
+spray = 1
+spray_color = Color(0.24, 0.17, 0.11, 1)
+rolling = 3
+
+[resource]
+script = ExtResource("1_table")
+feels = {
+&"asphalt": SubResource("Resource_asphalt"),
+&"damp_dirt": SubResource("Resource_dirt"),
+&"dirt": SubResource("Resource_dirt"),
+&"mud": SubResource("Resource_mud"),
+&"soft_mud": SubResource("Resource_mud")
+}
+fallback = SubResource("Resource_dirt")
