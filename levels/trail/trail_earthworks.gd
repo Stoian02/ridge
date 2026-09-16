@@ -59,6 +59,8 @@ static func nearest_samples(field: TerrainField, sampler: RoadSampler, start: fl
 	while distance <= end + 0.001:
 		var point := sampler.position(distance)
 		var right := sampler.right(distance)
+		var forward := sampler.forward(distance)
+		var flat_length := Vector2(forward.x, forward.z).length()
 		var cx := roundi((point.x - field.origin.x) / field.spacing)
 		var cz := roundi((point.z - field.origin.y) / field.spacing)
 		for row in range(maxi(0, cz - reach), mini(field.rows, cz + reach + 1)):
@@ -71,6 +73,10 @@ static func nearest_samples(field: TerrainField, sampler: RoadSampler, start: fl
 				var i := row * field.columns + column
 				var previous: Vector4 = result.get(i, Vector4(INF, 0, 0, 0))
 				if squared < previous.x:
-					result[i] = Vector4(squared, distance, point.y, dx * right.x + dz * right.z)
+					# Project past the nearest stamp, especially at the search ends:
+					# clamping there incorrectly extended a portal hole by the search radius.
+					var along := (dx * forward.x + dz * forward.z) / maxf(flat_length, 0.001)
+					result[i] = Vector4(squared, distance + along, point.y + along * forward.y,
+							dx * right.x + dz * right.z)
 		distance += 1.0
 	return result

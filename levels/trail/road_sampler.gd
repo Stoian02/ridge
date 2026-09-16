@@ -7,11 +7,13 @@ extends RefCounted
 
 var curve: Curve3D
 var length: float
+var use_curve_banking: bool
 
 
-func _init(road_curve: Curve3D) -> void:
+func _init(road_curve: Curve3D, banking: bool = true) -> void:
 	curve = road_curve
 	length = curve.get_baked_length()
+	use_curve_banking = banking
 
 
 func position(distance: float) -> Vector3:
@@ -23,7 +25,7 @@ func forward(distance: float) -> Vector3:
 
 
 func up(distance: float) -> Vector3:
-	var tilted_up := curve.sample_baked_up_vector(clampf(distance, 0.0, length), true)
+	var tilted_up: Vector3 = curve.sample_baked_up_vector(clampf(distance, 0.0, length), true) if use_curve_banking else Vector3.UP
 	var along := forward(distance)
 	return (tilted_up - along * tilted_up.dot(along)).normalized()
 

@@ -6,6 +6,8 @@ extends Resource
 @export var start: float = 0.0
 @export var length: float = 50.0
 @export var surface: SurfaceDef
+## Mud reaches the verges; winter ice/concrete can keep snowy shoulders instead.
+@export var affects_shoulders: bool = true
 ## Ordered physical surfaces from the base road toward `surface`. They occupy
 ## equal parts of transition_length at both ends, in reverse order on exit.
 @export var transition_surfaces: Array[SurfaceDef] = []

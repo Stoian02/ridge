@@ -122,7 +122,7 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 		skip_rows.append(1 if profile.on_bridge(midpoint) else 0)
 		var stretch := profile.stretch_at(midpoint)
 		var road: SurfaceDef = stretch.surface_at(midpoint) if stretch != null else def.base_surface
-		var shoulder: SurfaceDef = stretch.surface_at(midpoint) if stretch != null else def.shoulder_surface
+		var shoulder: SurfaceDef = stretch.surface_at(midpoint) if stretch != null and stretch.affects_shoulders else def.shoulder_surface
 		if not surfaces.has(road):
 			surfaces.append(road)
 		if not surfaces.has(shoulder):
@@ -182,7 +182,7 @@ static func row_distances(length: float, profile: RoadProfile, def: TrailDef) ->
 	var distance := 0.0
 	while distance < length - 0.001:
 		distances.append(distance)
-		var next := distance + (def.detail_step if profile.in_detail_range(distance) else def.sample_step)
+		var next: float = distance + (def.detail_step if profile.in_detail_range(distance) else def.sample_step)
 		while next_boundary < boundaries.size() and boundaries[next_boundary] <= distance + 0.001:
 			next_boundary += 1
 		if next_boundary < boundaries.size() and boundaries[next_boundary] < next - 0.001:
@@ -235,7 +235,7 @@ static func _faces(vertices: PackedVector3Array, stations: Array[Vector2], row_s
 			var left := stations[column]
 			if is_equal_approx(left.x, stations[column + 1].x):
 				continue
-			var face_surface := shoulder_surfaces[row] if int(left.y) == Part.SHOULDER else row_surfaces[row]
+			var face_surface: SurfaceDef = shoulder_surfaces[row] if int(left.y) == Part.SHOULDER else row_surfaces[row]
 			if face_surface != surface:
 				continue
 			var i := row * width + column
@@ -273,8 +273,8 @@ func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stati
 			shoulder_surfaces.append(null)
 			continue
 		var stretch := profile.stretch_at(midpoint)
-		var surface := stretch.surface_at(midpoint) if stretch != null else def.base_surface
-		var shoulder_surface: SurfaceDef = stretch.surface_at(midpoint) if stretch != null else def.shoulder_surface
+		var surface: SurfaceDef = stretch.surface_at(midpoint) if stretch != null else def.base_surface
+		var shoulder_surface: SurfaceDef = stretch.surface_at(midpoint) if stretch != null and stretch.affects_shoulders else def.shoulder_surface
 		row_surfaces.append(surface)
 		shoulder_surfaces.append(shoulder_surface)
 		if not surfaces.has(surface):
@@ -313,14 +313,14 @@ func _color(profile: RoadProfile, def: TrailDef, distance: float, lateral: float
 		Part.SHOULDER:
 			var shoulder := def.shoulder_color
 			var stretch := profile.stretch_at(distance)
-			if stretch != null:
+			if stretch != null and stretch.affects_shoulders:
 				shoulder = shoulder.lerp(stretch.color, stretch.weight(distance))
 			if def.shortcut != null and signf(lateral) == signf(def.shortcut.side):
 				shoulder = shoulder.lerp(def.asphalt_color, ShortcutBuilder.junction_weight(def.shortcut, distance))
 			return shoulder
 		Part.LINE:
 			return def.line_color
-	var base := def.patch_color if profile.is_patch(distance, lateral) else def.asphalt_color
+	var base: Color = def.patch_color if profile.is_patch(distance, lateral) else def.asphalt_color
 	var stretch := profile.stretch_at(distance)
 	if stretch != null:
 		base = base.lerp(stretch.color, stretch.weight(distance))

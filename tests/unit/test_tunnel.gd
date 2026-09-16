@@ -62,3 +62,11 @@ func test_ridge_has_cover_and_approaches_rejoin_natural_corridor() -> void:
 		assert_gte(field.height_at(0.0, -distance), tunnel.height + tunnel.cover - 0.01)
 	assert_lt(field.height_at(0.0, -30.0), 0.0)
 	assert_lt(field.height_at(0.0, -170.0), 0.0)
+	for row in field.rows:
+		for column in field.columns:
+			var i := field.index(column, row)
+			if field.portal_holes[i] == 0:
+				continue
+			var at := -field.sample_position(column, row).z
+			assert_between(at, tunnel.start - tunnel.portal_length - 1.0,
+					tunnel.end() + tunnel.portal_length + 1.0, "portal search radius must not extend the hole")

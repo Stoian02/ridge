@@ -6,6 +6,8 @@ extends Resource
 @export_group("Cross-section")
 @export var road_width: float = 7.0
 @export var shoulder_width: float = 2.5
+## Use the curve's transported up vector and authored tilt; false keeps snow roads unbanked.
+@export var use_curve_banking: bool = true
 @export var line_width: float = 0.15
 ## Painted edge lines sit this far inside each road edge.
 @export var line_inset: float = 0.3

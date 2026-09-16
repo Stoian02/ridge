@@ -81,13 +81,16 @@ func _chunk_data(field: TerrainField, first_column: int, first_row: int, size: i
 	var last_column := columns - 1
 	var last_row := field.rows - 1
 	var collision_heights := PackedFloat32Array()
+	var has_portal := false
 	collision_heights.resize(size * size)
 	for row in size:
 		var row_offset := clampi(first_row + row, 0, last_row) * columns
 		for column in size:
 			var i := row_offset + clampi(first_column + column, 0, last_column)
 			collision_heights[row * size + column] = NAN if not holes.is_empty() and holes[i] != 0 else heights[i]
+			has_portal = has_portal or (not holes.is_empty() and holes[i] != 0)
 	into["collision"] = collision_heights
+	into["portal"] = has_portal
 
 
 func _add_chunk(field: TerrainField, first_column: int, first_row: int, size: int, data: Dictionary,
@@ -100,6 +103,11 @@ func _add_chunk(field: TerrainField, first_column: int, first_row: int, size: in
 	far.name = "Far"
 	far.visibility_range_begin = field.def.detail_distance
 	far.visibility_range_end = field.def.view_distance
+	# A portal cap matches the full-resolution hole boundary. Keep its chunk at
+	# that resolution at distance too, so coarse triangles cannot reopen seams.
+	if data["portal"]:
+		near.visibility_range_end = field.def.view_distance
+		far.visible = false
 	var collision_started := Time.get_ticks_usec()
 	_mesh_usec += collision_started - mesh_started
 
