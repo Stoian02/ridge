@@ -4,6 +4,11 @@
 Master was not changed or merged. Ready for the owner's PC playtest; phone
 acceptance is deliberately deferred at the owner's request.
 
+**Subsequent PC-playtest change:** the owner separately approved a traction-control
+strength slider and its drivetrain edit. See [traction-tuning.md](traction-tuning.md)
+for that additional scope, behaviour, tests and per-car tyre-tuning locations.
+The original M4 implementation report below describes the pre-slider handoff.
+
 ## What was built
 
 ### Approved surfaces and feedback
