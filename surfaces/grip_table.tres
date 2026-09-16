@@ -10,5 +10,11 @@ multipliers = {
 "rally/mud": 1.1,
 "offroad/asphalt": 0.95,
 "offroad/dirt": 1.1,
-"offroad/mud": 1.35
+"offroad/mud": 1.35,
+"rally/snow": 1.0,
+"rally/ice": 1.0,
+"rally/logs": 1.0,
+"offroad/snow": 1.3,
+"offroad/ice": 1.05,
+"offroad/logs": 1.1
 }

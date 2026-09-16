@@ -2,6 +2,8 @@ class_name TerrainDef
 extends Resource
 ## Settings for the mountainside generated around a trail.
 
+@export var surface: SurfaceDef = preload("res://surfaces/dirt.tres")
+
 ## Terrain extends this far past the road on every side (m).
 @export var margin: float = 300.0
 ## Size of one terrain chunk (m). Chunks share their border samples.

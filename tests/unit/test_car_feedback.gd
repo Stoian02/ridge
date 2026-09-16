@@ -49,7 +49,7 @@ func test_the_rig_carries_sprays_and_sound_and_a_reset_quiets_them() -> void:
 	var rig: DrivingRig = RIG_SCENE.instantiate()
 	add_child_autofree(rig)
 	assert_eq(rig.effects.sprays.size(), 4, "one spray per wheel")
-	assert_eq(rig.audio.players.size(), 7)
+	assert_eq(rig.audio.players.size(), 8)
 	for sound_name in CarAudio.LOOPS:
 		assert_true((rig.audio.players[sound_name] as AudioStreamPlayer).playing, sound_name)
 	rig.effects.sprays[2].update(FEELS.feel_for(MUD), 1.0, 0.016)

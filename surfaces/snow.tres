@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SurfaceDef" format=3]
+
+[ext_resource type="Script" path="res://surfaces/surface_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"snow"
+display_name = "Packed snow"
+grip = 0.4
+rolling_resistance = 0.04
+drag = 10.0
+sink_depth = 0.03
+debug_color = Color(0.87, 0.92, 0.98, 1)

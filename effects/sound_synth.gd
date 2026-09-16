@@ -17,7 +17,7 @@ const FADE_SECONDS := 0.1
 ## buffer and crashed the audio thread when the 4 s wind loop first wrapped.
 const LOOP_PAD := 32
 const NAMES: Array[StringName] = [&"engine_low", &"engine_high", &"road", &"gravel", &"mud", &"skid", &"wind",
-		&"bird", &"thump"]
+		&"bird", &"thump", &"snow"]
 
 static var _cache := {}
 
@@ -46,6 +46,8 @@ static func _build(sound_name: StringName) -> AudioStreamWAV:
 			return _wav(_normalized(_seamless(_gravel(1.0)), LOOP_PEAK), true)
 		&"mud":
 			return _wav(_normalized(_seamless(_mud(1.5)), LOOP_PEAK), true)
+		&"snow":
+			return _wav(_normalized(_seamless(_snow(1.2)), LOOP_PEAK), true)
 		&"skid":
 			return _wav(_normalized(_seamless(_skid(0.8)), LOOP_PEAK), true)
 		&"wind":
@@ -129,6 +131,21 @@ static func _mud(seconds: float) -> PackedFloat32Array:
 			swell += exp(-pow((t - at) / 0.05, 2.0))
 		low += 0.035 * (rng.randf_range(-1.0, 1.0) - low)
 		samples[i] = low * swell + 0.25 * sin(TAU * 38.0 * t) * (swell - 0.35)
+	return samples
+
+
+## Soft, band-passed crunch, pulsing gently as the tread compresses packed snow.
+static func _snow(seconds: float) -> PackedFloat32Array:
+	var rng := _rng(27)
+	var samples := _padded(seconds)
+	var low := 0.0
+	var band := 0.0
+	for i in samples.size():
+		var noise := rng.randf_range(-1.0, 1.0)
+		low += 0.035 * (noise - low)
+		band += 0.18 * (noise - low - band)
+		var pulse := 0.7 + 0.3 * pow(sin(TAU * 5.0 * i / RATE), 2.0)
+		samples[i] = tanh(band * 2.0) * pulse
 	return samples
 
 

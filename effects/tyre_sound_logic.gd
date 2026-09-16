@@ -19,7 +19,7 @@ const SKID_SLIP := 10.0
 ## wheels: one Dictionary per wheel with "feel" (SurfaceFeel or null in the air),
 ## "ground_speed", "slip_speed" and "sliding". Returns {"road", "gravel", "mud", "skid"}, each 0-1.
 static func mix(wheels: Array[Dictionary]) -> Dictionary:
-	var result := {"road": 0.0, "gravel": 0.0, "mud": 0.0, "skid": 0.0}
+	var result := {"road": 0.0, "gravel": 0.0, "mud": 0.0, "skid": 0.0, "snow": 0.0}
 	for wheel in wheels:
 		var feel: SurfaceFeel = wheel["feel"]
 		if feel == null:
@@ -32,10 +32,12 @@ static func mix(wheels: Array[Dictionary]) -> Dictionary:
 				result["road"] += clampf(ground_speed / ROAD_SPEED, 0.0, 1.0) * WHEEL_SHARE * ROAD_MAX
 			SurfaceFeel.RollingSound.GRAVEL:
 				result["gravel"] += rolling
+			SurfaceFeel.RollingSound.SNOW:
+				result["snow"] += rolling
 			SurfaceFeel.RollingSound.MUD:
 				result["mud"] += rolling + clampf(slip_speed / MUD_SLIP, 0.0, 1.0) * WHEEL_SHARE
 		if feel.skids and wheel["sliding"]:
-			result["skid"] += clampf(SKID_BASE + slip_speed / SKID_SLIP, 0.0, 1.0) * WHEEL_SHARE
+			result["skid"] += clampf(SKID_BASE + slip_speed / SKID_SLIP, 0.0, 1.0) * WHEEL_SHARE * feel.skid_volume
 	for key: String in result:
 		result[key] = minf(result[key], 1.0)
 	return result

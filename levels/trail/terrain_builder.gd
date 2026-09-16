@@ -111,7 +111,7 @@ func _add_chunk(field: TerrainField, first_column: int, first_row: int, size: in
 	# The shape puts samples 1 m apart around its centre; scaling sets the spacing.
 	collision.scale = Vector3(field.spacing, 1.0, field.spacing)
 	var body := StaticBody3D.new()
-	body.set_meta(SurfaceLookup.META_KEY, DIRT)
+	body.set_meta(SurfaceLookup.META_KEY, field.def.surface)
 	var middle := (size - 1) * 0.5
 	body.position = Vector3(field.origin.x + (first_column + middle) * field.spacing, 0.0,
 			field.origin.y + (first_row + middle) * field.spacing)

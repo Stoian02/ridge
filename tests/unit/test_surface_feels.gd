@@ -86,7 +86,7 @@ func test_each_surface_feeds_its_own_rolling_sound() -> void:
 	var mud_mix := TyreSoundLogic.mix([_wheel(MUD, 2.0, 6.0), _wheel(MUD, 2.0, 6.0)])
 	assert_gt(mud_mix["mud"], 0.3, "wheelspin in mud squelches even when slow")
 	var air: Array[Dictionary] = [{"feel": null, "ground_speed": 30.0, "slip_speed": 10.0, "sliding": true}]
-	assert_eq(TyreSoundLogic.mix(air), {"road": 0.0, "gravel": 0.0, "mud": 0.0, "skid": 0.0})
+	assert_eq(TyreSoundLogic.mix(air), {"road": 0.0, "gravel": 0.0, "mud": 0.0, "skid": 0.0, "snow": 0.0})
 
 
 func test_only_sliding_on_asphalt_squeals_and_totals_are_capped() -> void:

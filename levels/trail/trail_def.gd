@@ -21,6 +21,8 @@ extends Resource
 @export_group("Surface")
 ## The road's surface outside any stretch. Shoulders are dirt outside stretches.
 @export var base_surface: SurfaceDef = preload("res://surfaces/asphalt.tres")
+## Shoulder surface outside stretches (snow on Frozen Pass, dirt by default).
+@export var shoulder_surface: SurfaceDef = preload("res://surfaces/dirt.tres")
 ## Painted edge lines along the road.
 @export var painted_lines: bool = true
 ## Stretches of another surface (such as mud with ruts). They must not overlap.

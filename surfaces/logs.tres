@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SurfaceDef" format=3]
+
+[ext_resource type="Script" path="res://surfaces/surface_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"logs"
+display_name = "Logs"
+grip = 0.7
+rolling_resistance = 0.03
+drag = 0.0
+sink_depth = 0.0
+debug_color = Color(0.38, 0.26, 0.16, 1)

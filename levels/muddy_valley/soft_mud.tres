@@ -6,7 +6,7 @@
 script = ExtResource("1_surface")
 id = &"soft_mud"
 display_name = "Soft mud"
-grip = 0.6
+grip = 0.7
 rolling_resistance = 0.08
 sink_depth = 0.04
 drag = 25.0

@@ -4,7 +4,7 @@ extends Node
 ## loops, and a thump for hard hits. Each frame it reads the car and sets every
 ## player's pitch and volume. Its players pause with the game.
 
-const LOOPS: Array[StringName] = [&"engine_low", &"engine_high", &"road", &"gravel", &"mud", &"skid"]
+const LOOPS: Array[StringName] = [&"engine_low", &"engine_high", &"road", &"gravel", &"mud", &"skid", &"snow"]
 ## Volumes move toward their targets this fast (linear units per second), so nothing clicks.
 const EASE_PER_SECOND := 4.0
 const SILENT := 0.01
@@ -80,6 +80,7 @@ func _process(delta: float) -> void:
 	_set_loop(&"road", tyres["road"], roll_pitch, delta)
 	_set_loop(&"gravel", tyres["gravel"], roll_pitch, delta)
 	_set_loop(&"mud", tyres["mud"], roll_pitch, delta)
+	_set_loop(&"snow", tyres["snow"], roll_pitch, delta)
 	_set_loop(&"skid", tyres["skid"], 1.0, delta)
 
 	if hardest > 0.0 and _impact_wait <= 0.0:
