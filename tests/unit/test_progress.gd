@@ -135,3 +135,21 @@ func test_the_sound_setting_is_saved_and_only_takes_its_steps() -> void:
 	assert_eq(Progress.from_dictionary({"settings": {"sound_volume": 0.3}}).sound_volume, 1.0, "not a step")
 	assert_eq(Progress.from_dictionary({"settings": {"sound_volume": "loud"}}).sound_volume, 1.0)
 	assert_eq(Progress.from_dictionary({"settings": {"steer_mode": "analog"}}).sound_volume, 1.0, "an older save")
+
+
+func test_traction_strength_round_trips_with_full_as_the_old_save_default() -> void:
+	assert_eq(progress.traction_control_strength, 1.0)
+	for strength: float in [0.0, 0.37, 0.5, 1.0]:
+		progress.traction_control_strength = strength
+		assert_eq(Progress.from_dictionary(progress.to_dictionary()).traction_control_strength, strength)
+	assert_eq(Progress.from_dictionary({}).traction_control_strength, 1.0)
+	assert_eq(Progress.from_dictionary({"settings": {"sound_volume": 0.5}}).traction_control_strength, 1.0)
+
+
+func test_traction_strength_rejects_invalid_values_and_clamps_numbers() -> void:
+	for invalid: Variant in [null, "off", true, [], {}, NAN, INF, -INF]:
+		var loaded := Progress.from_dictionary({"settings": {"traction_control_strength": invalid}})
+		assert_eq(loaded.traction_control_strength, 1.0)
+	for pair: Vector2 in [Vector2(-1, 0), Vector2(2, 1), Vector2(0, 0)]:
+		var loaded := Progress.from_dictionary({"settings": {"traction_control_strength": pair.x}})
+		assert_eq(loaded.traction_control_strength, pair.y)

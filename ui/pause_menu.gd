@@ -25,6 +25,8 @@ var _steering: Button
 var _sound: Button
 var _telemetry: Button
 var _recording: Button
+var _traction: HSlider
+var _traction_label: Label
 
 
 func _init() -> void:
@@ -110,6 +112,11 @@ func _on_sound() -> void:
 	_refresh_labels()
 
 
+func _on_traction_changed(percent: float) -> void:
+	GameState.set_traction_control_strength(percent / 100.0)
+	_refresh_labels()
+
+
 func _on_telemetry() -> void:
 	rig.telemetry.toggle()
 	_refresh_labels()
@@ -123,6 +130,14 @@ func _on_recording() -> void:
 func _refresh_labels() -> void:
 	var volume := GameState.progress.sound_volume
 	_sound.text = "Sound: %s" % ("Off" if volume <= 0.0 else "%d%%" % roundi(volume * 100.0))
+	var percent := roundi(GameState.progress.traction_control_strength * 100.0)
+	_traction.set_value_no_signal(percent)
+	var strength := "%d%%" % percent
+	if percent == 0:
+		strength = "Off (0%)"
+	elif percent == 100:
+		strength = "Full (100%)"
+	_traction_label.text = "Traction control: " + strength
 	if rig == null:
 		return
 	var buttons_mode := rig.touch_controls.steer_mode == TouchSteerLogic.Mode.BUTTONS
@@ -133,27 +148,75 @@ func _refresh_labels() -> void:
 
 func _build_ui() -> void:
 	var column := UiKit.centered_column(self, UiKit.dim(0.55))
+	column.name = "PauseContent"
 	column.add_child(UiKit.label("Paused", UiKit.HEADING_FONT))
-	column.add_child(UiKit.button("Resume", close))
+	var columns := HBoxContainer.new()
+	columns.add_theme_constant_override("separation", 60)
+	column.add_child(columns)
+	var navigation := VBoxContainer.new()
+	navigation.add_theme_constant_override("separation", 20)
+	columns.add_child(navigation)
+	var settings := VBoxContainer.new()
+	settings.alignment = BoxContainer.ALIGNMENT_CENTER
+	settings.add_theme_constant_override("separation", 20)
+	columns.add_child(settings)
+	navigation.add_child(UiKit.button("Resume", close))
 	var restart := UiKit.button("Restart", _on_restart)
 	restart.visible = show_restart
-	column.add_child(restart)
-	column.add_child(UiKit.button("Change car", car_select_pressed.emit))
+	navigation.add_child(restart)
+	navigation.add_child(UiKit.button("Change car", car_select_pressed.emit))
 	var level_select := UiKit.button("Level select", level_select_pressed.emit)
 	level_select.visible = show_restart
-	column.add_child(level_select)
-	column.add_child(UiKit.button("Main menu", main_menu_pressed.emit))
+	navigation.add_child(level_select)
+	navigation.add_child(UiKit.button("Main menu", main_menu_pressed.emit))
 	_steering = UiKit.button("Steering", _on_steering)
-	column.add_child(_steering)
+	settings.add_child(_steering)
 	_sound = UiKit.button("Sound", _on_sound)
-	column.add_child(_sound)
+	settings.add_child(_sound)
+	_add_traction_slider(settings)
 	var dev_row := HBoxContainer.new()
 	dev_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	dev_row.add_theme_constant_override("separation", 20)
-	column.add_child(dev_row)
+	settings.add_child(dev_row)
 	_telemetry = UiKit.button("Telemetry", _on_telemetry)
 	_telemetry.custom_minimum_size.x = 340.0
 	dev_row.add_child(_telemetry)
 	_recording = UiKit.button("Rec", _on_recording)
 	_recording.custom_minimum_size.x = 340.0
 	dev_row.add_child(_recording)
+
+
+## Large thumb and input area for touch; native slider also supports mouse/keys.
+func _add_traction_slider(parent: VBoxContainer) -> void:
+	var group := VBoxContainer.new()
+	group.add_theme_constant_override("separation", 4)
+	parent.add_child(group)
+	_traction_label = UiKit.label("Traction control: Full (100%)", 38)
+	_traction_label.name = "TractionControlLabel"
+	group.add_child(_traction_label)
+	_traction = HSlider.new()
+	_traction.name = "TractionControlSlider"
+	_traction.min_value = 0.0
+	_traction.max_value = 100.0
+	_traction.step = 1.0
+	_traction.value = 100.0
+	_traction.custom_minimum_size = Vector2(700.0, 80.0)
+	_traction.tick_count = 11
+	_traction.ticks_on_borders = true
+	_traction.scrollable = false
+	var track := StyleBoxFlat.new()
+	track.bg_color = Color(0.18, 0.2, 0.23)
+	track.content_margin_top = 6.0
+	track.content_margin_bottom = 6.0
+	track.set_corner_radius_all(6)
+	_traction.add_theme_stylebox_override("slider", track)
+	var fill: StyleBoxFlat = track.duplicate()
+	fill.bg_color = Color(0.9, 0.65, 0.3)
+	_traction.add_theme_stylebox_override("grabber_area", fill)
+	_traction.add_theme_stylebox_override("grabber_area_highlight", fill)
+	var thumb: Texture2D = preload("res://ui/slider_thumb.svg")
+	_traction.add_theme_icon_override("grabber", thumb)
+	_traction.add_theme_icon_override("grabber_highlight", thumb)
+	_traction.value_changed.connect(_on_traction_changed)
+	group.add_child(_traction)
+	group.add_child(UiKit.label("Off  —  less wheelspin control  —  Full", 28))

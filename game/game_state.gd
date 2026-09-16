@@ -2,6 +2,8 @@ extends Node
 ## The one always-loaded game object (autoload "GameState", spec §5.6): the level
 ## catalog, the player's progress and its save file, and moving between scenes.
 
+signal traction_control_strength_changed(strength: float)
+
 const CATALOG := preload("res://levels/catalog.tres")
 const DEFAULT_SAVE_PATH := "user://save.json"
 const MAIN_MENU := "res://ui/main_menu.tscn"
@@ -38,6 +40,7 @@ func _ready() -> void:
 func reload() -> void:
 	progress = Progress.from_dictionary(SaveSystem.read(save_path))
 	apply_sound_volume()
+	traction_control_strength_changed.emit(progress.traction_control_strength)
 
 
 func save() -> Error:
@@ -68,6 +71,15 @@ func set_steer_mode(mode: String) -> void:
 func set_sound_volume(value: float) -> void:
 	progress.sound_volume = clampf(value, 0.0, 1.0)
 	apply_sound_volume()
+	save()
+
+
+## Saves the global player assist and notifies any active driving rig, even paused.
+func set_traction_control_strength(value: float) -> void:
+	if not is_finite(value):
+		return
+	progress.traction_control_strength = clampf(value, 0.0, 1.0)
+	traction_control_strength_changed.emit(progress.traction_control_strength)
 	save()
 
 

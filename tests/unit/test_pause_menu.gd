@@ -140,3 +140,57 @@ func test_change_car_is_offered_in_levels_and_free_drive() -> void:
 		button.pressed.emit()
 		assert_signal_emitted(menu, "car_select_pressed")
 		menu.queue_free()
+
+
+func test_traction_slider_applies_and_saves_off_partial_and_full_while_paused() -> void:
+	_add_menu()
+	menu.open()
+	var slider: HSlider = menu.find_child("TractionControlSlider", true, false)
+	var label: Label = menu.find_child("TractionControlLabel", true, false)
+	assert_not_null(slider)
+	if slider == null:
+		return
+	assert_eq(slider.value, 100.0)
+	assert_eq(label.text, "Traction control: Full (100%)")
+	for percent: float in [0.0, 37.0, 100.0]:
+		slider.value = percent
+		assert_eq(rig.car.drivetrain.traction_control_strength, percent / 100.0)
+		assert_eq(SaveSystem.read(SaveSandbox.PATH)["settings"]["traction_control_strength"], percent / 100.0)
+		assert_true(get_tree().paused)
+		assert_string_contains(label.text, "%d%%" % roundi(percent))
+	slider.value = 0.0
+	assert_eq(label.text, "Traction control: Off (0%)")
+	menu.close()
+	assert_false(get_tree().paused)
+	menu.open()
+	assert_eq(slider.value, 0.0, "opening must not reset the setting")
+
+
+func test_every_car_uses_saved_traction_strength_without_changing_car_resources() -> void:
+	var state := SaveSandbox.game_state()
+	state.set_traction_control_strength(0.42)
+	for car_def: CarDef in state.car_catalog.cars:
+		var next: DrivingRig = RIG_SCENE.instantiate()
+		next.car_override = car_def
+		add_child_autofree(next)
+		assert_eq(next.car.drivetrain.traction_control_strength, 0.42, car_def.display_name)
+		assert_same(next.car.stats, car_def.stats, "shared tuning stays unchanged")
+		assert_true(car_def.stats.traction_control)
+		next.place_car(Transform3D.IDENTITY)
+		assert_eq(next.car.drivetrain.traction_control_strength, 0.42, "reset retains choice")
+		state.set_traction_control_strength(0.0)
+		assert_eq(next.car.drivetrain.traction_control_strength, 0.0, "live settings reach the current rig")
+		state.reload()
+		assert_eq(next.car.drivetrain.traction_control_strength, 0.0, "reload reapplies the saved choice")
+		state.set_traction_control_strength(0.42)
+		next.queue_free()
+
+
+func test_pause_content_fits_the_landscape_viewport() -> void:
+	_add_menu()
+	var content: VBoxContainer = menu.find_child("PauseContent", true, false)
+	assert_not_null(content)
+	if content != null:
+		var minimum := content.get_combined_minimum_size()
+		assert_lt(minimum.x, 1920.0)
+		assert_lt(minimum.y, 1080.0, "all navigation and settings fit without scrolling")

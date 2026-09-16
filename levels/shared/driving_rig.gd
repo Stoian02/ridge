@@ -35,6 +35,8 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
+	_apply_traction_control_strength(GameState.progress.traction_control_strength)
+	GameState.traction_control_strength_changed.connect(_apply_traction_control_strength)
 	touch_controls.pause_requested.connect(pause_requested.emit)
 	touch_controls.set_steer_mode(TouchControls.mode_from_name(GameState.progress.steer_mode))
 	effects = CarEffects.new()
@@ -48,6 +50,10 @@ func _ready() -> void:
 	audio.process_priority = 1
 	add_child(audio)
 	audio.setup(car, effects)
+
+
+func _apply_traction_control_strength(value: float) -> void:
+	car.drivetrain.traction_control_strength = value
 
 
 ## Puts the car upright and still at `target`, with the camera straight behind it.

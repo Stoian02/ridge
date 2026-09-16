@@ -99,6 +99,21 @@ func test_the_sound_setting_sets_the_master_bus_and_is_saved() -> void:
 	assert_false(AudioServer.is_bus_mute(master))
 
 
+func test_traction_strength_is_saved_signalled_clamped_and_reloaded() -> void:
+	watch_signals(state)
+	state.set_traction_control_strength(0.37)
+	assert_signal_emitted_with_parameters(state, "traction_control_strength_changed", [0.37])
+	assert_eq(SaveSystem.read(SaveSandbox.PATH)["settings"]["traction_control_strength"], 0.37)
+	state.reload()
+	assert_eq(state.progress.traction_control_strength, 0.37)
+	state.set_traction_control_strength(-2.0)
+	assert_eq(state.progress.traction_control_strength, 0.0)
+	state.set_traction_control_strength(2.0)
+	assert_eq(state.progress.traction_control_strength, 1.0)
+	state.set_traction_control_strength(NAN)
+	assert_eq(state.progress.traction_control_strength, 1.0, "non-finite runtime input is ignored")
+
+
 func test_going_to_a_level_shows_a_loading_screen_first_and_hides_it_after() -> void:
 	assert_false(state.show_loading, "the sandbox turns the loading screen off, so scene changes are immediate")
 	state.show_loading = true

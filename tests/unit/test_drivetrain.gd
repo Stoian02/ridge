@@ -43,6 +43,33 @@ func test_traction_factor() -> void:
 	assert_almost_eq(Drivetrain.traction_factor(5.0, 0.2, false), 1.0, 0.0001, "switched off")
 
 
+func test_traction_strength_scales_the_cut_and_preserves_full_exactly() -> void:
+	for slip: float in [0.0, 0.1, 0.3, 0.5, 5.0]:
+		var original: float = 1.0 if slip <= 0.2 else clampf(1.0 - (slip - 0.2) / 0.2, 0.2, 1.0)
+		assert_eq(Drivetrain.traction_factor(slip, 0.2, true), original, "default is the legacy calculation")
+		assert_eq(Drivetrain.traction_factor(slip, 0.2, true, 1.0), original, "full is exactly the old result")
+		assert_eq(Drivetrain.traction_factor(slip, 0.2, true, 0.0), 1.0, "off never trims torque")
+		assert_almost_eq(Drivetrain.traction_factor(slip, 0.2, true, 0.5), (1.0 + original) * 0.5, 0.00001)
+		assert_eq(Drivetrain.traction_factor(slip, 0.2, false, 0.5), 1.0, "car's TC disable is still respected")
+	assert_eq(Drivetrain.traction_factor(5.0, 0.2, true, -1.0), 1.0)
+	assert_eq(Drivetrain.traction_factor(5.0, 0.2, true, 2.0), 0.2)
+
+
+func test_traction_strength_reaches_engine_torque_and_survives_reset() -> void:
+	drivetrain.traction_control_strength = 0.0
+	_update_at_rpm(4000.0, 1.0, 0.0, 5.0)
+	var uncut := drivetrain.drive_torque
+	drivetrain.traction_control_strength = 0.5
+	_update_at_rpm(4000.0, 1.0, 0.0, 5.0)
+	assert_almost_eq(drivetrain.drive_torque, uncut * 0.6, 0.001)
+	drivetrain.reset()
+	assert_eq(drivetrain.traction_control_strength, 0.5)
+	drivetrain.traction_control_strength = 1.0
+	_update_at_rpm(4000.0, 1.0, 0.0, 5.0)
+	assert_almost_eq(drivetrain.drive_torque, uncut * 0.2, 0.001)
+	assert_true(stats.traction_control, "runtime choice does not edit the shared stats")
+
+
 func test_first_gear_ratio_includes_final_drive() -> void:
 	assert_almost_eq(drivetrain.overall_ratio(), 3.3 * 4.4, 0.001)
 

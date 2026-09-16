@@ -14,6 +14,9 @@ var rpm: float = 0.0
 var drive_torque: float = 0.0
 ## Brake demand 0..1 after reverse handling and auto-hold.
 var brake_input: float = 0.0
+## Runtime player assist; does not mutate the car's shared tuning resource.
+## 0 = no TC torque reduction, 1 = the car's original full intervention.
+var traction_control_strength: float = 1.0
 
 var _shift_timer: float = 0.0
 
@@ -49,10 +52,14 @@ static func torque_at(engine_rpm: float, rpm_points: PackedFloat32Array, torque_
 ## Traction control: the share of engine torque to keep when the driven wheels
 ## slip by driven_slip. Full torque up to target_slip, then fading to a 20%
 ## floor at twice the target.
-static func traction_factor(driven_slip: float, target_slip: float, enabled: bool) -> float:
-	if not enabled or driven_slip <= target_slip:
+static func traction_factor(driven_slip: float, target_slip: float, enabled: bool,
+		strength: float = 1.0) -> float:
+	if not enabled or strength <= 0.0 or driven_slip <= target_slip:
 		return 1.0
-	return clampf(1.0 - (driven_slip - target_slip) / target_slip, 0.2, 1.0)
+	var full := clampf(1.0 - (driven_slip - target_slip) / target_slip, 0.2, 1.0)
+	if strength >= 1.0:
+		return full  # Preserve the original arithmetic exactly at the default.
+	return lerpf(1.0, full, strength)
 
 
 ## Ratio from engine to wheels in the current gear, including the final drive.
@@ -97,7 +104,7 @@ func update(delta: float, throttle: float, brake: float, driven_wheel_speed: flo
 	if gas > 0.0:
 		if wheel_rpm < stats.redline_rpm:  # rev limiter
 			engine_torque = gas * torque_at(rpm, stats.torque_curve_rpm, stats.torque_curve_nm) \
-					* traction_factor(driven_slip, stats.traction_slip_target, stats.traction_control)
+					* traction_factor(driven_slip, stats.traction_slip_target, stats.traction_control, traction_control_strength)
 	else:
 		# Engine braking resists the direction the wheels are turning.
 		engine_torque = -stats.engine_braking_nm * (rpm / stats.redline_rpm) \
