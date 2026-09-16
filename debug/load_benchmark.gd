@@ -5,7 +5,8 @@ extends Node
 ##   adb shell am start -n com.ridge.game/com.godot.game.GodotAppLauncher --esa command_line_params res://debug/load_benchmark.tscn
 ##   adb logcat -s godot
 
-const LEVELS: Array[String] = ["res://levels/rally_road/rally_road.tscn", "res://levels/muddy_valley/muddy_valley.tscn"]
+const LEVELS: Array[String] = ["res://levels/rally_road/rally_road.tscn", "res://levels/muddy_valley/muddy_valley.tscn",
+		"res://levels/frozen_pass/frozen_pass.tscn"]
 const ROUNDS := 3
 ## Frames to wait after freeing a level, so it is gone before the next load.
 const SETTLE_FRAMES := 30

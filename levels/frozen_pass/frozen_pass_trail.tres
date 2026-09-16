@@ -1,0 +1,107 @@
+[gd_resource type="Resource" script_class="TrailDef" format=3]
+
+[ext_resource type="Script" path="res://levels/trail/trail_def.gd" id="1"]
+[ext_resource type="Script" path="res://levels/trail/surface_stretch.gd" id="2"]
+[ext_resource type="Resource" path="res://surfaces/snow.tres" id="3"]
+[ext_resource type="Resource" path="res://surfaces/ice.tres" id="4"]
+[ext_resource type="Resource" path="res://surfaces/asphalt.tres" id="5"]
+[ext_resource type="Script" path="res://levels/trail/tunnel_def.gd" id="6"]
+[ext_resource type="Script" path="res://levels/trail/bridge_def.gd" id="7"]
+
+[sub_resource type="Resource" id="Ice1"]
+script = ExtResource("2")
+start = 535.0
+length = 16.0
+surface = ExtResource("4")
+affects_shoulders = false
+color = Color(0.43, 0.61, 0.76, 1)
+roughness = 0.16
+blend_length = 2.0
+
+[sub_resource type="Resource" id="Ice2"]
+script = ExtResource("2")
+start = 748.0
+length = 18.0
+surface = ExtResource("4")
+affects_shoulders = false
+color = Color(0.43, 0.61, 0.76, 1)
+roughness = 0.16
+
+[sub_resource type="Resource" id="Concrete"]
+script = ExtResource("2")
+start = 1150.0
+length = 250.0
+surface = ExtResource("5")
+affects_shoulders = false
+color = Color(0.4, 0.43, 0.46, 1)
+blend_length = 3.0
+
+[sub_resource type="Resource" id="ExitIce"]
+script = ExtResource("2")
+start = 1400.0
+length = 32.0
+surface = ExtResource("4")
+affects_shoulders = false
+color = Color(0.43, 0.61, 0.76, 1)
+roughness = 0.16
+
+[sub_resource type="Resource" id="Ice3"]
+script = ExtResource("2")
+start = 1555.0
+length = 24.0
+surface = ExtResource("4")
+affects_shoulders = false
+color = Color(0.43, 0.61, 0.76, 1)
+roughness = 0.16
+
+[sub_resource type="Resource" id="Ice4"]
+script = ExtResource("2")
+start = 1720.0
+length = 20.0
+surface = ExtResource("4")
+affects_shoulders = false
+color = Color(0.43, 0.61, 0.76, 1)
+roughness = 0.16
+
+[sub_resource type="Resource" id="Ice5"]
+script = ExtResource("2")
+start = 1950.0
+length = 35.0
+surface = ExtResource("4")
+affects_shoulders = false
+color = Color(0.43, 0.61, 0.76, 1)
+roughness = 0.16
+
+[sub_resource type="Resource" id="SummitTunnel"]
+script = ExtResource("6")
+start = 1150.0
+length = 250.0
+inner_width = 11.0
+
+[sub_resource type="Resource" id="BrokenBridge"]
+script = ExtResource("7")
+start = 835.0
+length = 30.0
+drop = 0.7
+
+[resource]
+script = ExtResource("1")
+road_width = 9.0
+shoulder_width = 2.5
+use_curve_banking = false
+base_surface = ExtResource("3")
+shoulder_surface = ExtResource("3")
+painted_lines = false
+sample_step = 1.0
+detail_step = 0.5
+asphalt_color = Color(0.78, 0.85, 0.92, 1)
+shoulder_color = Color(0.91, 0.94, 0.98, 1)
+surface_stretches = Array[ExtResource("2")]([SubResource("Ice1"), SubResource("Ice2"), SubResource("Concrete"), SubResource("ExitIce"), SubResource("Ice3"), SubResource("Ice4"), SubResource("Ice5")])
+tunnels = Array[ExtResource("6")]([SubResource("SummitTunnel")])
+bridges = Array[ExtResource("7")]([SubResource("BrokenBridge")])
+undulation_amplitude = 0.12
+undulation_wavelengths = Vector2(19, 29)
+rollers = Array[Vector3]([Vector3(1460, 0.14, 9), Vector3(1510, 0.16, 10), Vector3(1615, 0.18, 12), Vector3(1680, 0.14, 9), Vector3(1880, 0.18, 11), Vector3(2015, 0.14, 10)])
+checkpoint_distances = PackedFloat32Array(450, 900, 1420, 1750)
+end_margin = 70.0
+seed = 17

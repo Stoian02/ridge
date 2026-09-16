@@ -80,7 +80,10 @@ func test_mud_stages_in_over_damp_dirt_and_soft_mud() -> void:
 func test_scripted_driver_completes_muddy_valley() -> void:
 	var level := _load()
 	var car := level.rig.car
-	var driver := TrailDriver.new(car, level.trail.sampler)
+	# With the approved higher mud grip, the surface-blind driver carries enough
+	# speed into the final bend to hit the hedge at 1399 m. Use the same surface
+	# awareness as the tuned/4x4 scenarios; keep the finish/reset/time assertions.
+	var driver := TrailDriver.new(car, level.trail.sampler, level.trail.profile)
 	watch_signals(level.resets)
 	watch_signals(level.run)
 	var ticks := 0
@@ -108,6 +111,8 @@ func test_scripted_driver_completes_muddy_valley() -> void:
 	assert_between(time, 60.0, 150.0)
 	assert_lt(lost_contact, 240, "rough ground shakes the wheels but doesn't throw them off")
 	assert_true(level.results.is_showing(), "results appear at the finish")
+	if not level.tracker.is_finished():
+		return  # The assertions above report failure without a missing-save script error.
 	var saved: Dictionary = SaveSystem.read(SaveSandbox.PATH)["levels"]["muddy_valley"]
 	assert_almost_eq(float(saved["best_time"]), time, 0.001, "the finish was saved")
 

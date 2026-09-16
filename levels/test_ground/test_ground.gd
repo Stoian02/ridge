@@ -8,7 +8,8 @@ extends Node3D
 ##   - three hills to the left: 10 and 20 degree dirt, 30 degree asphalt
 ##   - two side slopes further left, asphalt then dirt: drive along them and the
 ##     ground tilts from flat to 40 degrees across, with a marker every 5 degrees
-##   - a rough asphalt lane 60 m to the right: potholes, speed bumps, washboard
+##   - snow and ice strips 45 and 60 m to the right
+##   - a rough asphalt lane 105 m to the right: potholes, speed bumps, washboard
 ##   - a rutted mud strip 90 m to the right
 ##   - a suspension course further right: an axle twister, whoops, curb steps
 ##     (10-40 cm), and ground clearance logs (15, 25, 35 cm)
@@ -19,6 +20,8 @@ extends Node3D
 const ASPHALT := preload("res://surfaces/asphalt.tres")
 const DIRT := preload("res://surfaces/dirt.tres")
 const MUD := preload("res://surfaces/mud.tres")
+const SNOW := preload("res://surfaces/snow.tres")
+const ICE := preload("res://surfaces/ice.tres")
 
 ## Thickness of ramps and plateaus (m).
 const SLAB := 1.0
@@ -29,6 +32,9 @@ const DIRT_SLOPE_X := -140.0
 const SLOPE_SIZE := Vector2(14.0, 180.0)
 ## Every strip's entry (+Z) end sits on this line.
 const STRIP_ENTRY_Z := 10.0
+const SNOW_X := 45.0
+const ICE_X := 60.0
+const ROUGH_ASPHALT_X := 105.0
 const TWISTER_X := 125.0
 const WHOOPS_X := 145.0
 const STEPS_X := 165.0
@@ -80,13 +86,18 @@ func _build_layout() -> void:
 	# Strips sit 2 cm above the dirt so their surfaces don't overlap.
 	_add_block(ASPHALT, Vector3(14.0, 0.2, 400.0), Vector3(0.0, -0.08, -190.0))
 	_add_block(MUD, Vector3(14.0, 0.2, 300.0), Vector3(30.0, -0.08, -140.0))
+	_add_block(SNOW, Vector3(14.0, 0.2, 300.0), Vector3(SNOW_X, -0.08, -140.0))
+	_add_block(ICE, Vector3(14.0, 0.2, 300.0), Vector3(ICE_X, -0.08, -140.0))
+	_add_label("SNOW", Vector3(SNOW_X, 3.0, STRIP_ENTRY_Z + 4.0), 160, TITLE_RANGE)
+	_add_label("ICE", Vector3(ICE_X, 3.0, STRIP_ENTRY_Z + 4.0), 160, TITLE_RANGE)
+	_add_label("ROUGH ASPHALT", Vector3(ROUGH_ASPHALT_X, 3.0, STRIP_ENTRY_Z + 4.0), 128, TITLE_RANGE)
 	for i in 8:
 		_add_cone(Vector3(-3.5 if i % 2 == 0 else 3.5, 0.02, -30.0 - i * 18.0))
 	_add_ramp(ASPHALT, Vector3(0.0, 0.02, -250.0), 8.0, 15.0, 8.0)
 	_add_hill(DIRT, Vector3(-30.0, 0.0, -20.0), 10.0, 40.0)
 	_add_hill(DIRT, Vector3(-50.0, 0.0, -20.0), 20.0, 25.0)
 	_add_hill(ASPHALT, Vector3(-70.0, 0.0, -20.0), 30.0, 16.0)
-	_add_rough_patch(ASPHALT, RoughPatch.Profile.ROUGH_ASPHALT, Vector3(60.0, 0.0, -110.0), Vector2(10.0, 200.0))
+	_add_rough_patch(ASPHALT, RoughPatch.Profile.ROUGH_ASPHALT, Vector3(ROUGH_ASPHALT_X, 0.0, -110.0), Vector2(10.0, 200.0))
 	_add_rough_patch(MUD, RoughPatch.Profile.RUTTED_MUD, Vector3(90.0, 0.0, -60.0), Vector2(10.0, 100.0))
 	_add_runway_boards()
 	_add_side_slope(ASPHALT, ASPHALT_SLOPE_X, "SIDE SLOPE - ASPHALT")
@@ -186,6 +197,12 @@ func _add_rough_patch(surface: SurfaceDef, profile: RoughPatch.Profile, center: 
 	patch.spacing = spacing
 	patch.position = center
 	add_child(patch)
+	# Like trail terrain, dense ground receives car shadows but does not render
+	# itself a second time into the shadow map. The new lane view exceeded 300k
+	# primitives with all the neighbouring suspension strips casting shadows.
+	for child in patch.get_children():
+		if child is MeshInstance3D:
+			child.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 ## A box of one surface. tilt_deg rotates it about X (+ raises its -Z end).
@@ -207,7 +224,7 @@ func _add_block(surface: SurfaceDef, size: Vector3, center: Vector3, tilt_deg :=
 	mesh.mesh = box_mesh
 	var material := StandardMaterial3D.new()
 	material.albedo_color = surface.debug_color
-	material.roughness = 0.9
+	material.roughness = 0.16 if surface == ICE else 0.9
 	mesh.material_override = material
 	body.add_child(mesh)
 

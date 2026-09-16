@@ -6,6 +6,7 @@ extends Node
 ## The first argument after "--" is the level scene; the rest are distances along
 ## the road (m), plus an optional car=<id> to drive instead of the selected car.
 ## Shots are saved as build/level_shots/<level>[_<car>]_<distance>.png.
+## For Test Ground, spots are lane X coordinates instead of road distances.
 
 const OUT_DIR := "res://build/level_shots"
 ## Frames to wait at each spot so the camera and visibility ranges settle.
@@ -25,7 +26,7 @@ func _ready() -> void:
 		push_error("usage: -- <level scene> <distance> [distance...] [car=<id>]")
 		get_tree().quit(1)
 		return
-	var level: RunLevel = load(args[0]).instantiate()
+	var level: Node3D = load(args[0]).instantiate()
 	if not car_id.is_empty():
 		var car := GameState.car_catalog.find_by_id(StringName(car_id))
 		if car == null:
@@ -36,12 +37,19 @@ func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 	add_child(level)
 	await get_tree().process_frame
+	var rig: DrivingRig = level.get_node("DrivingRig")
 	var tag := args[0].get_file().get_basename()
 	if not car_id.is_empty():
 		tag += "_" + car_id
-	print("%s built in %.2f s" % [tag, level.trail.build_seconds])
+	if level is RunLevel:
+		print("%s built in %.2f s" % [tag, level.trail.build_seconds])
+		while level.run.clock.stage == RunClock.Stage.COUNTDOWN:
+			await get_tree().process_frame
 	for spot in spots:
-		level.rig.place_car(level.trail.sampler.transform_at(spot, 1.0, level.trail.profile))
+		if level is RunLevel:
+			rig.place_car(level.trail.sampler.transform_at(spot, 1.0, level.trail.profile))
+		else:
+			rig.place_car(Transform3D(Basis.IDENTITY, Vector3(spot, 1.0, 26.0)))
 		for i in SETTLE_FRAMES:
 			await get_tree().process_frame
 		var image := get_viewport().get_texture().get_image()

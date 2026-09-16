@@ -4,7 +4,8 @@
 [ext_resource type="Resource" path="res://levels/rally_road/rally_road_level.tres" id="2_3v4in"]
 [ext_resource type="Script" path="res://game/level_catalog.gd" id="3_sd0ii"]
 [ext_resource type="Resource" path="res://levels/muddy_valley/muddy_valley_level.tres" id="4_muddy"]
+[ext_resource type="Resource" path="res://levels/frozen_pass/frozen_pass_level.tres" id="5_frozen"]
 
 [resource]
 script = ExtResource("3_sd0ii")
-levels = Array[ExtResource("1_gufqt")]([ExtResource("2_3v4in"), ExtResource("4_muddy")])
+levels = Array[ExtResource("1_gufqt")]([ExtResource("2_3v4in"), ExtResource("4_muddy"), ExtResource("5_frozen")])

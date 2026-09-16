@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="TerrainDef" format=3]
+
+[ext_resource type="Script" path="res://levels/trail/terrain_def.gd" id="1"]
+[ext_resource type="Resource" path="res://surfaces/snow.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+surface = ExtResource("2")
+margin = 220.0
+detail_distance = 140.0
+view_distance = 420.0
+noise_amplitude = 28.0
+noise_wavelength = 180.0
+rock_slope_deg = 32.0
+dirt_color = Color(0.9, 0.93, 0.97, 1)
+rock_color = Color(0.43, 0.48, 0.54, 1)
+seed = 31

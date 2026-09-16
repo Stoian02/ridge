@@ -40,7 +40,7 @@ func build(field: TerrainField, sampler: RoadSampler, profile: RoadProfile, trai
 	rock_collision.set_meta(SurfaceLookup.META_KEY, DIRT)
 	add_child(rock_collision)
 
-	var pines := _scatter(field, def, def.pine_spacing, Vector2(0.8, 1.3), 0.0, creek_clearance, rng)
+	var pines := _scatter(field, def, def.pine_spacing, Vector2(0.8, 1.3), 0.0, creek_clearance, rng, true)
 	pine_count = pines.size()
 	_add_multimeshes(field, pines, LowPolyMeshes.pine(def.foliage_color, def.trunk_color), material,
 			def.pine_view_distance, true)
@@ -73,7 +73,7 @@ func build(field: TerrainField, sampler: RoadSampler, profile: RoadProfile, trai
 ## One transform per grid cell of `spacing`, jittered, skipping cells too close
 ## to the road or a creek, or too steep. `sink` lowers each item by that share of its scale.
 func _scatter(field: TerrainField, def: ScatterDef, spacing: float, scale_range: Vector2, sink: float,
-		creek_clearance: float, rng: RandomNumberGenerator) -> Array[Transform3D]:
+		creek_clearance: float, rng: RandomNumberGenerator, pines: bool = false) -> Array[Transform3D]:
 	var transforms: Array[Transform3D] = []
 	var width := (field.columns - 1) * field.spacing
 	var depth := (field.rows - 1) * field.spacing
@@ -96,6 +96,10 @@ func _scatter(field: TerrainField, def: ScatterDef, spacing: float, scale_range:
 			if acos(clampf(field.normal_at(world_x, world_z).y, -1.0, 1.0)) > max_slope:
 				continue
 			var ground := field.height_at(world_x, world_z) - sink * scale
+			if pines and def.pine_thinning_heights.y > def.pine_thinning_heights.x:
+				var thinning := smoothstep(def.pine_thinning_heights.x, def.pine_thinning_heights.y, ground)
+				if rng.randf() > lerpf(1.0, def.pine_high_density, thinning):
+					continue
 			var basis := Basis(Vector3.UP, yaw).scaled(Vector3.ONE * scale)
 			transforms.append(Transform3D(basis, Vector3(world_x, ground, world_z)))
 		z += spacing
@@ -109,6 +113,9 @@ func _posts(field: TerrainField, sampler: RoadSampler, profile: RoadProfile, tra
 	var half := trail.half_total_width()
 	var distance := def.post_spacing * 0.5
 	while distance < sampler.length:
+		if profile.on_bridge(distance) or trail.tunnels.any(func(t: TunnelDef) -> bool: return t.contains(distance)):
+			distance += def.post_spacing
+			continue
 		var across := sampler.right(distance)
 		var flat_across := Vector3(across.x, 0.0, across.z).normalized()
 		for side: float in [-1.0, 1.0]:

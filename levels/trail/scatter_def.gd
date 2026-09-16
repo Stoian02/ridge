@@ -4,6 +4,9 @@ extends Resource
 
 ## Average distance between pines (m); 12.2 m is about one per 150 m².
 @export var pine_spacing: float = 12.2
+## Optional altitude thinning; equal endpoints disable it for existing levels.
+@export var pine_thinning_heights: Vector2 = Vector2.ZERO
+@export_range(0.0, 1.0) var pine_high_density: float = 0.15
 ## Average distance between broadleaf trees (m); 0 = none.
 @export var broadleaf_spacing: float = 0.0
 ## Average distance between rocks (m); 17.3 m is about one per 300 m².

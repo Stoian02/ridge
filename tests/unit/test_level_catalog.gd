@@ -42,7 +42,7 @@ func test_the_shipped_catalog_starts_with_rally_road() -> void:
 
 func test_muddy_valley_follows_rally_road_and_unlocks_after_it() -> void:
 	var shipped: LevelCatalog = load("res://levels/catalog.tres")
-	assert_eq(shipped.levels.size(), 2)
+	assert_eq(shipped.levels.size(), 3)
 	var muddy: LevelDef = shipped.levels[1]
 	assert_eq(muddy.id, &"muddy_valley")
 	assert_eq(muddy.display_name, "Muddy Valley")
@@ -52,6 +52,22 @@ func test_muddy_valley_follows_rally_road_and_unlocks_after_it() -> void:
 	assert_false(progress.is_unlocked(shipped, muddy), "locked at first")
 	progress.record_finish(shipped.levels[0], 90.0, {})
 	assert_true(progress.is_unlocked(shipped, muddy), "unlocked by finishing Rally Road")
+
+
+func test_frozen_pass_is_third_and_unlocks_after_muddy_valley() -> void:
+	var shipped: LevelCatalog = load("res://levels/catalog.tres")
+	var frozen: LevelDef = shipped.levels[2]
+	assert_eq(frozen.id, &"frozen_pass")
+	assert_eq(frozen.display_name, "Frozen Pass")
+	assert_true(ResourceLoader.exists(frozen.scene_path))
+	assert_eq(frozen.two_star_time, 135.0, "placeholder pending owner playtest")
+	assert_eq(frozen.three_star_time, 120.0)
+	var progress := Progress.new()
+	assert_false(progress.is_unlocked(shipped, frozen))
+	progress.record_finish(shipped.levels[0], 90.0, {})
+	assert_false(progress.is_unlocked(shipped, frozen), "Rally Road alone is not enough")
+	progress.record_finish(shipped.levels[1], 100.0, {})
+	assert_true(progress.is_unlocked(shipped, frozen))
 
 
 func test_a_saved_level_scene_missing_from_the_catalog_is_flagged() -> void:

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ScatterDef" format=3]
+
+[ext_resource type="Script" path="res://levels/trail/scatter_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+pine_spacing = 18.0
+rock_spacing = 22.0
+pine_view_distance = 230.0
+rock_view_distance = 140.0
+pine_thinning_heights = Vector2(35, 85)
+pine_high_density = 0.12
+foliage_color = Color(0.56, 0.67, 0.62, 1)
+trunk_color = Color(0.28, 0.28, 0.27, 1)
+rock_color = Color(0.46, 0.49, 0.54, 1)
+post_color = Color(0.5, 0.53, 0.56, 1)
+reflector_color = Color(1, 0.4, 0.06, 1)
+seed = 23
