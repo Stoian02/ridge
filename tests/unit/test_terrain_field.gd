@@ -72,6 +72,20 @@ func test_generation_is_deterministic() -> void:
 	assert_eq(a.heights, b.heights)
 
 
+func test_parallel_carving_matches_serial_with_bends_noise_and_creek() -> void:
+	terrain.noise_amplitude = 20.0
+	trail.creek_start = 20.0
+	trail.creek_length = 90.0
+	var sampler := _sampler([Vector3.ZERO, Vector3(0, 12, -130), Vector3(45, 21, -150), Vector3(80, 30, -60)])
+	var serial := TerrainField.generate(sampler, trail, terrain, false)
+	var parallel := TerrainField.generate(sampler, trail, terrain, true)
+	assert_eq(parallel.heights, serial.heights)
+	assert_eq(parallel.edge_distances, serial.edge_distances)
+	assert_eq(parallel.creek_distances, serial.creek_distances)
+	assert_eq(parallel.creek_levels, serial.creek_levels)
+	assert_eq(parallel.lowest_height, serial.lowest_height)
+
+
 func test_switchback_legs_leave_no_cliff_between_them() -> void:
 	# Down one leg, a tight turn, and back up a parallel leg 30 m away and 12 m higher.
 	var field := TerrainField.generate(_sampler([

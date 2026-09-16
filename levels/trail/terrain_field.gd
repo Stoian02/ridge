@@ -42,7 +42,7 @@ var wear_color := Color.WHITE
 var lowest_height := 0.0
 
 
-static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef) -> TerrainField:
+static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef, threaded: bool = true) -> TerrainField:
 	var field := TerrainField.new()
 	field.def = terrain
 	field.spacing = terrain.sample_spacing
@@ -64,7 +64,10 @@ static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef)
 
 	field._size_grid(stamps, terrain.margin)
 	field._fill_natural(stamps, terrain)
-	field._carve(stamps, rights, bank_slopes, trail, terrain)
+	if threaded:
+		field._carve_parallel(stamps, rights, bank_slopes, trail, terrain)
+	else:
+		field._carve(stamps, rights, bank_slopes, trail, terrain)
 	field._cut_creek(sampler, trail)
 	return field
 
@@ -239,6 +242,93 @@ func _carve(stamps: Array[Vector3], rights: Array[Vector2], bank_slopes: PackedF
 			heights[i] = Corridor.carved_height(road_height, heights[i], edge_distances[i],
 					terrain.corridor_blend, terrain.under_road_drop)
 		lowest_height = minf(lowest_height, heights[i])
+
+
+## Each task owns a band of rows and visits stamps in the original order. This
+## preserves float32 accumulation exactly, without locks or shared writes.
+func _carve_parallel(stamps: Array[Vector3], rights: Array[Vector2], banks: PackedFloat32Array,
+		trail: TrailDef, terrain: TerrainDef) -> void:
+	var bands := ceili(rows / 32.0)
+	var inputs: Array[Dictionary] = []
+	var results: Array[Dictionary] = []
+	for band in bands:
+		var first := band * 32
+		var count := mini(32, rows - first)
+		inputs.append({"first": first, "rows": count, "columns": columns,
+				"origin": origin, "spacing": spacing, "half_width": trail.half_total_width(),
+				"blend": terrain.corridor_blend, "sigma": terrain.smoothing_radius * terrain.smoothing_radius,
+				"drop": terrain.under_road_drop, "heights": heights.slice(first * columns, (first + count) * columns)})
+		results.append({})
+	var work := func(i: int) -> void:
+		_carve_band(inputs[i], stamps, rights, banks, results[i])
+	var task := WorkerThreadPool.add_group_task(work, bands, -1, true, "Corridor carving")
+	WorkerThreadPool.wait_for_group_task_completion(task)
+	heights.clear()
+	edge_distances.clear()
+	lowest_height = INF
+	for result: Dictionary in results:
+		heights.append_array(result["heights"])
+		edge_distances.append_array(result["edges"])
+		lowest_height = minf(lowest_height, result["lowest"])
+
+
+static func _carve_band(input: Dictionary, stamps: Array[Vector3], rights: Array[Vector2],
+		banks: PackedFloat32Array, into: Dictionary) -> void:
+	var first: int = input["first"]
+	var count: int = input["rows"]
+	var columns: int = input["columns"]
+	var origin: Vector2 = input["origin"]
+	var spacing: float = input["spacing"]
+	var half_width: float = input["half_width"]
+	var blend: float = input["blend"]
+	var sigma: float = input["sigma"]
+	var drop: float = input["drop"]
+	var heights: PackedFloat32Array = input["heights"]
+	var radius := half_width + blend + 2.0
+	var radius_squared := radius * radius
+	var reach := ceili(radius / spacing)
+	var weights := PackedFloat32Array()
+	var sums := PackedFloat32Array()
+	var edges := PackedFloat32Array()
+	weights.resize(count * columns)
+	sums.resize(count * columns)
+	edges.resize(count * columns)
+	edges.fill(FAR)
+	for s in stamps.size():
+		var stamp := stamps[s]
+		var across := rights[s]
+		var bank := banks[s]
+		var centre_row := roundi((stamp.z - origin.y) / spacing)
+		if centre_row + reach < first or centre_row - reach >= first + count:
+			continue
+		var centre_column := roundi((stamp.x - origin.x) / spacing)
+		for row in range(maxi(first, centre_row - reach), mini(first + count, centre_row + reach + 1)):
+			var dz := origin.y + row * spacing - stamp.z
+			for column in range(maxi(0, centre_column - reach), mini(columns, centre_column + reach + 1)):
+				var dx := origin.x + column * spacing - stamp.x
+				var squared := dx * dx + dz * dz
+				if squared > radius_squared:
+					continue
+				var i := (row - first) * columns + column
+				var weight := exp(-squared / sigma)
+				var lateral := dx * across.x + dz * across.y
+				weights[i] += weight
+				sums[i] += weight * (stamp.y + lateral * bank)
+				var edge := sqrt(squared) - half_width
+				if edge < edges[i]:
+					edges[i] = edge
+	var lowest := INF
+	for i in heights.size():
+		if weights[i] > 0.000001 and edges[i] < blend:
+			var road_height := sums[i] / weights[i]
+			if edges[i] < 0.0:
+				heights[i] = road_height - lerpf(Corridor.EDGE_GAP, drop, smoothstep(0.0, Corridor.INSIDE_FALLOFF, -edges[i]))
+			else:
+				heights[i] = lerpf(road_height - Corridor.EDGE_GAP, heights[i], smoothstep(0.0, blend, edges[i]))
+		lowest = minf(lowest, heights[i])
+	into["heights"] = heights
+	into["edges"] = edges
+	into["lowest"] = lowest
 
 
 ## Shapes the ground along the creek. Each nearby sample takes its shape from the

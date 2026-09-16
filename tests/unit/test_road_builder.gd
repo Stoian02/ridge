@@ -87,6 +87,71 @@ func test_collision_surfaces_under_road_and_shoulder() -> void:
 	assert_almost_eq(road_y, 0.0, 0.01)
 
 
+func test_snow_shoulders_have_snow_collision() -> void:
+	def.base_surface = load("res://surfaces/snow.tres")
+	def.shoulder_surface = def.base_surface
+	builder.build(sampler, profile, def)
+	await wait_physics_frames(2)
+	var hit := builder.get_world_3d().direct_space_state.intersect_ray(
+			PhysicsRayQueryParameters3D.create(Vector3(5.0, 3.0, -60.0), Vector3(5.0, -3.0, -60.0)))
+	assert_eq(SurfaceLookup.surface_of(hit["collider"]).id, &"snow")
+
+
+func test_parallel_chunks_match_the_original_serial_builder() -> void:
+	var muddy := _muddy_def()
+	muddy.rough_sections = [Vector3(40, 120, 25)]
+	muddy.undulation_amplitude = 0.1
+	muddy.surface_stretches[0].transition_surfaces = [load("res://levels/muddy_valley/soft_mud.tres")]
+	muddy.surface_stretches[0].transition_length = 8.0
+	for definition: TrailDef in [def, muddy]:
+		var road_profile := RoadProfile.new(definition, sampler.length)
+		builder.threaded = true
+		builder.build(sampler, road_profile, definition)
+		var serial := RoadBuilder.new()
+		serial.threaded = false
+		add_child_autofree(serial)
+		serial.build(sampler, road_profile, definition)
+		assert_eq(builder.get_child_count(), serial.get_child_count())
+		for i in serial.get_child_count():
+			var a := builder.get_child(i)
+			var b := serial.get_child(i)
+			if a is MeshInstance3D and b is MeshInstance3D:
+				var aa: Array = a.mesh.surface_get_arrays(0)
+				var bb: Array = b.mesh.surface_get_arrays(0)
+				for slot: int in [Mesh.ARRAY_VERTEX, Mesh.ARRAY_NORMAL, Mesh.ARRAY_COLOR, Mesh.ARRAY_INDEX]:
+					assert_true(aa[slot] == bb[slot], "chunk %d array %d matches exactly" % [i, slot])
+			elif a is StaticBody3D and b is StaticBody3D:
+				assert_eq(SurfaceLookup.surface_of(a), SurfaceLookup.surface_of(b))
+				var shape_a: ConcavePolygonShape3D = a.get_child(0).shape
+				var shape_b: ConcavePolygonShape3D = b.get_child(0).shape
+				assert_true(shape_a.get_faces() == shape_b.get_faces(), "body %d faces match exactly" % i)
+
+
+func test_curved_road_parallel_geometry_matches_serial() -> void:
+	var curve: Curve3D = load("res://levels/muddy_valley/muddy_valley_curve.tres")
+	var definition: TrailDef = load("res://levels/muddy_valley/muddy_valley_trail.tres")
+	var road := RoadSampler.new(curve)
+	var road_profile := RoadProfile.new(definition, road.length)
+	builder.build(road, road_profile, definition)
+	var serial := RoadBuilder.new()
+	serial.threaded = false
+	add_child_autofree(serial)
+	serial.build(road, road_profile, definition)
+	assert_eq(builder.get_child_count(), serial.get_child_count())
+	for i in serial.get_child_count():
+		var a := builder.get_child(i)
+		var b := serial.get_child(i)
+		if a is MeshInstance3D and b is MeshInstance3D:
+			var aa: Array = a.mesh.surface_get_arrays(0)
+			var bb: Array = b.mesh.surface_get_arrays(0)
+			for slot: int in [Mesh.ARRAY_VERTEX, Mesh.ARRAY_NORMAL, Mesh.ARRAY_COLOR, Mesh.ARRAY_INDEX]:
+				assert_true(aa[slot] == bb[slot], "curved chunk %d slot %d" % [i, slot])
+		elif a is StaticBody3D and b is StaticBody3D:
+			var shape_a: ConcavePolygonShape3D = a.get_child(0).shape
+			var shape_b: ConcavePolygonShape3D = b.get_child(0).shape
+			assert_true(shape_a.get_faces() == shape_b.get_faces(), "curved collision %d" % i)
+
+
 func test_potholes_dip_the_surface_and_darken_it() -> void:
 	var pothole := profile.potholes[0]
 	assert_lt(profile.height(pothole.x, pothole.y), -0.03)

@@ -13,6 +13,9 @@ enum Part { SHOULDER, ROAD, LINE }
 ## Grid stations closer than this to a rut station are dropped (m).
 const MIN_STATION_GAP := 0.05
 
+## Tests retain the original serial builder as an independent reference.
+@export var threaded: bool = true
+
 
 func build(sampler: RoadSampler, profile: RoadProfile, def: TrailDef) -> void:
 	for child in get_children():
@@ -24,6 +27,8 @@ func build(sampler: RoadSampler, profile: RoadProfile, def: TrailDef) -> void:
 	material.vertex_color_use_as_albedo = true
 	material.vertex_color_is_srgb = true
 	material.roughness = 0.9
+	var inputs: Array[Dictionary] = []
+	var results: Array[Dictionary] = []
 
 	var chunk_start := 0
 	while chunk_start < distances.size() - 1:
@@ -33,8 +38,90 @@ func build(sampler: RoadSampler, profile: RoadProfile, def: TrailDef) -> void:
 			chunk_end += 1
 		if chunk_end == chunk_start:
 			chunk_end += 1
-		_add_chunk(sampler, profile, def, stations, distances.slice(chunk_start, chunk_end + 1), material)
+		var rows := distances.slice(chunk_start, chunk_end + 1)
+		if threaded:
+			inputs.append(_snapshot(sampler, profile, def, stations, rows))
+			results.append({})
+		else:
+			_add_chunk(sampler, profile, def, stations, rows, material)
 		chunk_start = chunk_end
+	if threaded:
+		var work := func(i: int) -> void:
+			RoadChunkData.compute(inputs[i], results[i])
+		var task := WorkerThreadPool.add_group_task(work, inputs.size(), -1, true, "Road chunks")
+		WorkerThreadPool.wait_for_group_task_completion(task)
+		for i in results.size():
+			var mesh := ArrayMesh.new()
+			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, results[i]["arrays"])
+			var instance := MeshInstance3D.new()
+			instance.mesh = mesh
+			instance.material_override = material
+			add_child(instance)
+			var surfaces: Array[SurfaceDef] = inputs[i]["surfaces"]
+			var faces: Array[PackedVector3Array] = results[i]["faces"]
+			for surface in surfaces.size():
+				if not faces[surface].is_empty():
+					add_child(_collision_body(faces[surface], surfaces[surface]))
+
+
+## Resolve resources and sample the curve once per row on the main thread;
+## only immutable value arrays enter the workers' per-vertex loops.
+func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
+		stations: Array[Vector2], distances: PackedFloat32Array) -> Dictionary:
+	var centres := PackedVector3Array()
+	var rights := PackedVector3Array()
+	var ups := PackedVector3Array()
+	var heights := PackedFloat64Array()
+	var ruts: Array[PackedFloat64Array] = []
+	var road_colors: Array[Color] = []
+	var patch_colors: Array[Color] = []
+	var left_colors: Array[Color] = []
+	var right_colors: Array[Color] = []
+	for distance: float in distances:
+		centres.append(sampler.position(distance))
+		rights.append(sampler.right(distance))
+		ups.append(sampler.up(distance))
+		heights.append(profile.undulation(distance) + profile.jump_height(distance))
+		var stretch := profile.stretch_at(distance)
+		var rut := PackedFloat64Array([0.0, 1.0, 0.0])
+		var road_color := def.asphalt_color
+		var patch_color := def.patch_color
+		if stretch != null:
+			var weight := stretch.weight(distance)
+			rut = PackedFloat64Array([stretch.rut_depth * weight, stretch.rut_width * 0.5, stretch.rut_spacing * 0.5])
+			road_color = road_color.lerp(stretch.color, weight)
+			patch_color = patch_color.lerp(stretch.color, weight)
+		ruts.append(rut)
+		road_colors.append(road_color)
+		patch_colors.append(patch_color)
+		left_colors.append(_color(profile, def, distance, -def.half_total_width(), Part.SHOULDER))
+		right_colors.append(_color(profile, def, distance, def.half_total_width(), Part.SHOULDER))
+	var surfaces: Array[SurfaceDef] = [def.base_surface]
+	if not surfaces.has(def.shoulder_surface):
+		surfaces.append(def.shoulder_surface)
+	var road_surfaces := PackedInt32Array()
+	var shoulder_surfaces := PackedInt32Array()
+	for row in distances.size() - 1:
+		var midpoint := (distances[row] + distances[row + 1]) * 0.5
+		var stretch := profile.stretch_at(midpoint)
+		var road: SurfaceDef = stretch.surface_at(midpoint) if stretch != null else def.base_surface
+		var shoulder: SurfaceDef = stretch.surface_at(midpoint) if stretch != null else def.shoulder_surface
+		if not surfaces.has(road):
+			surfaces.append(road)
+		if not surfaces.has(shoulder):
+			surfaces.append(shoulder)
+		road_surfaces.append(surfaces.find(road))
+		shoulder_surfaces.append(surfaces.find(shoulder))
+	var potholes: Array[Vector4] = []
+	for pothole: Vector4 in profile.potholes:
+		if pothole.x + pothole.z >= distances[0] and pothole.x - pothole.z <= distances[-1]:
+			potholes.append(pothole)
+	return {"stations": stations, "distances": distances, "centres": centres, "rights": rights,
+			"ups": ups, "heights": heights, "ruts": ruts, "road_colors": road_colors,
+			"patch_colors": patch_colors, "left_colors": left_colors, "right_colors": right_colors,
+			"line_color": def.line_color, "potholes": potholes, "patches": profile.patches,
+			"road_surfaces": road_surfaces, "shoulder_surfaces": shoulder_surfaces,
+			"surfaces": surfaces, "surface_count": surfaces.size()}
 
 
 ## Cross-section stations from left to right as Vector2(lateral offset, part).

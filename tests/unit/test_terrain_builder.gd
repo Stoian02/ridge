@@ -40,6 +40,13 @@ func test_near_and_far_mesh_and_one_dirt_body_per_chunk() -> void:
 	assert_eq(bodies[0].get_meta(SurfaceLookup.META_KEY).id, &"dirt")
 
 
+func test_terrain_collision_uses_its_configured_surface() -> void:
+	field.def.surface = load("res://surfaces/snow.tres")
+	builder.build(field)
+	for body: StaticBody3D in _children_of("StaticBody3D"):
+		assert_eq(SurfaceLookup.surface_of(body).id, &"snow")
+
+
 func test_far_mesh_takes_over_where_the_near_mesh_ends() -> void:
 	var near: MeshInstance3D = _near_meshes()[0]
 	var far: MeshInstance3D = _far_meshes()[0]
