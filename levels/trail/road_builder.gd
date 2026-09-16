@@ -29,12 +29,23 @@ func build(sampler: RoadSampler, profile: RoadProfile, def: TrailDef) -> void:
 	material.roughness = 0.9
 	var inputs: Array[Dictionary] = []
 	var results: Array[Dictionary] = []
+	var materials: Array[StandardMaterial3D] = []
+	var material_cache := {0.9: material}
 
 	var chunk_start := 0
 	while chunk_start < distances.size() - 1:
 		var chunk_end := chunk_start
+		var roughness := profile.roughness_at((distances[chunk_start] + distances[chunk_start + 1]) * 0.5)
+		if not material_cache.has(roughness):
+			var variant: StandardMaterial3D = material.duplicate()
+			variant.roughness = roughness
+			material_cache[roughness] = variant
+		var chunk_material: StandardMaterial3D = material_cache[roughness]
 		var limit := distances[chunk_start] + def.chunk_length
 		while chunk_end < distances.size() - 1 and distances[chunk_end + 1] <= limit + 0.001:
+			var next_roughness := profile.roughness_at((distances[chunk_end] + distances[chunk_end + 1]) * 0.5)
+			if not is_equal_approx(next_roughness, roughness):
+				break
 			chunk_end += 1
 		if chunk_end == chunk_start:
 			chunk_end += 1
@@ -42,8 +53,9 @@ func build(sampler: RoadSampler, profile: RoadProfile, def: TrailDef) -> void:
 		if threaded:
 			inputs.append(_snapshot(sampler, profile, def, stations, rows))
 			results.append({})
+			materials.append(chunk_material)
 		else:
-			_add_chunk(sampler, profile, def, stations, rows, material)
+			_add_chunk(sampler, profile, def, stations, rows, chunk_material)
 		chunk_start = chunk_end
 	if threaded:
 		var work := func(i: int) -> void:
@@ -52,10 +64,13 @@ func build(sampler: RoadSampler, profile: RoadProfile, def: TrailDef) -> void:
 		WorkerThreadPool.wait_for_group_task_completion(task)
 		for i in results.size():
 			var mesh := ArrayMesh.new()
-			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, results[i]["arrays"])
+			var arrays: Array = results[i]["arrays"]
+			if arrays[Mesh.ARRAY_INDEX].is_empty():
+				continue
+			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 			var instance := MeshInstance3D.new()
 			instance.mesh = mesh
-			instance.material_override = material
+			instance.material_override = materials[i]
 			add_child(instance)
 			var surfaces: Array[SurfaceDef] = inputs[i]["surfaces"]
 			var faces: Array[PackedVector3Array] = results[i]["faces"]
@@ -81,7 +96,7 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 		centres.append(sampler.position(distance))
 		rights.append(sampler.right(distance))
 		ups.append(sampler.up(distance))
-		heights.append(profile.undulation(distance) + profile.jump_height(distance))
+		heights.append(profile.longitudinal_height(distance))
 		var stretch := profile.stretch_at(distance)
 		var rut := PackedFloat64Array([0.0, 1.0, 0.0])
 		var road_color := def.asphalt_color
@@ -101,8 +116,10 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 		surfaces.append(def.shoulder_surface)
 	var road_surfaces := PackedInt32Array()
 	var shoulder_surfaces := PackedInt32Array()
+	var skip_rows := PackedByteArray()
 	for row in distances.size() - 1:
 		var midpoint := (distances[row] + distances[row + 1]) * 0.5
+		skip_rows.append(1 if profile.on_bridge(midpoint) else 0)
 		var stretch := profile.stretch_at(midpoint)
 		var road: SurfaceDef = stretch.surface_at(midpoint) if stretch != null else def.base_surface
 		var shoulder: SurfaceDef = stretch.surface_at(midpoint) if stretch != null else def.shoulder_surface
@@ -116,7 +133,7 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 	for pothole: Vector4 in profile.potholes:
 		if pothole.x + pothole.z >= distances[0] and pothole.x - pothole.z <= distances[-1]:
 			potholes.append(pothole)
-	return {"stations": stations, "distances": distances, "centres": centres, "rights": rights,
+	return {"stations": stations, "distances": distances, "centres": centres, "rights": rights, "skip_rows": skip_rows,
 			"ups": ups, "heights": heights, "ruts": ruts, "road_colors": road_colors,
 			"patch_colors": patch_colors, "left_colors": left_colors, "right_colors": right_colors,
 			"line_color": def.line_color, "potholes": potholes, "patches": profile.patches,
@@ -212,6 +229,8 @@ static func _faces(vertices: PackedVector3Array, stations: Array[Vector2], row_s
 	var width := stations.size()
 	var faces := PackedVector3Array()
 	for row in row_surfaces.size():
+		if row_surfaces[row] == null:
+			continue
 		for column in width - 1:
 			var left := stations[column]
 			if is_equal_approx(left.x, stations[column + 1].x):
@@ -249,6 +268,10 @@ func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stati
 		surfaces.append(def.shoulder_surface)
 	for row in distances.size() - 1:
 		var midpoint := (distances[row] + distances[row + 1]) * 0.5
+		if profile.on_bridge(midpoint):
+			row_surfaces.append(null)
+			shoulder_surfaces.append(null)
+			continue
 		var stretch := profile.stretch_at(midpoint)
 		var surface := stretch.surface_at(midpoint) if stretch != null else def.base_surface
 		var shoulder_surface: SurfaceDef = stretch.surface_at(midpoint) if stretch != null else def.shoulder_surface
@@ -264,6 +287,8 @@ func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stati
 			var i := row * width + column
 			indices.append_array([i, i + width, i + 1, i + 1, i + width, i + width + 1])
 
+	if indices.is_empty():
+		return
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices

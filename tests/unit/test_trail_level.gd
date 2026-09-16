@@ -23,7 +23,7 @@ func test_building_creates_every_part() -> void:
 	var level := _level()
 	add_child_autofree(level)  # builds in _ready
 	for part in ["Generated/Road", "Generated/Shortcut", "Generated/Terrain", "Generated/Hedges",
-			"Generated/Scatter", "Generated/Checkpoints"]:
+			"Generated/Tunnels", "Generated/Scatter", "Generated/Checkpoints"]:
 		assert_not_null(level.get_node_or_null(part), part)
 	assert_eq(level.checkpoints.reset_transforms.size(), 3)
 	gut.p("small trail built in %.2f s" % level.build_seconds)

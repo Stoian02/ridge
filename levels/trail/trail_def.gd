@@ -27,6 +27,7 @@ extends Resource
 @export var painted_lines: bool = true
 ## Stretches of another surface (such as mud with ruts). They must not overlap.
 @export var surface_stretches: Array[SurfaceStretch] = []
+@export_range(0.0, 1.0) var road_roughness: float = 0.9
 
 @export_group("Undulation")
 ## Peak height of the gentle waves along the whole road.
@@ -47,6 +48,8 @@ extends Resource
 @export_group("Jumps")
 ## Jump crests shaped into the road, as Vector3(distance, height, length).
 @export var jumps: Array[Vector3] = []
+## Smooth full-width rollers as (distance, height, length), with no takeoff ledge.
+@export var rollers: Array[Vector3] = []
 
 @export_group("Checkpoints")
 ## The start gate sits this far along the road, leaving road behind the car.
@@ -79,6 +82,10 @@ extends Resource
 
 @export_group("Shortcut")
 @export var shortcut: TrailShortcut
+
+@export_group("Structures")
+@export var tunnels: Array[TunnelDef] = []
+@export var bridges: Array[BridgeDef] = []
 
 @export_group("Colours")
 ## The road's own colour: asphalt, or dirt on a dirt trail.

@@ -39,6 +39,8 @@ var creek_levels := PackedFloat32Array()
 ## How strongly each sample is tinted toward wear_color (0..1); empty where nothing wears the ground.
 var wear := PackedFloat32Array()
 var wear_color := Color.WHITE
+## Grid samples removed around tunnel approaches; the structure closes the sides.
+var portal_holes := PackedByteArray()
 var lowest_height := 0.0
 
 
@@ -55,6 +57,8 @@ static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 	var distance := 0.0
 	while distance <= sampler.length:
 		var point := sampler.position(distance)
+		for bridge: BridgeDef in trail.bridges:
+			point.y += bridge.height_offset(distance)
 		var across := sampler.right(distance)
 		var flat := Vector2(across.x, across.z)
 		stamps.append(point)
@@ -69,6 +73,12 @@ static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 	else:
 		field._carve(stamps, rights, bank_slopes, trail, terrain)
 	field._cut_creek(sampler, trail)
+	TrailEarthworks.apply_tunnels(field, sampler, trail)
+	TrailEarthworks.apply_bridges(field, sampler, trail)
+	if not trail.tunnels.is_empty() or not trail.bridges.is_empty():
+		field.lowest_height = INF
+		for height: float in field.heights:
+			field.lowest_height = minf(field.lowest_height, height)
 	return field
 
 

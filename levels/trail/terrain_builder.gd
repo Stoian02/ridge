@@ -76,6 +76,7 @@ func _chunk_data(field: TerrainField, first_column: int, first_row: int, size: i
 	into["near"] = _mesh_arrays(field, first_column, first_row, size, 1)
 	into["far"] = _mesh_arrays(field, first_column, first_row, size, COARSE_STEP)
 	var heights := field.heights
+	var holes := field.portal_holes
 	var columns := field.columns
 	var last_column := columns - 1
 	var last_row := field.rows - 1
@@ -84,7 +85,8 @@ func _chunk_data(field: TerrainField, first_column: int, first_row: int, size: i
 	for row in size:
 		var row_offset := clampi(first_row + row, 0, last_row) * columns
 		for column in size:
-			collision_heights[row * size + column] = heights[row_offset + clampi(first_column + column, 0, last_column)]
+			var i := row_offset + clampi(first_column + column, 0, last_column)
+			collision_heights[row * size + column] = NAN if not holes.is_empty() and holes[i] != 0 else heights[i]
 	into["collision"] = collision_heights
 
 
@@ -126,6 +128,7 @@ func _add_chunk(field: TerrainField, first_column: int, first_row: int, size: in
 ## _chunk_data for why); the results match TerrainField's own methods.
 func _mesh_arrays(field: TerrainField, first_column: int, first_row: int, size: int, step: int) -> Array:
 	var heights := field.heights
+	var holes := field.portal_holes
 	var wear := field.wear
 	var has_wear := not wear.is_empty()
 	var columns := field.columns
@@ -172,7 +175,21 @@ func _mesh_arrays(field: TerrainField, first_column: int, first_row: int, size: 
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_COLOR] = colors
-	arrays[Mesh.ARRAY_INDEX] = _index_cache[mesh_size]
+	var indices: PackedInt32Array = _index_cache[mesh_size]
+	if not holes.is_empty():
+		var filtered := PackedInt32Array()
+		for row in mesh_size - 1:
+			for column in mesh_size - 1:
+				var clear := true
+				for dz in step + 1:
+					for dx in step + 1:
+						if holes[(first_row + row * step + dz) * columns + first_column + column * step + dx] != 0:
+							clear = false
+				if clear:
+					var i := row * mesh_size + column
+					filtered.append_array([i, i + 1, i + mesh_size, i + 1, i + mesh_size + 1, i + mesh_size])
+		indices = filtered
+	arrays[Mesh.ARRAY_INDEX] = indices
 	return arrays
 
 

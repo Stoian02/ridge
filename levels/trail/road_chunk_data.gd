@@ -22,6 +22,7 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 	var road_surfaces: PackedInt32Array = input["road_surfaces"]
 	var shoulder_surfaces: PackedInt32Array = input["shoulder_surfaces"]
 	var surface_count: int = input["surface_count"]
+	var skip_rows: PackedByteArray = input["skip_rows"]
 	var width := stations.size()
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
@@ -73,6 +74,8 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 	for surface in surface_count:
 		faces.append(PackedVector3Array())
 	for row in distances.size() - 1:
+		if skip_rows[row] != 0:
+			continue
 		for column in width - 1:
 			if is_equal_approx(stations[column].x, stations[column + 1].x):
 				continue

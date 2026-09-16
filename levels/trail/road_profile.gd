@@ -51,6 +51,10 @@ func _init(trail_def: TrailDef, length: float) -> void:
 	for stretch in def.surface_stretches:
 		for end: float in [stretch.start, stretch.end()]:
 			ranges.append(Vector2(end - stretch.blend_length, end + stretch.blend_length))
+	for bridge: BridgeDef in def.bridges:
+		ranges.append(Vector2(bridge.start, bridge.end() + bridge.ramp_length))
+	for roller: Vector3 in def.rollers:
+		ranges.append(Vector2(roller.x - roller.z * 0.5, roller.x + roller.z * 0.5))
 
 	potholes.sort_custom(func(a: Vector4, b: Vector4) -> bool: return a.x < b.x)
 	for pothole in potholes:
@@ -61,8 +65,38 @@ func _init(trail_def: TrailDef, length: float) -> void:
 
 ## Total surface offset at a point of the road (m).
 func height(distance: float, lateral: float) -> float:
-	return undulation(distance) + jump_height(distance) + rough_height(distance, lateral) \
+	return longitudinal_height(distance) + rough_height(distance, lateral) \
 			+ rut_height(distance, lateral)
+
+
+func longitudinal_height(distance: float) -> float:
+	return undulation(distance) + jump_height(distance) + bridge_height(distance) + roller_height(distance)
+
+
+func roller_height(distance: float) -> float:
+	var total := 0.0
+	for roller: Vector3 in def.rollers:
+		total += RoughShapes.bump(distance - roller.x, roller.z, roller.y)
+	return total
+
+
+func roughness_at(distance: float) -> float:
+	var stretch := stretch_at(distance)
+	return stretch.roughness if stretch != null else def.road_roughness
+
+
+func bridge_height(distance: float) -> float:
+	var total := 0.0
+	for bridge: BridgeDef in def.bridges:
+		total += bridge.height_offset(distance)
+	return total
+
+
+func on_bridge(distance: float) -> bool:
+	for bridge: BridgeDef in def.bridges:
+		if bridge.contains(distance):
+			return true
+	return false
 
 
 func undulation(distance: float) -> float:
@@ -127,6 +161,8 @@ func stretch_at(distance: float) -> SurfaceStretch:
 
 ## The road's surface at `distance`: a stretch's surface, or the trail's base surface.
 func surface_at(distance: float) -> SurfaceDef:
+	if on_bridge(distance):
+		return preload("res://surfaces/logs.tres")
 	var stretch := stretch_at(distance)
 	return stretch.surface_at(distance) if stretch != null else def.base_surface
 
@@ -136,6 +172,10 @@ func surface_boundaries() -> PackedFloat32Array:
 	var boundaries := PackedFloat32Array()
 	for stretch in def.surface_stretches:
 		for boundary: float in stretch.surface_boundaries():
+			if boundary > 0.0 and boundary < road_length and not boundaries.has(boundary):
+				boundaries.append(boundary)
+	for bridge: BridgeDef in def.bridges:
+		for boundary: float in [bridge.start, bridge.end(), bridge.end() + bridge.ramp_length]:
 			if boundary > 0.0 and boundary < road_length and not boundaries.has(boundary):
 				boundaries.append(boundary)
 	boundaries.sort()
