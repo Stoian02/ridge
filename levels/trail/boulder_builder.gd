@@ -9,10 +9,12 @@ extends Node3D
 const ROCK := preload("res://surfaces/rock.tres")
 ## Nothing is placed closer than this to a checkpoint gate's centre (m).
 const GATE_CLEARANCE := 1.5
-## A boulder's centre sits this share of its radius above the ground: a tenth
-## below it, so about 0.74 r of the flattened rock shows (0.33 m for a 0.45 m
-## boulder, within the 4x4's measured 35 cm clearance).
-const BURY := -0.1
+## A boulder's centre sits this share of its radius above the ground. At 0 the
+## centre sits on the ground: the rock mesh's top sits 0.48-0.71 r above its
+## centre, so a 0.45 m boulder stands 0.21-0.32 m and a 0.30 m one 0.14-0.21 m -
+## above the rally cars' roughly 15 cm and under the 4x4's measured 35 cm
+## clearance (spec §7.3). Kept as the single tuning point for that height.
+const BURY := 0.0
 ## Slab shape relative to its radius: across, up, along the road.
 const SLAB_SCALE := Vector3(1.1, 0.35, 1.6)
 ## Slabs are rolled about the road's axis by this range (degrees).
@@ -51,10 +53,13 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 	var body := StaticBody3D.new()
 	body.name = "Field%dCollision" % index
 	body.set_meta(SurfaceLookup.META_KEY, ROCK)
-	for n in def.count:
+	# Never draws past the road's sampled length, where RoadSampler.forward()
+	# returns a zero vector and Basis.looking_at() would error for a slab.
+	var end := minf(def.end(), sampler.length - 1.0)
+	for n in (def.count if def.start < end else 0):
 		# Every random draw happens before a boulder can be skipped, so the layout
 		# of the others never depends on the gates.
-		var distance := rng.randf_range(def.start, def.end())
+		var distance := rng.randf_range(def.start, end)
 		var side: float = -1.0 if n % 2 == 0 else 1.0
 		var lateral := side * rng.randf_range(def.lateral_range.x, def.lateral_range.y)
 		var slab := rng.randf() < def.slab_fraction

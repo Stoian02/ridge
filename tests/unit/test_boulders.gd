@@ -94,6 +94,15 @@ func test_each_boulder_has_a_convex_rock_collider_and_one_multimesh_per_field() 
 		assert_gt(hit["position"].y, centre.y, "its top is above its centre")
 
 
+func test_a_field_past_the_road_end_builds_without_errors() -> void:
+	def.start = 280.0
+	def.length = 70.0  # end() = 350, 50 m past the 300 m road
+	builder.build(sampler, profile, field, trail)
+	assert_gt(builder.placed[0].size(), 0, "some boulders still land before the road's end")
+	for transform: Transform3D in builder.placed[0]:
+		assert_lte(sampler.closest_distance(transform.origin), sampler.length - 1.0 + 0.01)
+
+
 func test_slabs_are_tilted_across_the_road() -> void:
 	def.slab_fraction = 1.0
 	builder.build(sampler, profile, field, trail)
