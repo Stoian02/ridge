@@ -16,5 +16,13 @@ multipliers = {
 "rally/logs": 1.0,
 "offroad/snow": 1.3,
 "offroad/ice": 1.05,
-"offroad/logs": 1.1
+"offroad/logs": 1.1,
+"offroad/deep_mud": 1.35,
+"rally/deep_mud": 1.0,
+"offroad/rock": 1.05,
+"rally/rock": 1.0,
+"offroad/scree": 1.2,
+"rally/scree": 0.95,
+"offroad/wet_rock": 1.1,
+"rally/wet_rock": 1.0
 }

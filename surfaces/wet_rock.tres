@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SurfaceDef" format=3]
+
+[ext_resource type="Script" path="res://surfaces/surface_def.gd" id="1_surface"]
+
+[resource]
+script = ExtResource("1_surface")
+id = &"wet_rock"
+display_name = "Wet rock"
+grip = 0.5
+rolling_resistance = 0.05
+sink_depth = 0.02
+drag = 20.0
+debug_color = Color(0.3, 0.29, 0.28, 1)

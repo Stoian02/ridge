@@ -14,12 +14,14 @@ const ROAD_SPEED := 35.0
 const MUD_SLIP := 8.0
 const SKID_BASE := 0.3
 const SKID_SLIP := 10.0
+## Rock grinds under the engine: it tops out at this loudness, quieter than gravel.
+const ROCK_MAX := 0.6
 
 
 ## wheels: one Dictionary per wheel with "feel" (SurfaceFeel or null in the air),
-## "ground_speed", "slip_speed" and "sliding". Returns {"road", "gravel", "mud", "skid"}, each 0-1.
+## "ground_speed", "slip_speed" and "sliding". Returns {"road", "gravel", "mud", "skid", "snow", "rock"}, each 0-1.
 static func mix(wheels: Array[Dictionary]) -> Dictionary:
-	var result := {"road": 0.0, "gravel": 0.0, "mud": 0.0, "skid": 0.0, "snow": 0.0}
+	var result := {"road": 0.0, "gravel": 0.0, "mud": 0.0, "skid": 0.0, "snow": 0.0, "rock": 0.0}
 	for wheel in wheels:
 		var feel: SurfaceFeel = wheel["feel"]
 		if feel == null:
@@ -36,6 +38,8 @@ static func mix(wheels: Array[Dictionary]) -> Dictionary:
 				result["snow"] += rolling
 			SurfaceFeel.RollingSound.MUD:
 				result["mud"] += rolling + clampf(slip_speed / MUD_SLIP, 0.0, 1.0) * WHEEL_SHARE
+			SurfaceFeel.RollingSound.ROCK:
+				result["rock"] += rolling * ROCK_MAX
 		if feel.skids and wheel["sliding"]:
 			result["skid"] += clampf(SKID_BASE + slip_speed / SKID_SLIP, 0.0, 1.0) * WHEEL_SHARE * feel.skid_volume
 	for key: String in result:

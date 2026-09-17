@@ -37,6 +37,35 @@ skid_volume = 0.5
 script = ExtResource("2_feel")
 rolling = 2
 
+[sub_resource type="Resource" id="Resource_deep_mud"]
+script = ExtResource("2_feel")
+spray = 1
+spray_color = Color(0.25, 0.18, 0.12, 1)
+rolling = 3
+
+[sub_resource type="Resource" id="Resource_rock"]
+script = ExtResource("2_feel")
+spray = 0
+rolling = 5
+skids = true
+skid_volume = 0.7
+
+[sub_resource type="Resource" id="Resource_scree"]
+script = ExtResource("2_feel")
+spray = 2
+spray_color = Color(0.66, 0.5, 0.4, 1)
+rolling = 2
+skids = true
+skid_volume = 0.6
+
+[sub_resource type="Resource" id="Resource_wet_rock"]
+script = ExtResource("2_feel")
+spray = 4
+spray_color = Color(0.7, 0.78, 0.8, 1)
+rolling = 5
+skids = true
+skid_volume = 0.5
+
 [resource]
 script = ExtResource("1_table")
 feels = {
@@ -47,6 +76,10 @@ feels = {
 &"soft_mud": SubResource("Resource_mud"),
 &"snow": SubResource("Resource_snow"),
 &"ice": SubResource("Resource_ice"),
-&"logs": SubResource("Resource_logs")
+&"logs": SubResource("Resource_logs"),
+&"deep_mud": SubResource("Resource_deep_mud"),
+&"rock": SubResource("Resource_rock"),
+&"scree": SubResource("Resource_scree"),
+&"wet_rock": SubResource("Resource_wet_rock")
 }
 fallback = SubResource("Resource_dirt")

@@ -17,7 +17,7 @@ const FADE_SECONDS := 0.1
 ## buffer and crashed the audio thread when the 4 s wind loop first wrapped.
 const LOOP_PAD := 32
 const NAMES: Array[StringName] = [&"engine_low", &"engine_high", &"road", &"gravel", &"mud", &"skid", &"wind",
-		&"bird", &"thump", &"snow"]
+		&"bird", &"thump", &"snow", &"rock", &"waterfall"]
 
 static var _cache := {}
 
@@ -48,6 +48,10 @@ static func _build(sound_name: StringName) -> AudioStreamWAV:
 			return _wav(_normalized(_seamless(_mud(1.5)), LOOP_PEAK), true)
 		&"snow":
 			return _wav(_normalized(_seamless(_snow(1.2)), LOOP_PEAK), true)
+		&"rock":
+			return _wav(_normalized(_seamless(_rock(1.3)), LOOP_PEAK), true)
+		&"waterfall":
+			return _wav(_normalized(_seamless(_waterfall(3.0)), LOOP_PEAK), true)
 		&"skid":
 			return _wav(_normalized(_seamless(_skid(0.8)), LOOP_PEAK), true)
 		&"wind":
@@ -146,6 +150,45 @@ static func _snow(seconds: float) -> PackedFloat32Array:
 		band += 0.18 * (noise - low - band)
 		var pulse := 0.7 + 0.3 * pow(sin(TAU * 5.0 * i / RATE), 2.0)
 		samples[i] = tanh(band * 2.0) * pulse
+	return samples
+
+
+## Tyres grinding on rock: a low, twice-filtered rumble with irregular knocks
+## (short decaying 60 Hz bursts) as the tread catches on edges. Kept clear of the
+## cross-faded ends so the loop joins cleanly.
+static func _rock(seconds: float) -> PackedFloat32Array:
+	var rng := _rng(28)
+	var samples := _padded(seconds)
+	var low := 0.0
+	var lower := 0.0
+	for i in samples.size():
+		low += 0.12 * (rng.randf_range(-1.0, 1.0) - low)
+		lower += 0.3 * (low - lower)
+		samples[i] = lower * 1.2
+	var fade := _fade_samples()
+	var knock := 400
+	for k in 40:
+		var at := rng.randi_range(fade, samples.size() - fade * 2 - knock)
+		var amplitude := rng.randf_range(0.4, 1.0)
+		for j in knock:
+			samples[at + j] += amplitude * sin(TAU * 60.0 * j / RATE) * exp(-j / 90.0)
+	return samples
+
+
+## A waterfall: a bright hiss (noise minus its low band) over a deep rumble
+## (noise low-passed twice), steady rather than gusting like the wind.
+static func _waterfall(seconds: float) -> PackedFloat32Array:
+	var rng := _rng(29)
+	var samples := _padded(seconds)
+	var low := 0.0
+	var lower := 0.0
+	var band := 0.0
+	for i in samples.size():
+		var noise := rng.randf_range(-1.0, 1.0)
+		low += 0.04 * (noise - low)
+		lower += 0.08 * (low - lower)
+		band += 0.35 * ((noise - low) - band)
+		samples[i] = band * 0.6 + lower * 1.6
 	return samples
 
 

@@ -1,6 +1,6 @@
 class_name WheelSpray
 extends CPUParticles3D
-## One wheel's spray (spec §4.2): mud clods, dust or tyre smoke. Its particles stay
+## One wheel's spray (spec §4.2): mud clods, dust, tyre smoke or a water sheet. Its particles stay
 ## in the world where they were thrown. It hides once it has been idle for longer
 ## than its particles live, so an idle spray costs no draw call.
 ## Forward is -Z, so "behind the tyre" is +Z of the transform the car gives it.
@@ -103,6 +103,19 @@ func _configure(new_kind: SurfaceFeel.SprayKind) -> void:
 			scale_amount_min = 1.5
 			scale_amount_max = 2.5
 			scale_amount_curve = _growing_curve(3.5)
+			color_ramp = _fading_ramp()
+		SurfaceFeel.SprayKind.SPLASH:
+			lifetime = 0.9
+			direction = Vector3(0.0, 0.6, 1.0)
+			spread = 45.0
+			initial_velocity_min = 4.0
+			initial_velocity_max = 8.0
+			gravity = Vector3(0.0, -9.0, 0.0)
+			damping_min = 0.5
+			damping_max = 1.5
+			scale_amount_min = 1.0
+			scale_amount_max = 2.0
+			scale_amount_curve = _growing_curve(2.0)
 			color_ramp = _fading_ramp()
 	_base_velocity = Vector2(initial_velocity_min, initial_velocity_max)
 
