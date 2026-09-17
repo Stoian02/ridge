@@ -4,7 +4,8 @@ extends RefCounted
 ## The natural ground is a plane fitted to the road's overall climb plus noise.
 ## Near the road, the ground follows a smoothed road elevation and is carved to
 ## meet the shoulders (see Corridor). A creek, if the trail has one, is cut as a
-## shallow channel beside the road.
+## shallow channel beside the road. Wall sections raise or drop the ground beyond
+## the corridor blend into canyon walls.
 ## Grid rows run along +Z and columns along +X; index = row * columns + column.
 
 ## Sentinel edge distance for samples far from any road.
@@ -19,6 +20,14 @@ const CREEK_SMOOTHING := 5.0
 const CREEK_BELOW_GROUND := 0.15
 ## Beyond a creek's banks, raised ground falls back to the natural ground over this width (m).
 const CREEK_LEVEE := 4.0
+## Beyond the corridor blend a canyon wall rises to its full height over this width (m) ...
+const WALL_RISE := 12.0
+## ... holds it for this width (m) ...
+const WALL_PLATEAU := 30.0
+## ... and eases back to the natural ground over this width (m).
+const WALL_FALLOFF := 30.0
+## Wall sections are painted onto the grid every this far along and across the road (m).
+const WALL_STEP := 1.0
 
 var def: TerrainDef
 ## World X/Z of sample (column 0, row 0).
@@ -75,6 +84,7 @@ static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 		field._carve_parallel(stamps, rights, bank_slopes, half_widths, trail, terrain)
 	else:
 		field._carve(stamps, rights, bank_slopes, half_widths, trail, terrain)
+	field._raise_walls(sampler, trail, terrain)
 	field._cut_creek(sampler, trail)
 	TrailEarthworks.apply_tunnels(field, sampler, trail)
 	TrailEarthworks.apply_bridges(field, sampler, trail)
@@ -344,6 +354,70 @@ static func _carve_band(input: Dictionary, stamps: Array[Vector3], rights: Array
 	into["heights"] = heights
 	into["edges"] = edges
 	into["lowest"] = lowest
+
+
+## The ground `edge` metres outside the shoulder edge where a wall section moves
+## it by `delta` relative to the road: untouched inside the corridor blend, then
+## rising over WALL_RISE, holding for WALL_PLATEAU and easing back to the natural
+## ground over WALL_FALLOFF. A wall never lowers ground that is already higher,
+## and a drop never raises ground that is already lower (spec §10.1).
+static func walled_height(natural: float, road_height: float, delta: float, edge: float, blend: float) -> float:
+	if edge < blend:
+		return natural
+	var rise := smoothstep(blend, blend + WALL_RISE, edge)
+	var plateau_end := blend + WALL_RISE + WALL_PLATEAU
+	var fall := 1.0 - smoothstep(plateau_end, plateau_end + WALL_FALLOFF, edge)
+	var target := lerpf(natural, road_height + delta, rise * fall)
+	return maxf(natural, target) if delta > 0.0 else minf(natural, target)
+
+
+## Paints each wall section onto the grid: every WALL_STEP along the section and
+## across the road out to the wall's full reach, the nearest grid sample records
+## the smallest edge distance seen, that stamp's delta and the road height there.
+## Then each touched sample takes its walled height. Runs after the corridor is
+## carved and before the creek and structures, so a river channel can cut a wall.
+func _raise_walls(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef) -> void:
+	if not terrain.has_walls():
+		return
+	var cell_count := columns * rows
+	var wall_edges := PackedFloat32Array()
+	var wall_deltas := PackedFloat32Array()
+	var wall_heights := PackedFloat32Array()
+	wall_edges.resize(cell_count)
+	wall_edges.fill(FAR)
+	wall_deltas.resize(cell_count)
+	wall_heights.resize(cell_count)
+	var reach := trail.half_total_width() + terrain.corridor_blend + WALL_RISE + WALL_PLATEAU + WALL_FALLOFF
+	for section: Vector4 in terrain.wall_sections:
+		var distance := maxf(section.x, 0.0)
+		var end := minf(section.x + section.y, sampler.length)
+		while distance <= end:
+			var left := terrain.wall_delta(distance, -1.0)
+			var right := terrain.wall_delta(distance, 1.0)
+			var centre := sampler.position(distance)
+			var across := sampler.right(distance)
+			var flat := Vector2(across.x, across.z).normalized()
+			var bank := across.y / maxf(Vector2(across.x, across.z).length(), 0.0001)
+			var half := trail.half_total_width_at(distance)
+			var lateral := -reach
+			while lateral <= reach:
+				var delta := right if lateral > 0.0 else left
+				var edge := absf(lateral) - half
+				if delta != 0.0 and edge >= terrain.corridor_blend:
+					var column := roundi((centre.x + flat.x * lateral - origin.x) / spacing)
+					var row := roundi((centre.z + flat.y * lateral - origin.y) / spacing)
+					if column >= 0 and column < columns and row >= 0 and row < rows:
+						var i := row * columns + column
+						if edge < wall_edges[i]:
+							wall_edges[i] = edge
+							wall_deltas[i] = delta
+							wall_heights[i] = centre.y + lateral * bank
+				lateral += WALL_STEP
+			distance += WALL_STEP
+	for i in cell_count:
+		if wall_edges[i] < FAR:
+			heights[i] = walled_height(heights[i], wall_heights[i], wall_deltas[i], wall_edges[i], terrain.corridor_blend)
+			lowest_height = minf(lowest_height, heights[i])
 
 
 ## Shapes the ground along the creek. Each nearby sample takes its shape from the

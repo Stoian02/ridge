@@ -33,3 +33,30 @@ extends Resource
 @export var dirt_color: Color = Color(0.62, 0.47, 0.3)
 @export var rock_color: Color = Color(0.55, 0.45, 0.38)
 @export var seed: int = 7
+
+@export_group("Canyon walls")
+## Sections where the ground beyond the corridor blend is raised into a wall
+## or dropped away, as Vector4(start, length, left delta, right delta): metres
+## along the road, then metres up (+) or down (-) relative to the road on each
+## side. Deltas ease in and out over wall_blend inside each end.
+@export var wall_sections: Array[Vector4] = []
+@export var wall_blend: float = 25.0
+
+
+## The wall delta at `distance` on `side` (-1 = left, +1 = right): the covering
+## section's delta eased over wall_blend inside each of its ends, 0 elsewhere.
+func wall_delta(distance: float, side: float) -> float:
+	var total := 0.0
+	for section: Vector4 in wall_sections:
+		var end := section.x + section.y
+		if distance < section.x or distance >= end:
+			continue
+		var blend := maxf(wall_blend, 0.001)
+		var weight := minf(smoothstep(section.x, section.x + blend, distance),
+				1.0 - smoothstep(end - blend, end, distance))
+		total += (section.w if side > 0.0 else section.z) * weight
+	return total
+
+
+func has_walls() -> bool:
+	return wall_sections.any(func(section: Vector4) -> bool: return section.z != 0.0 or section.w != 0.0)
