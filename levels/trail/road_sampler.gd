@@ -8,12 +8,25 @@ extends RefCounted
 var curve: Curve3D
 var length: float
 var use_curve_banking: bool
+## The trail whose width profile half_width_at follows; a default TrailDef when none is given.
+var trail: TrailDef
 
 
-func _init(road_curve: Curve3D, banking: bool = true) -> void:
+func _init(road_curve: Curve3D, banking: bool = true, trail_def: TrailDef = null) -> void:
 	curve = road_curve
 	length = curve.get_baked_length()
 	use_curve_banking = banking
+	trail = trail_def if trail_def != null else TrailDef.new()
+
+
+## Half the road plus one shoulder at `distance`, following the trail's width stretches.
+func half_width_at(distance: float) -> float:
+	return trail.half_total_width_at(distance)
+
+
+## Half the road alone at `distance`.
+func road_half_width_at(distance: float) -> float:
+	return trail.road_width_at(distance) * 0.5
 
 
 func position(distance: float) -> Vector3:

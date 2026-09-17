@@ -56,7 +56,7 @@ func build() -> void:
 	add_child(generated)
 
 	var road: Path3D = $Road
-	sampler = RoadSampler.new(road.curve, trail.use_curve_banking)
+	sampler = RoadSampler.new(road.curve, trail.use_curve_banking, trail)
 	profile = RoadProfile.new(trail, sampler.length)
 	field = TerrainField.generate(sampler, trail, terrain)
 	_lap(&"field")

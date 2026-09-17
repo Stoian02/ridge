@@ -20,6 +20,14 @@ extends Resource
 ## Length of road built as one mesh and collision chunk.
 @export var chunk_length: float = 100.0
 
+@export_group("Width profile")
+## Stretches where the road changes width, as Vector4(start, length, road width,
+## shoulder width) in metres. They must not overlap. Outside them the road keeps
+## road_width and shoulder_width.
+@export var width_stretches: Array[Vector4] = []
+## The widths ease from the trail's to a stretch's over this distance inside each of its ends (m).
+@export var width_blend: float = 10.0
+
 @export_group("Surface")
 ## The road's surface outside any stretch. Shoulders are dirt outside stretches.
 @export var base_surface: SurfaceDef = preload("res://surfaces/asphalt.tres")
@@ -100,9 +108,45 @@ extends Resource
 @export var seed: int = 1
 
 
-## Half the width of road plus both shoulders.
+## Half the widest road-plus-shoulders on the trail: the coarse bound terrain
+## search radii, tunnel portals and earthworks use.
 func half_total_width() -> float:
-	return road_width * 0.5 + shoulder_width
+	var widest := road_width * 0.5 + shoulder_width
+	for stretch: Vector4 in width_stretches:
+		widest = maxf(widest, stretch.z * 0.5 + stretch.w)
+	return widest
+
+
+## The road's width at `distance`, eased into and out of any width stretch.
+func road_width_at(distance: float) -> float:
+	var stretch := _width_stretch_at(distance)
+	return lerpf(road_width, stretch.y, stretch.x)
+
+
+## The shoulder width at `distance`, eased like the road's.
+func shoulder_width_at(distance: float) -> float:
+	var stretch := _width_stretch_at(distance)
+	return lerpf(shoulder_width, stretch.z, stretch.x)
+
+
+## Half the road plus one shoulder at `distance`.
+func half_total_width_at(distance: float) -> float:
+	return road_width_at(distance) * 0.5 + shoulder_width_at(distance)
+
+
+## (weight, road width, shoulder width) of the width stretch covering `distance`.
+## The weight is 0 outside every stretch and rises to 1 over width_blend inside
+## each end, so lerping the trail's widths toward the stretch's by it eases them.
+## Off every stretch the weight is exactly 0, so the trail's widths come back unchanged.
+func _width_stretch_at(distance: float) -> Vector3:
+	for stretch: Vector4 in width_stretches:
+		var end := stretch.x + stretch.y
+		if distance >= stretch.x and distance < end:
+			var blend := maxf(width_blend, 0.001)
+			var weight := minf(smoothstep(stretch.x, stretch.x + blend, distance),
+					1.0 - smoothstep(end - blend, end, distance))
+			return Vector3(weight, stretch.z, stretch.w)
+	return Vector3(0.0, road_width, shoulder_width)
 
 
 func has_creek() -> bool:

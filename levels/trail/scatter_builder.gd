@@ -17,6 +17,9 @@ var pine_count := 0
 var rock_count := 0
 var post_count := 0
 var broadleaf_count := 0
+## Where the roadside posts were placed. A MultiMesh's instance transforms cannot
+## be read back in a headless run, so tests check the posts here.
+var post_transforms: Array[Transform3D] = []
 
 
 func build(field: TerrainField, sampler: RoadSampler, profile: RoadProfile, trail: TrailDef, def: ScatterDef) -> void:
@@ -27,6 +30,7 @@ func build(field: TerrainField, sampler: RoadSampler, profile: RoadProfile, trai
 	rock_count = 0
 	post_count = 0
 	broadleaf_count = 0
+	post_transforms.clear()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = def.seed
 	var material := StandardMaterial3D.new()
@@ -58,9 +62,9 @@ func build(field: TerrainField, sampler: RoadSampler, profile: RoadProfile, trai
 			shape.position = rock.origin
 			rock_collision.add_child(shape)
 
-	var posts := _posts(field, sampler, profile, trail, def)
-	post_count = posts.size()
-	_add_multimeshes(field, posts, LowPolyMeshes.post(def.post_color, def.reflector_color), material,
+	post_transforms = _posts(field, sampler, profile, trail, def)
+	post_count = post_transforms.size()
+	_add_multimeshes(field, post_transforms, LowPolyMeshes.post(def.post_color, def.reflector_color), material,
 			def.rock_view_distance, false)
 
 	if def.broadleaf_spacing > 0.0:
@@ -110,12 +114,12 @@ func _scatter(field: TerrainField, def: ScatterDef, spacing: float, scale_range:
 func _posts(field: TerrainField, sampler: RoadSampler, profile: RoadProfile, trail: TrailDef,
 		def: ScatterDef) -> Array[Transform3D]:
 	var transforms: Array[Transform3D] = []
-	var half := trail.half_total_width()
 	var distance := def.post_spacing * 0.5
 	while distance < sampler.length:
 		if profile.on_bridge(distance) or trail.tunnels.any(func(t: TunnelDef) -> bool: return t.contains(distance)):
 			distance += def.post_spacing
 			continue
+		var half := trail.half_total_width_at(distance)
 		var across := sampler.right(distance)
 		var flat_across := Vector3(across.x, 0.0, across.z).normalized()
 		for side: float in [-1.0, 1.0]:

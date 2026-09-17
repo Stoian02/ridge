@@ -23,6 +23,9 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 	var shoulder_surfaces: PackedInt32Array = input["shoulder_surfaces"]
 	var surface_count: int = input["surface_count"]
 	var skip_rows: PackedByteArray = input["skip_rows"]
+	var road_scales: PackedFloat64Array = input["road_scales"]
+	var shoulder_scales: PackedFloat64Array = input["shoulder_scales"]
+	var half_road: float = input["half_road"]
 	var width := stations.size()
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
@@ -30,12 +33,23 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 	vertices.resize(distances.size() * width)
 	normals.resize(vertices.size())
 	colors.resize(vertices.size())
+	# The lateral each vertex actually sits at, so columns that a narrowed row
+	# collapsed onto one another can be skipped when the quads are built.
+	var laterals := PackedFloat32Array()
+	laterals.resize(vertices.size())
 	for row in distances.size():
 		var distance := distances[row]
 		var rut := ruts[row]
+		var road_scale := road_scales[row]
+		var shoulder_scale := shoulder_scales[row]
 		for column in width:
 			var station := stations[column]
 			var lateral := station.x
+			if road_scale != 1.0 or shoulder_scale != 1.0:
+				if int(station.y) == RoadBuilder.Part.SHOULDER:
+					lateral = signf(station.x) * (half_road * road_scale + (absf(station.x) - half_road) * shoulder_scale)
+				else:
+					lateral = station.x * road_scale
 			var pothole_height := 0.0
 			for pothole: Vector4 in potholes:
 				if absf(distance - pothole.x) > pothole.z:
@@ -59,6 +73,7 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 			if is_patch:
 				rough += RoadProfile.PATCH_RAISE
 			var i := row * width + column
+			laterals[i] = lateral
 			vertices[i] = centres[row] + rights[row] * lateral + ups[row] * (heights[row] + rough + rut_height)
 			normals[i] = ups[row]
 			if int(station.y) == RoadBuilder.Part.SHOULDER:
@@ -80,6 +95,8 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 			if is_equal_approx(stations[column].x, stations[column + 1].x):
 				continue
 			var i := row * width + column
+			if absf(laterals[i] - laterals[i + 1]) < 0.001 and absf(laterals[i + width] - laterals[i + width + 1]) < 0.001:
+				continue  # a narrowed row collapsed this column onto the next
 			var surface: int = shoulder_surfaces[row] if int(stations[column].y) == RoadBuilder.Part.SHOULDER else road_surfaces[row]
 			for corner: int in [i, i + width, i + 1, i + 1, i + width, i + width + 1]:
 				indices.append(corner)

@@ -54,6 +54,8 @@ static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 	var stamps: Array[Vector3] = []
 	var rights: Array[Vector2] = []
 	var bank_slopes := PackedFloat32Array()
+	# Half the road plus one shoulder at each stamp, so the corridor follows the width profile.
+	var half_widths := PackedFloat32Array()
 	var distance := 0.0
 	while distance <= sampler.length:
 		var point := sampler.position(distance)
@@ -64,14 +66,15 @@ static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 		stamps.append(point)
 		rights.append(flat.normalized())
 		bank_slopes.append(across.y / maxf(flat.length(), 0.0001))
+		half_widths.append(trail.half_total_width_at(distance))
 		distance += 1.0
 
 	field._size_grid(stamps, terrain.margin)
 	field._fill_natural(stamps, terrain)
 	if threaded:
-		field._carve_parallel(stamps, rights, bank_slopes, trail, terrain)
+		field._carve_parallel(stamps, rights, bank_slopes, half_widths, trail, terrain)
 	else:
-		field._carve(stamps, rights, bank_slopes, trail, terrain)
+		field._carve(stamps, rights, bank_slopes, half_widths, trail, terrain)
 	field._cut_creek(sampler, trail)
 	TrailEarthworks.apply_tunnels(field, sampler, trail)
 	TrailEarthworks.apply_bridges(field, sampler, trail)
@@ -210,7 +213,7 @@ func _fill_natural(stamps: Array[Vector3], terrain: TerrainDef) -> void:
 
 ## Near the road, blend the natural ground toward a smoothed road elevation.
 func _carve(stamps: Array[Vector3], rights: Array[Vector2], bank_slopes: PackedFloat32Array,
-		trail: TrailDef, terrain: TerrainDef) -> void:
+		half_widths: PackedFloat32Array, trail: TrailDef, terrain: TerrainDef) -> void:
 	var cell_count := columns * rows
 	var weight_sums := PackedFloat32Array()
 	var height_sums := PackedFloat32Array()
@@ -218,7 +221,7 @@ func _carve(stamps: Array[Vector3], rights: Array[Vector2], bank_slopes: PackedF
 	height_sums.resize(cell_count)
 	edge_distances.fill(FAR)
 
-	var half_width := trail.half_total_width()
+	var half_width := trail.half_total_width()  # the widest, so the search radius covers every stamp
 	var radius := half_width + terrain.corridor_blend + 2.0
 	var radius_squared := radius * radius
 	var sigma_squared := terrain.smoothing_radius * terrain.smoothing_radius
@@ -241,7 +244,7 @@ func _carve(stamps: Array[Vector3], rights: Array[Vector2], bank_slopes: PackedF
 				var lateral := dx * across.x + dz * across.y
 				weight_sums[i] += weight
 				height_sums[i] += weight * (stamp.y + lateral * bank)
-				var edge := sqrt(squared) - half_width
+				var edge := sqrt(squared) - half_widths[s]
 				if edge < edge_distances[i]:
 					edge_distances[i] = edge
 
@@ -257,7 +260,7 @@ func _carve(stamps: Array[Vector3], rights: Array[Vector2], bank_slopes: PackedF
 ## Each task owns a band of rows and visits stamps in the original order. This
 ## preserves float32 accumulation exactly, without locks or shared writes.
 func _carve_parallel(stamps: Array[Vector3], rights: Array[Vector2], banks: PackedFloat32Array,
-		trail: TrailDef, terrain: TerrainDef) -> void:
+		half_widths: PackedFloat32Array, trail: TrailDef, terrain: TerrainDef) -> void:
 	var bands := ceili(rows / 32.0)
 	var inputs: Array[Dictionary] = []
 	var results: Array[Dictionary] = []
@@ -266,6 +269,7 @@ func _carve_parallel(stamps: Array[Vector3], rights: Array[Vector2], banks: Pack
 		var count := mini(32, rows - first)
 		inputs.append({"first": first, "rows": count, "columns": columns,
 				"origin": origin, "spacing": spacing, "half_width": trail.half_total_width(),
+				"half_widths": half_widths,
 				"blend": terrain.corridor_blend, "sigma": terrain.smoothing_radius * terrain.smoothing_radius,
 				"drop": terrain.under_road_drop, "heights": heights.slice(first * columns, (first + count) * columns)})
 		results.append({})
@@ -289,7 +293,8 @@ static func _carve_band(input: Dictionary, stamps: Array[Vector3], rights: Array
 	var columns: int = input["columns"]
 	var origin: Vector2 = input["origin"]
 	var spacing: float = input["spacing"]
-	var half_width: float = input["half_width"]
+	var half_width: float = input["half_width"]  # the widest, so the search radius covers every stamp
+	var half_widths: PackedFloat32Array = input["half_widths"]
 	var blend: float = input["blend"]
 	var sigma: float = input["sigma"]
 	var drop: float = input["drop"]
@@ -324,7 +329,7 @@ static func _carve_band(input: Dictionary, stamps: Array[Vector3], rights: Array
 				var lateral := dx * across.x + dz * across.y
 				weights[i] += weight
 				sums[i] += weight * (stamp.y + lateral * bank)
-				var edge := sqrt(squared) - half_width
+				var edge := sqrt(squared) - half_widths[s]
 				if edge < edges[i]:
 					edges[i] = edge
 	var lowest := INF

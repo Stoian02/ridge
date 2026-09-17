@@ -92,6 +92,8 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 	var patch_colors: Array[Color] = []
 	var left_colors: Array[Color] = []
 	var right_colors: Array[Color] = []
+	var road_scales := PackedFloat64Array()
+	var shoulder_scales := PackedFloat64Array()
 	for distance: float in distances:
 		centres.append(sampler.position(distance))
 		rights.append(sampler.right(distance))
@@ -111,6 +113,9 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 		patch_colors.append(patch_color)
 		left_colors.append(_color(profile, def, distance, -def.half_total_width(), Part.SHOULDER))
 		right_colors.append(_color(profile, def, distance, def.half_total_width(), Part.SHOULDER))
+		var scales := width_scales(def, distance)
+		road_scales.append(scales.x)
+		shoulder_scales.append(scales.y)
 	var surfaces: Array[SurfaceDef] = [def.base_surface]
 	if not surfaces.has(def.shoulder_surface):
 		surfaces.append(def.shoulder_surface)
@@ -138,6 +143,7 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 			"patch_colors": patch_colors, "left_colors": left_colors, "right_colors": right_colors,
 			"line_color": def.line_color, "potholes": potholes, "patches": profile.patches,
 			"road_surfaces": road_surfaces, "shoulder_surfaces": shoulder_surfaces,
+			"road_scales": road_scales, "shoulder_scales": shoulder_scales, "half_road": def.road_width * 0.5,
 			"surfaces": surfaces, "surface_count": surfaces.size()}
 
 
@@ -170,6 +176,25 @@ static func cross_section(def: TrailDef) -> Array[Vector2]:
 		stations.append(Vector2(half_road, Part.ROAD))
 	stations.append_array([Vector2(half_road, Part.SHOULDER), Vector2(outer, Part.SHOULDER)])
 	return stations
+
+
+## A station's lateral position on a row whose road and shoulder widths are
+## scaled by `road_scale` and `shoulder_scale` (1.0 = the trail's own widths).
+## Road stations scale about the centre line; shoulder stations keep their
+## distance from the road edge, scaled by the shoulder factor. Unscaled rows
+## return the station exactly, so trails without width stretches are unchanged.
+static func station_lateral(station: Vector2, half_road: float, road_scale: float, shoulder_scale: float) -> float:
+	if road_scale == 1.0 and shoulder_scale == 1.0:
+		return station.x
+	if int(station.y) == Part.SHOULDER:
+		return signf(station.x) * (half_road * road_scale + (absf(station.x) - half_road) * shoulder_scale)
+	return station.x * road_scale
+
+
+## The per-row width scales of `def` at `distance`: (road, shoulder). Exactly 1.0 off every stretch.
+static func width_scales(def: TrailDef, distance: float) -> Vector2:
+	var shoulder_scale := def.shoulder_width_at(distance) / def.shoulder_width if def.shoulder_width > 0.0 else 1.0
+	return Vector2(def.road_width_at(distance) / def.road_width, shoulder_scale)
 
 
 ## Distances of the cross-section rows: every sample_step, every detail_step
@@ -223,9 +248,10 @@ static func _interior_laterals(def: TrailDef, limit: float) -> Array[float]:
 	return merged
 
 
-## Collision faces whose road or shoulder surface matches `surface`.
-static func _faces(vertices: PackedVector3Array, stations: Array[Vector2], row_surfaces: Array[SurfaceDef],
-		shoulder_surfaces: Array[SurfaceDef], surface: SurfaceDef) -> PackedVector3Array:
+## Collision faces whose road or shoulder surface matches `surface`. `laterals`
+## holds each vertex's own lateral, which a narrowed row scales off its station.
+static func _faces(vertices: PackedVector3Array, stations: Array[Vector2], laterals: PackedFloat32Array,
+		row_surfaces: Array[SurfaceDef], shoulder_surfaces: Array[SurfaceDef], surface: SurfaceDef) -> PackedVector3Array:
 	var width := stations.size()
 	var faces := PackedVector3Array()
 	for row in row_surfaces.size():
@@ -239,6 +265,8 @@ static func _faces(vertices: PackedVector3Array, stations: Array[Vector2], row_s
 			if face_surface != surface:
 				continue
 			var i := row * width + column
+			if absf(laterals[i] - laterals[i + 1]) < 0.001 and absf(laterals[i + width] - laterals[i + width + 1]) < 0.001:
+				continue  # a narrowed row collapsed this column onto the next
 			for corner in [i, i + width, i + 1, i + 1, i + width, i + width + 1]:
 				faces.append(vertices[corner])
 	return faces
@@ -249,12 +277,18 @@ func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stati
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var colors := PackedColorArray()
+	# The lateral each vertex actually sits at, so columns that a narrowed row
+	# collapsed onto one another can be skipped when the quads are built.
+	var laterals := PackedFloat32Array()
+	var half_road := def.road_width * 0.5
 	for distance in distances:
 		var centre := sampler.position(distance)
 		var across := sampler.right(distance)
 		var surface_up := sampler.up(distance)
+		var scales := width_scales(def, distance)
 		for station in stations:
-			var lateral := station.x
+			var lateral := station_lateral(station, half_road, scales.x, scales.y)
+			laterals.append(lateral)
 			vertices.append(centre + across * lateral + surface_up * profile.height(distance, lateral))
 			normals.append(surface_up)
 			colors.append(_color(profile, def, distance, lateral, int(station.y)))
@@ -285,6 +319,8 @@ func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stati
 			if is_equal_approx(stations[column].x, stations[column + 1].x):
 				continue  # zero-width boundary between parts
 			var i := row * width + column
+			if absf(laterals[i] - laterals[i + 1]) < 0.001 and absf(laterals[i + width] - laterals[i + width + 1]) < 0.001:
+				continue  # a narrowed row collapsed this column onto the next
 			indices.append_array([i, i + width, i + 1, i + 1, i + width, i + width + 1])
 
 	if indices.is_empty():
@@ -303,7 +339,7 @@ func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stati
 	add_child(mesh_instance)
 
 	for surface in surfaces:
-		var faces := _faces(vertices, stations, row_surfaces, shoulder_surfaces, surface)
+		var faces := _faces(vertices, stations, laterals, row_surfaces, shoulder_surfaces, surface)
 		if not faces.is_empty():
 			add_child(_collision_body(faces, surface))
 
