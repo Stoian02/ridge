@@ -25,6 +25,7 @@ var road_builder: RoadBuilder
 var tunnel_builder: TunnelBuilder
 var bridge_builder: BridgeBuilder
 var rock_step_builder: RockStepBuilder
+var boulder_builder: BoulderBuilder
 var shortcut_builder: ShortcutBuilder
 var terrain_builder: TerrainBuilder
 var hedge_builder: HedgeBuilder
@@ -99,6 +100,12 @@ func build() -> void:
 	generated.add_child(rock_step_builder)
 	rock_step_builder.build(sampler, profile, trail)
 	_lap(&"rock_steps")
+
+	boulder_builder = BoulderBuilder.new()
+	boulder_builder.name = "Boulders"
+	generated.add_child(boulder_builder)
+	boulder_builder.build(sampler, profile, field, trail)
+	_lap(&"boulders")
 
 	hedge_builder = HedgeBuilder.new()
 	hedge_builder.name = "Hedges"
