@@ -26,6 +26,7 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 	var road_scales: PackedFloat64Array = input["road_scales"]
 	var shoulder_scales: PackedFloat64Array = input["shoulder_scales"]
 	var half_road: float = input["half_road"]
+	var steps: Array[PackedFloat64Array] = input["steps"]
 	var width := stations.size()
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
@@ -69,12 +70,22 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 					var t := absf(lateral - centre) / rut[1]
 					if t < 1.0:
 						rut_height += -rut[0] * (0.5 + 0.5 * cos(PI * t))
+			var step_height := 0.0
+			for step: PackedFloat64Array in steps:
+				if distance <= step[0]:
+					continue
+				if lateral >= step[2] and lateral <= step[3]:
+					var lip := clampf((distance - step[0]) / maxf(step[5], 0.001), 0.0, 1.0)
+					step_height += step[1] * (RockStepDef.LEDGE_SHARE + (1.0 - RockStepDef.LEDGE_SHARE) * lip)
+				else:
+					step_height += step[1] * clampf((distance - step[0]) / maxf(step[4], 0.001), 0.0, 1.0)
 			var rough := pothole_height
 			if is_patch:
 				rough += RoadProfile.PATCH_RAISE
 			var i := row * width + column
 			laterals[i] = lateral
-			vertices[i] = centres[row] + rights[row] * lateral + ups[row] * (heights[row] + rough + rut_height)
+			vertices[i] = centres[row] + rights[row] * lateral \
+					+ ups[row] * (heights[row] + rough + rut_height + step_height)
 			normals[i] = ups[row]
 			if int(station.y) == RoadBuilder.Part.SHOULDER:
 				colors[i] = left_colors[row] if lateral < 0.0 else right_colors[row]

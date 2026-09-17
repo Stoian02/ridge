@@ -1,9 +1,10 @@
 class_name RoadProfile
 extends RefCounted
 ## Surface height offsets along a trail: gentle undulation everywhere, potholes
-## (and patched tarmac on asphalt) in rough ranges, jump crests, and wheel ruts
-## in surface stretches. Built once from a TrailDef. All randomness comes from
-## its seed, so the same settings always give the same road.
+## (and patched tarmac on asphalt) in rough ranges, jump crests, wheel ruts in
+## surface stretches, and the permanent level changes of rock steps. Built once
+## from a TrailDef. All randomness comes from its seed, so the same settings
+## always give the same road.
 
 ## Patched tarmac is raised this much above the surrounding asphalt (m).
 const PATCH_RAISE := 0.012
@@ -11,6 +12,8 @@ const PATCH_RAISE := 0.012
 const CLUSTER_SPREAD := 8.0
 ## Detailed cross-sections extend this far either side of a cluster's centre (m).
 const CLUSTER_DETAIL := 10.0
+## The row just past a rock step's face sits this far along from it (m).
+const FACE_ROW_GAP := 0.02
 
 var def: TrailDef
 var road_length: float
@@ -55,6 +58,8 @@ func _init(trail_def: TrailDef, length: float) -> void:
 		ranges.append(Vector2(bridge.start, bridge.end() + bridge.ramp_length))
 	for roller: Vector3 in def.rollers:
 		ranges.append(Vector2(roller.x - roller.z * 0.5, roller.x + roller.z * 0.5))
+	for step: RockStepDef in def.rock_steps:
+		ranges.append(Vector2(step.distance - 1.0, step.distance + step.ramp_length + 1.0))
 
 	potholes.sort_custom(func(a: Vector4, b: Vector4) -> bool: return a.x < b.x)
 	for pothole in potholes:
@@ -66,7 +71,7 @@ func _init(trail_def: TrailDef, length: float) -> void:
 ## Total surface offset at a point of the road (m).
 func height(distance: float, lateral: float) -> float:
 	return longitudinal_height(distance) + rough_height(distance, lateral) \
-			+ rut_height(distance, lateral)
+			+ rut_height(distance, lateral) + step_height(distance, lateral)
 
 
 func longitudinal_height(distance: float) -> float:
@@ -165,6 +170,27 @@ func surface_at(distance: float) -> SurfaceDef:
 		return preload("res://surfaces/logs.tres")
 	var stretch := stretch_at(distance)
 	return stretch.surface_at(distance) if stretch != null else def.base_surface
+
+
+## The rise from every rock step at a point: vertical inside a face's span, a ramp beside it.
+func step_height(distance: float, lateral: float) -> float:
+	var total := 0.0
+	for step: RockStepDef in def.rock_steps:
+		total += step.height_at(distance, lateral)
+	return total
+
+
+## Distances the road must have a cross-section row at exactly: every surface
+## boundary, and both sides of each rock step's face, so the face is a sharp
+## edge in the road mesh rather than a slope.
+func exact_rows() -> PackedFloat32Array:
+	var rows := surface_boundaries()
+	for step: RockStepDef in def.rock_steps:
+		for at: float in [step.distance, step.distance + FACE_ROW_GAP]:
+			if at > 0.0 and at < road_length and not rows.has(at):
+				rows.append(at)
+	rows.sort()
+	return rows
 
 
 ## Every stretch start and end on the road, sorted.

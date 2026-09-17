@@ -138,13 +138,19 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 	for pothole: Vector4 in profile.potholes:
 		if pothole.x + pothole.z >= distances[0] and pothole.x - pothole.z <= distances[-1]:
 			potholes.append(pothole)
+	# Every step starting before this chunk's last row: a step's rise is permanent.
+	var steps: Array[PackedFloat64Array] = []
+	for step: RockStepDef in def.rock_steps:
+		if step.distance < distances[-1]:
+			steps.append(PackedFloat64Array([step.distance, step.height, step.lateral_from, step.lateral_to,
+					step.ramp_length, step.face_length]))
 	return {"stations": stations, "distances": distances, "centres": centres, "rights": rights, "skip_rows": skip_rows,
 			"ups": ups, "heights": heights, "ruts": ruts, "road_colors": road_colors,
 			"patch_colors": patch_colors, "left_colors": left_colors, "right_colors": right_colors,
 			"line_color": def.line_color, "potholes": potholes, "patches": profile.patches,
 			"road_surfaces": road_surfaces, "shoulder_surfaces": shoulder_surfaces,
 			"road_scales": road_scales, "shoulder_scales": shoulder_scales, "half_road": def.road_width * 0.5,
-			"surfaces": surfaces, "surface_count": surfaces.size()}
+			"steps": steps, "surfaces": surfaces, "surface_count": surfaces.size()}
 
 
 ## Cross-section stations from left to right as Vector2(lateral offset, part).
@@ -198,10 +204,10 @@ static func width_scales(def: TrailDef, distance: float) -> Vector2:
 
 
 ## Distances of the cross-section rows: every sample_step, every detail_step
-## inside rough ranges, and exactly at each surface stretch's ends. Always
-## includes 0 and the road's end.
+## inside rough ranges, and exactly at each surface stretch's ends and either
+## side of each rock step's face. Always includes 0 and the road's end.
 static func row_distances(length: float, profile: RoadProfile, def: TrailDef) -> PackedFloat32Array:
-	var boundaries := profile.surface_boundaries()
+	var boundaries := profile.exact_rows()
 	var next_boundary := 0
 	var distances := PackedFloat32Array()
 	var distance := 0.0

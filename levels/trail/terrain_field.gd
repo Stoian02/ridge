@@ -70,6 +70,8 @@ static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 		var point := sampler.position(distance)
 		for bridge: BridgeDef in trail.bridges:
 			point.y += bridge.height_offset(distance)
+		for step: RockStepDef in trail.rock_steps:
+			point.y += step.ramp_offset(distance)
 		var across := sampler.right(distance)
 		var flat := Vector2(across.x, across.z)
 		stamps.append(point)

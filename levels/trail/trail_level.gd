@@ -2,10 +2,10 @@
 class_name TrailLevel
 extends Node3D
 ## Generates a whole trail from its "Road" Path3D child and its settings: road
-## surface, terrain, shortcuts, hedges, creek, scenery and checkpoint gates. It
-## builds on load in the game. In the editor, tick Rebuild to preview after
-## moving the road's curve points. The Road child must keep an identity
-## transform: the curve's points are used as positions in this node's space.
+## surface, terrain, shortcuts, hedges, creek, rock steps, scenery and
+## checkpoint gates. It builds on load in the game. In the editor, tick Rebuild
+## to preview after moving the road's curve points. The Road child must keep an
+## identity transform: the curve's points are used as positions in this node's space.
 
 signal built
 
@@ -24,6 +24,7 @@ var field: TerrainField
 var road_builder: RoadBuilder
 var tunnel_builder: TunnelBuilder
 var bridge_builder: BridgeBuilder
+var rock_step_builder: RockStepBuilder
 var shortcut_builder: ShortcutBuilder
 var terrain_builder: TerrainBuilder
 var hedge_builder: HedgeBuilder
@@ -92,6 +93,12 @@ func build() -> void:
 	generated.add_child(bridge_builder)
 	bridge_builder.build(sampler, profile, field, trail)
 	_lap(&"bridges")
+
+	rock_step_builder = RockStepBuilder.new()
+	rock_step_builder.name = "RockSteps"
+	generated.add_child(rock_step_builder)
+	rock_step_builder.build(sampler, profile, trail)
+	_lap(&"rock_steps")
 
 	hedge_builder = HedgeBuilder.new()
 	hedge_builder.name = "Hedges"
