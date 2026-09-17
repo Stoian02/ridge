@@ -106,6 +106,29 @@ func test_the_builder_puts_a_rock_face_with_collision_on_the_level_change() -> v
 	assert_true(beside.is_empty(), "no face beside a partial ledge, just the road's ramp")
 
 
+func test_the_rock_face_is_what_a_wheel_meets_with_the_road_built_too() -> void:
+	# The road mesh has its own near-vertical quad over RoadProfile.FACE_ROW_GAP,
+	# tagged with the road's surface. The rock face must sit in front of it, or the
+	# car climbs the ledge on asphalt and the road colour stripes over the rock.
+	var road := RoadBuilder.new()
+	add_child_autofree(road)
+	road.build(sampler, profile, trail)
+	var builder := RockStepBuilder.new()
+	add_child_autofree(builder)
+	builder.build(sampler, profile, trail)
+	await wait_physics_frames(2)
+	var space := builder.get_world_3d().direct_space_state
+	var face := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(0.0, 0.1, -97.0), Vector3(0.0, 0.1, -103.0)))
+	assert_false(face.is_empty(), "a ray along the road hits the ledge")
+	if not face.is_empty():
+		assert_eq(SurfaceLookup.surface_of(face["collider"]).id, &"rock", "the rock face, not the road's step quad")
+		assert_almost_eq(face["position"].z, -100.0, 0.06, "and it stands at the step, not behind it")
+	var lip := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(2.25, 2.0, -100.55), Vector3(2.25, -1.0, -100.55)))
+	assert_false(lip.is_empty(), "the lip is there")
+	if not lip.is_empty():
+		assert_eq(SurfaceLookup.surface_of(lip["collider"]).id, &"rock", "the lip lies over the raised road, not under it")
+
+
 func test_terrain_follows_the_ramp_under_the_road() -> void:
 	var terrain := TerrainDef.new()
 	terrain.margin = 40.0
