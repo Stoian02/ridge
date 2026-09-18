@@ -98,6 +98,7 @@ extends Resource
 @export var bridges: Array[BridgeDef] = []
 @export var rock_steps: Array[RockStepDef] = []
 @export var boulder_fields: Array[BoulderFieldDef] = []
+@export var talus: Array[TalusDef] = []
 
 @export_group("Colours")
 ## The road's own colour: asphalt, or dirt on a dirt trail.
