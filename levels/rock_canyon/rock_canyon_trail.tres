@@ -12,7 +12,6 @@
 [ext_resource type="Script" path="res://surfaces/surface_def.gd" id="10"]
 [ext_resource type="Script" path="res://levels/trail/rock_step_def.gd" id="11"]
 [ext_resource type="Script" path="res://levels/trail/boulder_field_def.gd" id="12"]
-[ext_resource type="Script" path="res://levels/trail/talus_def.gd" id="13"]
 [ext_resource type="Script" path="res://levels/trail/ford_def.gd" id="14"]
 
 [sub_resource type="Resource" id="Tarmac"]
@@ -170,14 +169,15 @@ lateral_range = Vector2(2.5, 2.6)
 slab_fraction = 0.0
 seed = 65
 
-[sub_resource type="Resource" id="TalusField"]
-script = ExtResource("13")
+[sub_resource type="Resource" id="FixedTalusFallback"]
+script = ExtResource("12")
 start = 1150.0
 length = 100.0
 count = 40
 size_range = Vector2(0.18, 0.32)
-mass_range = Vector2(30, 120)
+off_road_size_range = Vector2(0.18, 0.32)
 lateral_range = Vector2(0, 4)
+slab_fraction = 0.0
 seed = 71
 
 [sub_resource type="Resource" id="Ford"]
@@ -205,8 +205,7 @@ pothole_depth_range = Vector2(0.05, 0.12)
 checkpoint_distances = PackedFloat32Array(300, 700, 1250, 1500, 1900)
 end_margin = 70.0
 rock_steps = Array[ExtResource("11")]([SubResource("Step1"), SubResource("Step2"), SubResource("Step3")])
-boulder_fields = Array[ExtResource("12")]([SubResource("Wash1"), SubResource("Wash2"), SubResource("Washout1"), SubResource("Washout2"), SubResource("Squeeze")])
-talus = Array[ExtResource("13")]([SubResource("TalusField")])
+boulder_fields = Array[ExtResource("12")]([SubResource("Wash1"), SubResource("Wash2"), SubResource("Washout1"), SubResource("Washout2"), SubResource("Squeeze"), SubResource("FixedTalusFallback")])
 fords = Array[ExtResource("14")]([SubResource("Ford")])
 asphalt_color = Color(0.6, 0.42, 0.3, 1)
 shoulder_color = Color(0.58, 0.38, 0.26, 1)
