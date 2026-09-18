@@ -1,6 +1,6 @@
 # Ridge — notes for coding agents
 
-Start with the latest handover: `docs/notes/handover-2026-09-18-codex-m5.md` (Milestone 5 in progress on branch `m5-rock-canyon`: Tasks 1–5 done, Task 6 WIP, 7–11 to do), then `docs/notes/handover-2026-09-17-rock-canyon.md` for the repo rules. They cover:
+Start with the completion notes: `docs/notes/m5-rock-canyon-notes.md` (Milestone 5 implemented and desktop-validated on `m5-rock-canyon`, not merged; awaiting owner PC/phone acceptance), then `docs/notes/handover-2026-09-17-rock-canyon.md` for the repo rules. The completion notes supersede the older Task 6 WIP handover and record the approved fixed-rock talus fallback. They cover:
 - the current branch and state
 - the open request
 - how to run tests

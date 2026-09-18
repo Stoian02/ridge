@@ -3,7 +3,8 @@ extends RefCounted
 ## A scripted driver for scenario tests: steers toward a point a little way up
 ## the road (pure pursuit) and picks a speed from how sharply the road bends
 ## ahead. Not a good driver - just a steady one. Given the road's profile, it also
-## slows for the grip of the surface ahead (mud, dirt), on straights as in bends.
+## slows for the grip of the surface ahead (mud, dirt), on straights as in bends,
+## and crawls through rock steps, boulder fields, talus, fords and narrow shelves.
 
 ## Steer toward the road point this far ahead of the car (m).
 const LOOKAHEAD := 12.0
@@ -13,6 +14,12 @@ const CURVE_WINDOW := 30.0
 const CAUTION := 0.6
 const MIN_SPEED := 6.0
 const MAX_SPEED := 25.0
+## Slow this far before an authored obstacle and until the whole car is clear.
+const CRAWL_LOOKAHEAD := 20.0
+const CRAWL_SPEED := 4.5
+## Avoid accelerating between obstacles on a shelf that leaves little room to
+## brake or recover. Wider/profile-free roads retain their original behavior.
+const NARROW_ROAD_WIDTH := 5.0
 
 var car: Car
 var sampler: RoadSampler
@@ -59,10 +66,40 @@ func target_speed(distance: float) -> float:
 		ahead += step
 	var surface_grip := _lowest_surface_grip(distance) if profile != null else 1.0
 	var fastest := MAX_SPEED * sqrt(minf(surface_grip, 1.0))
-	if sharpest < 0.0001:
-		return fastest
-	var grip_speed := sqrt(car.stats.tire_grip * surface_grip * 9.8 / sharpest)
-	return clampf(grip_speed * CAUTION, MIN_SPEED, fastest)
+	var wanted := fastest
+	if sharpest >= 0.0001:
+		var grip_speed := sqrt(car.stats.tire_grip * surface_grip * 9.8 / sharpest)
+		wanted = clampf(grip_speed * CAUTION, MIN_SPEED, fastest)
+	if crawl_zone_ahead(distance):
+		wanted = minf(wanted, CRAWL_SPEED)
+	return wanted
+
+
+## An obstacle intersects the 20 m approach window or lies up to 5 m behind,
+## keeping the rear wheels slow until they finish the ramp, field or ford bank.
+func crawl_zone_ahead(distance: float) -> bool:
+	if profile == null:
+		return false
+	var from := distance - 5.0
+	var to := distance + CRAWL_LOOKAHEAD
+	var def := profile.def
+	for width: Vector4 in def.width_stretches:
+		if width.z <= NARROW_ROAD_WIDTH and width.x + width.y >= from and width.x <= to:
+			return true
+	for step: RockStepDef in def.rock_steps:
+		if step.distance + step.ramp_length >= from and step.distance <= to:
+			return true
+	for field: BoulderFieldDef in def.boulder_fields:
+		if field.end() >= from and field.start <= to:
+			return true
+	for field: TalusDef in def.talus:
+		if field.end() >= from and field.start <= to:
+			return true
+	for ford: FordDef in def.fords:
+		var reach := ford.half_width() + ford.bank_run
+		if ford.distance + reach >= from and ford.distance - reach <= to:
+			return true
+	return false
 
 
 ## The lowest grip of the road surface over the window ahead, as this car feels it

@@ -7,10 +7,13 @@ extends RefCounted
 const RIG_SCENE := preload("res://levels/shared/driving_rig.tscn")
 
 
-static func straight(test: GutTest, length: float, checkpoints: PackedFloat32Array) -> RunLevel:
+static func straight(test: GutTest, length: float, checkpoints: PackedFloat32Array,
+		trail_def: TrailDef = null, car_def: CarDef = null) -> RunLevel:
 	var trail := TrailLevel.new()
 	trail.name = "Trail"
-	trail.trail = TrailDef.new()
+	# A scenario can reuse one authored trail across cars without its checkpoint
+	# override leaking into the next run or into the caller's Resource.
+	trail.trail = trail_def.duplicate(true) as TrailDef if trail_def != null else TrailDef.new()
 	trail.trail.checkpoint_distances = checkpoints
 	trail.terrain = TerrainDef.new()
 	trail.terrain.margin = 60.0
@@ -29,6 +32,8 @@ static func straight(test: GutTest, length: float, checkpoints: PackedFloat32Arr
 	level.add_child(trail)
 	var rig: DrivingRig = RIG_SCENE.instantiate()
 	rig.name = "DrivingRig"
+	if car_def != null:
+		rig.car_override = car_def
 	level.add_child(rig)
 	var tracker := CheckpointTracker.new()
 	tracker.name = "CheckpointTracker"
