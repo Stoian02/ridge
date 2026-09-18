@@ -7,8 +7,8 @@ extends Node3D
 ## awake. Provisional: the phone check decides whether it stays (spec §8.3).
 
 const ROCK := preload("res://surfaces/rock.tres")
-## A stone's centre sits this share of its radius above the ground.
-const REST := 0.85
+## Tiny separation from the ground; the hull's actual lowest vertex sets its rest height.
+const REST_GAP := 0.005
 const FRICTION := 1.0
 const BOUNCE := 0.0
 const VIEW_DISTANCE := 160.0
@@ -94,7 +94,7 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 		else:
 			origin = sampler.position(distance) + sampler.right(distance) * lateral
 			origin.y = field.height_at(origin.x, origin.z)
-		origin += Vector3.UP * radius * REST
+		origin.y += -mesh.get_aabb().position.y * radius + REST_GAP
 		var rotation := Basis(Vector3.UP, yaw)
 		var scaled := rotation * Basis.from_scale(Vector3.ONE * radius)
 		var stone := RigidBody3D.new()
@@ -115,8 +115,10 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 		stone.add_child(shape)
 		stone.transform = Transform3D(rotation, origin)
 		add_child(stone)
-		stone.sleeping = true  # entering the tree must not wake it
-		stone.set_deferred(&"sleeping", true)  # physics activation on enter-tree can still wake it
+		# Flush the queued enter-tree transform before sleeping: submitting it
+		# later wakes a Jolt body even when its transform has not changed.
+		stone.force_update_transform()
+		stone.sleeping = true
 		stones.append(stone)
 		instance_transforms.append(Transform3D(scaled, origin))
 		_fields.append(index)

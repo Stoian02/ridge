@@ -11,6 +11,10 @@ var def: TalusDef
 var builder: TalusBuilder
 
 
+func after_each() -> void:
+	get_tree().paused = false
+
+
 func before_each() -> void:
 	var curve := Curve3D.new()
 	curve.bake_interval = 1.0
@@ -80,3 +84,47 @@ func test_a_pushed_stone_wakes_and_its_instance_follows_it() -> void:
 	var after := builder.instance_transforms[0].origin
 	assert_gt(before.distance_to(after), 0.2, "the drawn stone moved with the body")
 	assert_almost_eq(after.distance_to(stone.global_position), 0.0, 0.01)
+
+
+func test_pausing_and_resuming_does_not_wake_untouched_stones() -> void:
+	await wait_physics_frames(3)
+	get_tree().paused = true
+	await wait_process_frames(2)
+	get_tree().paused = false
+	await wait_physics_frames(3)
+	assert_eq(builder.awake_count(), 0, "resuming is not a push")
+
+
+func test_no_queued_transform_can_wake_a_new_stone() -> void:
+	for stone in builder.stones:
+		stone.force_update_transform()
+		assert_true(PhysicsServer3D.body_get_state(stone.get_rid(), PhysicsServer3D.BODY_STATE_SLEEPING),
+				"the backend is asleep too, not just the node's cached state")
+
+
+func test_stones_rest_on_the_surface_instead_of_floating_above_it() -> void:
+	for stone in builder.stones:
+		var hull: ConvexPolygonShape3D = (stone.get_child(0) as CollisionShape3D).shape
+		var lowest := INF
+		for vertex in hull.points:
+			lowest = minf(lowest, (stone.transform * vertex).y)
+		assert_almost_eq(lowest, TalusBuilder.REST_GAP, 0.001)
+
+
+func test_rebuilding_without_fields_clears_bodies_and_instances() -> void:
+	trail.talus = []
+	builder.build(sampler, profile, field, trail)
+	assert_eq(builder.get_child_count(), 0)
+	assert_true(builder.stones.is_empty())
+	assert_true(builder.instance_transforms.is_empty())
+	assert_eq(builder.awake_count(), 0)
+
+
+func test_fields_beyond_the_road_are_skipped_and_crossing_fields_are_clamped() -> void:
+	def.start = sampler.length + 5.0
+	builder.build(sampler, profile, field, trail)
+	assert_true(builder.stones.is_empty())
+	def.start = sampler.length - 10.0
+	builder.build(sampler, profile, field, trail)
+	for stone in builder.stones:
+		assert_gte(stone.position.z, -sampler.length + 1.0)
