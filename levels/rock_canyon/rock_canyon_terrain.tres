@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="TerrainDef" format=3]
+
+[ext_resource type="Script" path="res://levels/trail/terrain_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+margin = 200.0
+corridor_blend = 8.0
+detail_distance = 140.0
+view_distance = 350.0
+noise_amplitude = 26.0
+noise_wavelength = 150.0
+rock_slope_deg = 30.0
+dirt_color = Color(0.66, 0.34, 0.22, 1)
+rock_color = Color(0.74, 0.44, 0.3, 1)
+wall_sections = Array[Vector4]([Vector4(300, 260, 18, 18), Vector4(700, 450, 30, 30), Vector4(1150, 180, 26, 14), Vector4(1500, 400, 25, -40)])
+wall_blend = 25.0
+seed = 41

@@ -18,6 +18,9 @@ extends Resource
 @export_range(0.0, 1.0) var roughness: float = 0.9
 ## Depth of the two wheel ruts (m); 0 = no ruts.
 @export var rut_depth: float = 0.0
+## Opt-in standing water above the rut floor (m), clipped below both lips.
+## Visual only; 0 preserves the dry geometry of every existing stretch.
+@export var water_rut_depth: float = 0.0
 ## Distance between the two ruts' centre lines, centred on the road (m).
 @export var rut_spacing: float = 1.55
 ## Width of each rut (m).

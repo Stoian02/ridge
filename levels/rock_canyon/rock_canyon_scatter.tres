@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ScatterDef" format=3]
+
+[ext_resource type="Script" path="res://levels/trail/scatter_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+pine_spacing = 0.0
+broadleaf_spacing = 35.0
+rock_spacing = 9.0
+road_clearance = 4.0
+max_slope_deg = 40.0
+broadleaf_view_distance = 220.0
+rock_view_distance = 160.0
+post_drop = 1000.0
+broadleaf_color = Color(0.42, 0.4, 0.28, 1)
+trunk_color = Color(0.3, 0.24, 0.18, 1)
+rock_color = Color(0.6, 0.38, 0.27, 1)
+seed = 43

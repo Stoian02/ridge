@@ -48,6 +48,22 @@ func test_scenery_is_drawn_with_a_view_distance() -> void:
 	assert_almost_eq(instances[0].visibility_range_end, scatter.pine_view_distance, 0.001)
 
 
+func test_zero_spacing_disables_a_kind_and_rebuild_clears_counts() -> void:
+	var builder := ScatterBuilder.new()
+	add_child_autofree(builder)
+	builder.build(field, sampler, profile, trail, scatter)
+	assert_gt(builder.pine_count, 0)
+	assert_gt(builder.rock_count, 0)
+	scatter.pine_spacing = 0.0
+	scatter.rock_spacing = 0.0
+	scatter.broadleaf_spacing = 0.0
+	builder.build(field, sampler, profile, trail, scatter)
+	assert_eq(builder.pine_count, 0)
+	assert_eq(builder.rock_count, 0)
+	assert_eq(builder.broadleaf_count, 0)
+	assert_eq(builder.get_node("RockCollision").get_child_count(), 0)
+
+
 func test_checkpoint_distances_add_start_and_finish_in_order() -> void:
 	var distances := CheckpointPlacer.distances_for(sampler.length, trail)
 	assert_eq(distances.size(), 4, "start, 100, 200, finish (400 is past the end)")

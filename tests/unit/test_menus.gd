@@ -51,7 +51,7 @@ func test_main_menu_shows_total_stars() -> void:
 	state.record_finish(state.catalog.levels[0], 75.0, {})
 	var menu: Control = MAIN_MENU.instantiate()
 	add_child_autofree(menu)
-	assert_has(_labels(menu), "2 / 9 stars")
+	assert_has(_labels(menu), "2 / 12 stars")
 
 
 func test_level_select_opens_car_select_for_an_unlocked_level() -> void:

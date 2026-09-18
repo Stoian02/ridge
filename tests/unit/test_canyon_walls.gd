@@ -80,3 +80,48 @@ func test_generation_is_deterministic_with_walls_noise_and_a_bend() -> void:
 	assert_eq(parallel.heights, serial.heights)
 	assert_eq(parallel.edge_distances, serial.edge_distances)
 	assert_eq(parallel.lowest_height, serial.lowest_height)
+
+
+func test_hairpin_walls_preserve_both_road_corridors_and_their_sample_footprints() -> void:
+	# The two legs are 60 m apart, within the canyon wall's 80 m reach. The
+	# return road is higher and faces the other way, just like Rock Canyon.
+	var curve := CurveGenerator.build_curve([
+		["straight", 200.0, 0.0], ["arc", 30.0, 180.0, 0.1], ["straight", 200.0, 0.0],
+	])
+	var hairpin := RoadSampler.new(curve, false, trail)
+	terrain.wall_sections = []
+	var plain := TerrainField.generate(hairpin, trail, terrain)
+	for delta: float in [22.0, -22.0]:
+		terrain.wall_sections = [Vector4(40.0, 120.0, delta, 0.0)]
+		var walled := TerrainField.generate(hairpin, trail, terrain)
+		var corridor := trail.half_total_width() + terrain.corridor_blend
+		for distance: float in [80.3, 100.7, hairpin.length - 119.7, hairpin.length - 99.3]:
+			for lateral: float in [-corridor, -trail.half_total_width(), 0.0, trail.half_total_width(), corridor]:
+				var spot := hairpin.position(distance) + hairpin.right(distance) * lateral
+				var message := "wall %+.0f, road %.1f m, lateral %.1f m" % [delta, distance, lateral]
+				assert_almost_eq(walled.height_at(spot.x, spot.z), plain.height_at(spot.x, spot.z),
+						0.0001, message)
+				# Comparing all four grid corners catches a wall bleeding through a
+				# bilinear height query or a terrain triangle beside the road edge.
+				var column := int(floor((spot.x - plain.origin.x) / plain.spacing))
+				var row := int(floor((spot.z - plain.origin.y) / plain.spacing))
+				for dx in 2:
+					for dz in 2:
+						var index := plain.index(column + dx, row + dz)
+						assert_almost_eq(walled.heights[index], plain.heights[index], 0.0001, message + " footprint")
+		assert_eq(walled.edge_distances, plain.edge_distances, "walls leave corridor metadata unchanged")
+		var middle := hairpin.position(100.0) + hairpin.right(100.0) * -30.0
+		assert_almost_eq(walled.height_at(middle.x, middle.z), delta, 0.3,
+				"the intended wall/drop remains between the two protected roads")
+		# Move from the return road toward the wall. The influence must fade in,
+		# rather than jumping from the preserved corridor to the full wall.
+		var return_distance := hairpin.length - 100.0
+		var fractions: Array[float] = []
+		for lateral: float in [-18.0, -21.0, -24.0, -30.0]:
+			var spot := hairpin.position(return_distance) + hairpin.right(return_distance) * lateral
+			var natural := plain.height_at(spot.x, spot.z)
+			fractions.append((walled.height_at(spot.x, spot.z) - natural) / (delta - natural))
+		assert_between(fractions[0], 0.0, 0.3, "small influence just beyond the protected footprint")
+		assert_between(fractions[1], fractions[0], 0.8, "smoothly grows outside the other road")
+		assert_between(fractions[2], fractions[1], 1.0, "keeps growing toward the plateau")
+		assert_almost_eq(fractions[3], 1.0, 0.02, "full intended wall away from both roads")

@@ -4,6 +4,7 @@ extends Node3D
 ## and rocks are scattered one per grid cell with a random offset, kept clear of
 ## the road and any creek, and off steep slopes; posts line shoulders where the
 ## ground drops away. Each kind is drawn as one MultiMesh per terrain chunk.
+## A spacing of zero places none of that kind.
 
 const DIRT := preload("res://surfaces/dirt.tres")
 
@@ -44,23 +45,25 @@ func build(field: TerrainField, sampler: RoadSampler, profile: RoadProfile, trai
 	rock_collision.set_meta(SurfaceLookup.META_KEY, DIRT)
 	add_child(rock_collision)
 
-	var pines := _scatter(field, def, def.pine_spacing, Vector2(0.8, 1.3), 0.0, creek_clearance, rng, true)
-	pine_count = pines.size()
-	_add_multimeshes(field, pines, LowPolyMeshes.pine(def.foliage_color, def.trunk_color), material,
-			def.pine_view_distance, true)
+	if def.pine_spacing > 0.0:
+		var pines := _scatter(field, def, def.pine_spacing, Vector2(0.8, 1.3), 0.0, creek_clearance, rng, true)
+		pine_count = pines.size()
+		_add_multimeshes(field, pines, LowPolyMeshes.pine(def.foliage_color, def.trunk_color), material,
+				def.pine_view_distance, true)
 
-	var rocks := _scatter(field, def, def.rock_spacing, Vector2(0.6, 1.6), 0.25, creek_clearance, rng)
-	rock_count = rocks.size()
-	_add_multimeshes(field, rocks, LowPolyMeshes.rock(def.rock_color, def.seed), material,
-			def.rock_view_distance, false)
-	for rock in rocks:
-		if field.edge_distance_at(rock.origin.x, rock.origin.z) < def.rock_collision_distance:
-			var sphere := SphereShape3D.new()
-			sphere.radius = 0.8 * rock.basis.get_scale().x
-			var shape := CollisionShape3D.new()
-			shape.shape = sphere
-			shape.position = rock.origin
-			rock_collision.add_child(shape)
+	if def.rock_spacing > 0.0:
+		var rocks := _scatter(field, def, def.rock_spacing, Vector2(0.6, 1.6), 0.25, creek_clearance, rng)
+		rock_count = rocks.size()
+		_add_multimeshes(field, rocks, LowPolyMeshes.rock(def.rock_color, def.seed), material,
+				def.rock_view_distance, false)
+		for rock in rocks:
+			if field.edge_distance_at(rock.origin.x, rock.origin.z) < def.rock_collision_distance:
+				var sphere := SphereShape3D.new()
+				sphere.radius = 0.8 * rock.basis.get_scale().x
+				var shape := CollisionShape3D.new()
+				shape.shape = sphere
+				shape.position = rock.origin
+				rock_collision.add_child(shape)
 
 	post_transforms = _posts(field, sampler, profile, trail, def)
 	post_count = post_transforms.size()

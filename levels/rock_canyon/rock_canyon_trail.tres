@@ -1,0 +1,213 @@
+[gd_resource type="Resource" script_class="TrailDef" format=3]
+
+[ext_resource type="Script" path="res://levels/trail/trail_def.gd" id="1"]
+[ext_resource type="Script" path="res://levels/trail/surface_stretch.gd" id="2"]
+[ext_resource type="Resource" path="res://surfaces/dirt.tres" id="3"]
+[ext_resource type="Resource" path="res://surfaces/asphalt.tres" id="4"]
+[ext_resource type="Resource" path="res://surfaces/deep_mud.tres" id="5"]
+[ext_resource type="Resource" path="res://surfaces/mud.tres" id="6"]
+[ext_resource type="Resource" path="res://surfaces/scree.tres" id="7"]
+[ext_resource type="Resource" path="res://surfaces/rock.tres" id="8"]
+[ext_resource type="Resource" path="res://surfaces/wet_rock.tres" id="9"]
+[ext_resource type="Script" path="res://surfaces/surface_def.gd" id="10"]
+[ext_resource type="Script" path="res://levels/trail/rock_step_def.gd" id="11"]
+[ext_resource type="Script" path="res://levels/trail/boulder_field_def.gd" id="12"]
+[ext_resource type="Script" path="res://levels/trail/talus_def.gd" id="13"]
+[ext_resource type="Script" path="res://levels/trail/ford_def.gd" id="14"]
+
+[sub_resource type="Resource" id="Tarmac"]
+script = ExtResource("2")
+start = 0.0
+length = 220.0
+surface = ExtResource("4")
+affects_shoulders = false
+color = Color(0.24, 0.23, 0.24, 1)
+blend_length = 4.0
+
+[sub_resource type="Resource" id="DeepMud"]
+script = ExtResource("2")
+start = 300.0
+length = 260.0
+surface = ExtResource("5")
+transition_surfaces = Array[ExtResource("10")]([ExtResource("6")])
+transition_length = 12.0
+color = Color(0.22, 0.16, 0.11, 1)
+rut_depth = 0.15
+water_rut_depth = 0.09
+rut_spacing = 1.6
+rut_width = 0.9
+blend_length = 12.0
+
+[sub_resource type="Resource" id="Scree1"]
+script = ExtResource("2")
+start = 760.0
+length = 30.0
+surface = ExtResource("7")
+color = Color(0.66, 0.5, 0.4, 1)
+
+[sub_resource type="Resource" id="Scree2"]
+script = ExtResource("2")
+start = 1000.0
+length = 25.0
+surface = ExtResource("7")
+color = Color(0.66, 0.5, 0.4, 1)
+
+[sub_resource type="Resource" id="Scree3"]
+script = ExtResource("2")
+start = 1090.0
+length = 40.0
+surface = ExtResource("7")
+color = Color(0.66, 0.5, 0.4, 1)
+
+[sub_resource type="Resource" id="TalusScree"]
+script = ExtResource("2")
+start = 1150.0
+length = 100.0
+surface = ExtResource("7")
+color = Color(0.66, 0.5, 0.4, 1)
+
+[sub_resource type="Resource" id="WetRock"]
+script = ExtResource("2")
+start = 1278.0
+length = 24.0
+surface = ExtResource("9")
+transition_surfaces = Array[ExtResource("10")]([ExtResource("8")])
+transition_length = 4.0
+color = Color(0.3, 0.29, 0.28, 1)
+roughness = 0.25
+blend_length = 2.0
+
+[sub_resource type="Resource" id="Slabs"]
+script = ExtResource("2")
+start = 1560.0
+length = 60.0
+surface = ExtResource("8")
+affects_shoulders = false
+color = Color(0.62, 0.4, 0.31, 1)
+roughness = 0.7
+
+[sub_resource type="Resource" id="FinalScree"]
+script = ExtResource("2")
+start = 1900.0
+length = 150.0
+surface = ExtResource("7")
+color = Color(0.66, 0.5, 0.4, 1)
+
+[sub_resource type="Resource" id="Step1"]
+script = ExtResource("11")
+distance = 812.0
+height = 0.35
+lateral_from = -6.5
+lateral_to = 6.5
+seed = 53
+
+[sub_resource type="Resource" id="Step2"]
+script = ExtResource("11")
+distance = 947.0
+height = 0.5
+lateral_from = 1.0
+lateral_to = 3.5
+seed = 54
+
+[sub_resource type="Resource" id="Step3"]
+script = ExtResource("11")
+distance = 1078.0
+height = 0.3
+lateral_from = -6.5
+lateral_to = 6.5
+seed = 55
+
+[sub_resource type="Resource" id="Wash1"]
+script = ExtResource("12")
+start = 720.0
+length = 140.0
+count = 24
+size_range = Vector2(0.3, 0.45)
+lateral_range = Vector2(0, 9)
+slab_fraction = 0.3
+seed = 61
+
+[sub_resource type="Resource" id="Wash2"]
+script = ExtResource("12")
+start = 980.0
+length = 140.0
+count = 24
+size_range = Vector2(0.3, 0.45)
+lateral_range = Vector2(0, 9)
+slab_fraction = 0.3
+seed = 62
+
+[sub_resource type="Resource" id="Washout1"]
+script = ExtResource("12")
+start = 1596.0
+length = 22.0
+count = 10
+size_range = Vector2(0.15, 0.28)
+off_road_size_range = Vector2(0.15, 0.28)
+lateral_range = Vector2(0, 1.8)
+slab_fraction = 0.4
+seed = 63
+
+[sub_resource type="Resource" id="Washout2"]
+script = ExtResource("12")
+start = 1744.0
+length = 18.0
+count = 8
+size_range = Vector2(0.15, 0.28)
+off_road_size_range = Vector2(0.15, 0.28)
+lateral_range = Vector2(0, 1.8)
+slab_fraction = 0.0
+seed = 64
+
+[sub_resource type="Resource" id="Squeeze"]
+script = ExtResource("12")
+start = 1838.0
+length = 0.1
+count = 2
+size_range = Vector2(1.1, 1.2)
+off_road_size_range = Vector2(1.1, 1.2)
+lateral_range = Vector2(2.5, 2.6)
+slab_fraction = 0.0
+seed = 65
+
+[sub_resource type="Resource" id="TalusField"]
+script = ExtResource("13")
+start = 1150.0
+length = 100.0
+count = 40
+size_range = Vector2(0.18, 0.32)
+mass_range = Vector2(30, 120)
+lateral_range = Vector2(0, 4)
+seed = 71
+
+[sub_resource type="Resource" id="Ford"]
+script = ExtResource("14")
+distance = 1290.0
+water_color = Color(0.36, 0.5, 0.55, 1)
+seed = 83
+
+[resource]
+script = ExtResource("1")
+road_width = 8.0
+shoulder_width = 2.5
+use_curve_banking = true
+detail_step = 0.25
+width_stretches = Array[Vector4]([Vector4(1500, 400, 4.5, 0)])
+width_blend = 10.0
+base_surface = ExtResource("3")
+painted_lines = false
+surface_stretches = Array[ExtResource("2")]([SubResource("Tarmac"), SubResource("DeepMud"), SubResource("Scree1"), SubResource("Scree2"), SubResource("Scree3"), SubResource("TalusScree"), SubResource("WetRock"), SubResource("Slabs"), SubResource("FinalScree")])
+undulation_amplitude = 0.08
+undulation_wavelengths = Vector2(17, 29)
+rough_sections = Array[Vector3]([Vector3(700, 450, 12)])
+pothole_radius_range = Vector2(0.3, 0.7)
+pothole_depth_range = Vector2(0.05, 0.12)
+checkpoint_distances = PackedFloat32Array(300, 700, 1250, 1500, 1900)
+end_margin = 70.0
+rock_steps = Array[ExtResource("11")]([SubResource("Step1"), SubResource("Step2"), SubResource("Step3")])
+boulder_fields = Array[ExtResource("12")]([SubResource("Wash1"), SubResource("Wash2"), SubResource("Washout1"), SubResource("Washout2"), SubResource("Squeeze")])
+talus = Array[ExtResource("13")]([SubResource("TalusField")])
+fords = Array[ExtResource("14")]([SubResource("Ford")])
+asphalt_color = Color(0.6, 0.42, 0.3, 1)
+shoulder_color = Color(0.58, 0.38, 0.26, 1)
+seed = 47

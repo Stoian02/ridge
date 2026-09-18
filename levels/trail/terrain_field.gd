@@ -89,7 +89,7 @@ static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 		field._carve_parallel(stamps, rights, bank_slopes, half_widths, trail, terrain)
 	else:
 		field._carve(stamps, rights, bank_slopes, half_widths, trail, terrain)
-	field._raise_walls(sampler, trail, terrain)
+	field._raise_walls(sampler, trail, terrain, stamps, half_widths)
 	field._cut_creek(sampler, trail)
 	TrailEarthworks.apply_tunnels(field, sampler, trail)
 	TrailEarthworks.apply_bridges(field, sampler, trail)
@@ -366,23 +366,28 @@ static func _carve_band(input: Dictionary, stamps: Array[Vector3], rights: Array
 ## it by `delta` relative to the road: untouched inside the corridor blend, then
 ## rising over WALL_RISE, holding for WALL_PLATEAU and easing back to the natural
 ## ground over WALL_FALLOFF. A wall never lowers ground that is already higher,
-## and a drop never raises ground that is already lower (spec §10.1).
-static func walled_height(natural: float, road_height: float, delta: float, edge: float, blend: float) -> float:
+## and a drop never raises ground that is already lower (spec §10.1). A nearby
+## road can cap the wall's influence without changing its intended plateau.
+static func walled_height(natural: float, road_height: float, delta: float, edge: float, blend: float,
+		clearance_weight: float = 1.0) -> float:
 	if edge < blend:
 		return natural
 	var rise := smoothstep(blend, blend + WALL_RISE, edge)
 	var plateau_end := blend + WALL_RISE + WALL_PLATEAU
 	var fall := 1.0 - smoothstep(plateau_end, plateau_end + WALL_FALLOFF, edge)
-	var target := lerpf(natural, road_height + delta, rise * fall)
+	var target := lerpf(natural, road_height + delta, minf(rise * fall, clearance_weight))
 	return maxf(natural, target) if delta > 0.0 else minf(natural, target)
 
 
 ## Paints each wall section onto the grid: every WALL_STEP along the section and
 ## across the road out to the wall's full reach, the nearest grid sample records
 ## the smallest edge distance seen, that stamp's delta and the road height there.
-## Then each touched sample takes its walled height. Runs after the corridor is
-## carved and before the creek and structures, so a river channel can cut a wall.
-func _raise_walls(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef) -> void:
+## Then each touched sample takes its walled height, protecting every road's
+## corridor, including nearby hairpin legs, plus the grid samples used to
+## interpolate it. Runs after the corridor is carved and before the creek and
+## structures, so a river channel can cut a wall.
+func _raise_walls(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
+		stamps: Array[Vector3], half_widths: PackedFloat32Array) -> void:
 	if not terrain.has_walls():
 		return
 	var cell_count := columns * rows
@@ -420,10 +425,52 @@ func _raise_walls(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef) ->
 							wall_heights[i] = centre.y + lateral * bank
 				lateral += WALL_STEP
 			distance += WALL_STEP
+	# A height query/terrain triangle can reach the opposite corner of a grid
+	# cell. Preserve that entire footprint beyond the corridor, then smoothly
+	# restore full wall influence by its original plateau. The usual carved
+	# edge_distances stop too close to the road to provide this fade reliably.
+	var protected_edge := terrain.corridor_blend + spacing * sqrt(2.0)
+	var full_edge := maxf(terrain.corridor_blend + WALL_RISE, protected_edge + spacing)
+	var clearances := _wall_road_clearances(stamps, half_widths, wall_edges, full_edge)
 	for i in cell_count:
 		if wall_edges[i] < FAR:
-			heights[i] = walled_height(heights[i], wall_heights[i], wall_deltas[i], wall_edges[i], terrain.corridor_blend)
+			var weight := smoothstep(protected_edge, full_edge, clearances[i])
+			heights[i] = walled_height(heights[i], wall_heights[i], wall_deltas[i], wall_edges[i],
+					terrain.corridor_blend, weight)
 			lowest_height = minf(lowest_height, heights[i])
+
+
+## Distance from each wall-affected grid sample to the nearest road edge. Use
+## segments between road stamps, not isolated stamps, so a sample between them
+## never loses its protection. The larger endpoint width is conservative through
+## tapers. This extra pass exists only for levels with canyon walls and leaves
+## the original corridor metadata and no-wall generation unchanged.
+func _wall_road_clearances(stamps: Array[Vector3], half_widths: PackedFloat32Array,
+		wall_edges: PackedFloat32Array, full_edge: float) -> PackedFloat32Array:
+	var clearances := PackedFloat32Array()
+	clearances.resize(columns * rows)
+	clearances.fill(FAR)
+	for s in maxi(1, stamps.size() - 1):
+		var next := mini(s + 1, stamps.size() - 1)
+		var start := Vector2(stamps[s].x, stamps[s].z)
+		var segment := Vector2(stamps[next].x, stamps[next].z) - start
+		var length_squared := segment.length_squared()
+		var half_width := maxf(half_widths[s], half_widths[next])
+		var radius := half_width + full_edge + segment.length()
+		var reach := ceili(radius / spacing)
+		var centre_column := roundi((start.x - origin.x) / spacing)
+		var centre_row := roundi((start.y - origin.y) / spacing)
+		for row in range(maxi(0, centre_row - reach), mini(rows, centre_row + reach + 1)):
+			var z := origin.y + row * spacing
+			for column in range(maxi(0, centre_column - reach), mini(columns, centre_column + reach + 1)):
+				var i := row * columns + column
+				if wall_edges[i] >= FAR:
+					continue
+				var offset := Vector2(origin.x + column * spacing, z) - start
+				var along := clampf(offset.dot(segment) / maxf(length_squared, 0.000001), 0.0, 1.0)
+				var edge := (offset - segment * along).length() - half_width
+				clearances[i] = minf(clearances[i], edge)
+	return clearances
 
 
 ## Shapes the ground along the creek. Each nearby sample takes its shape from the

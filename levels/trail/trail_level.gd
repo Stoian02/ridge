@@ -22,6 +22,7 @@ var sampler: RoadSampler
 var profile: RoadProfile
 var field: TerrainField
 var road_builder: RoadBuilder
+var rut_water_builder: RutWaterBuilder
 var tunnel_builder: TunnelBuilder
 var bridge_builder: BridgeBuilder
 var rock_step_builder: RockStepBuilder
@@ -70,6 +71,12 @@ func build() -> void:
 	generated.add_child(road_builder)
 	road_builder.build(sampler, profile, trail)
 	_lap(&"road")
+
+	rut_water_builder = RutWaterBuilder.new()
+	rut_water_builder.name = "RutWater"
+	generated.add_child(rut_water_builder)
+	rut_water_builder.build(sampler, profile, trail)
+	_lap(&"rut_water")
 
 	# The shortcut stores the unmodified terrain for its ribbon, then lowers the
 	# field beneath its potholes before TerrainBuilder consumes it.
