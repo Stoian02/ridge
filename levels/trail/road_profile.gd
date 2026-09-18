@@ -61,6 +61,9 @@ func _init(trail_def: TrailDef, length: float) -> void:
 		# asphalt. A half-metre rim lets the coarse row spacing enter safely.
 		for hole: Vector4 in holes:
 			ranges.append(Vector2(hole.x - hole.z - 0.5, hole.x + hole.z + 0.5))
+	for rut: CrossRutDef in def.cross_ruts:
+		var span := rut.bounds()
+		ranges.append(Vector2(span.x - 0.5, span.y + 0.5))
 	for stretch in def.surface_stretches:
 		for end: float in [stretch.start, stretch.end()]:
 			ranges.append(Vector2(end - stretch.blend_length, end + stretch.blend_length))
@@ -146,9 +149,16 @@ func jump_height(distance: float) -> float:
 
 
 func rough_height(distance: float, lateral: float) -> float:
-	var total := pothole_height(distance, lateral)
+	var total := pothole_height(distance, lateral) + cross_rut_height(distance, lateral)
 	if is_patch(distance, lateral):
 		total += PATCH_RAISE
+	return total
+
+
+func cross_rut_height(distance: float, lateral: float) -> float:
+	var total := 0.0
+	for rut: CrossRutDef in def.cross_ruts:
+		total += rut.height_at(distance, lateral)
 	return total
 
 

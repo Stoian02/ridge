@@ -153,13 +153,18 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 		if step.distance < distances[-1]:
 			steps.append(PackedFloat64Array([step.distance, step.height, step.lateral_from, step.lateral_to,
 					step.ramp_length, step.face_length]))
+	var cross_ruts: Array[PackedFloat64Array] = []
+	for rut: CrossRutDef in def.cross_ruts:
+		var span := rut.bounds()
+		if span.y >= distances[0] and span.x <= distances[-1]:
+			cross_ruts.append(rut.snapshot())
 	return {"stations": stations, "distances": distances, "centres": centres, "rights": rights, "skip_rows": skip_rows,
 			"ups": ups, "heights": heights, "ruts": ruts, "rut_centres": rut_centres, "road_colors": road_colors,
 			"patch_colors": patch_colors, "left_colors": left_colors, "right_colors": right_colors,
 			"line_color": def.line_color, "potholes": potholes, "patches": profile.patches,
 			"road_surfaces": road_surfaces, "shoulder_surfaces": shoulder_surfaces,
 			"road_scales": road_scales, "shoulder_scales": shoulder_scales, "half_road": def.road_width * 0.5,
-			"steps": steps, "surfaces": surfaces, "surface_count": surfaces.size()}
+			"steps": steps, "cross_ruts": cross_ruts, "surfaces": surfaces, "surface_count": surfaces.size()}
 
 
 ## Cross-section stations from left to right as Vector2(lateral offset, part).
@@ -378,7 +383,8 @@ func _color(profile: RoadProfile, def: TrailDef, distance: float, lateral: float
 	var stretch := profile.stretch_at(distance)
 	if stretch != null:
 		base = base.lerp(stretch.color, stretch.weight(distance))
-	var dip := profile.pothole_height(distance, lateral) + profile.rut_height(distance, lateral)
+	var dip := profile.pothole_height(distance, lateral) + profile.cross_rut_height(distance, lateral) \
+			+ profile.rut_height(distance, lateral)
 	var shade := clampf(1.0 + dip * SHADE_PER_METRE, 0.5, 1.0)
 	return Color(base.r * shade, base.g * shade, base.b * shade)
 

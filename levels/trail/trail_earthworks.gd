@@ -14,7 +14,7 @@ const FORD_TAPER := 8.0
 ## hole centres leaves coarse terrain triangles bridging the depression. Sum
 ## overlapping depths conservatively; the road mesh still supplies the floor.
 static func apply_road_damage(field: TerrainField, sampler: RoadSampler, trail: TrailDef) -> void:
-	if trail.damage_sections.is_empty():
+	if trail.damage_sections.is_empty() and trail.cross_ruts.is_empty():
 		return
 	var profile := RoadProfile.new(trail, sampler.length)
 	var cuts := {}
@@ -33,6 +33,20 @@ static func apply_road_damage(field: TerrainField, sampler: RoadSampler, trail: 
 					var i := row * field.columns + column
 					var previous: float = cuts.get(i, 0.0)
 					cuts[i] = previous + hole.w
+	for rut: CrossRutDef in trail.cross_ruts:
+		var span := rut.bounds()
+		var reach := maxf(absf(rut.lateral_from), absf(rut.lateral_to)) + diagonal
+		var samples := nearest_samples(field, sampler, span.x - diagonal, span.y + diagonal, reach)
+		for i: int in samples:
+			var sample: Vector4 = samples[i]
+			# Expand by the whole grid diagonal, including skew, so every corner
+			# of a triangle below a channel is cleared, not just its centre.
+			if sample.w < rut.lateral_from - diagonal or sample.w > rut.lateral_to + diagonal:
+				continue
+			if absf(sample.y - rut.distance - sample.w * rut.skew) > rut.width * 0.5 + diagonal * (1.0 + absf(rut.skew)):
+				continue
+			var previous: float = cuts.get(i, 0.0)
+			cuts[i] = previous + rut.depth
 	for i: int in cuts:
 		var depth: float = cuts[i]
 		field.heights[i] -= depth

@@ -28,6 +28,7 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 	var shoulder_scales: PackedFloat64Array = input["shoulder_scales"]
 	var half_road: float = input["half_road"]
 	var steps: Array[PackedFloat64Array] = input["steps"]
+	var cross_ruts: Array[PackedFloat64Array] = input["cross_ruts"]
 	var width := stations.size()
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
@@ -84,7 +85,14 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 					step_height += step[1] * (RockStepDef.LEDGE_SHARE + (1.0 - RockStepDef.LEDGE_SHARE) * lip)
 				else:
 					step_height += step[1] * clampf((distance - step[0]) / maxf(step[4], 0.001), 0.0, 1.0)
-			var rough := pothole_height
+			var cross_height := 0.0
+			for channel: PackedFloat64Array in cross_ruts:
+				var t := absf(distance - channel[0] - lateral * channel[3]) / maxf(channel[4] * 0.5, 0.001)
+				if t < 1.0 and lateral > channel[1] and lateral < channel[2]:
+					var fade := minf(smoothstep(channel[1], channel[1] + channel[6], lateral),
+							1.0 - smoothstep(channel[2] - channel[6], channel[2], lateral))
+					cross_height -= channel[5] * (0.5 + 0.5 * cos(PI * t)) * fade
+			var rough := pothole_height + cross_height
 			if is_patch:
 				rough += RoadProfile.PATCH_RAISE
 			var i := row * width + column
@@ -98,7 +106,7 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 				colors[i] = line_color
 			else:
 				var base: Color = patch_colors[row] if is_patch else road_colors[row]
-				var shade := clampf(1.0 + (pothole_height + rut_height) * RoadBuilder.SHADE_PER_METRE, 0.5, 1.0)
+				var shade := clampf(1.0 + (pothole_height + cross_height + rut_height) * RoadBuilder.SHADE_PER_METRE, 0.5, 1.0)
 				colors[i] = Color(base.r * shade, base.g * shade, base.b * shade)
 	var indices := PackedInt32Array()
 	var faces: Array[PackedVector3Array] = []

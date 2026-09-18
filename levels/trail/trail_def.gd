@@ -62,6 +62,8 @@ extends Resource
 @export var rough_margin: float = 3.0
 ## Individually seeded, graded damage with its own size/depth range and terrain clearance.
 @export var damage_sections: Array[RoadDamageDef] = []
+## Authored diagonal erosion channels; their terrain clearance is cut as well.
+@export var cross_ruts: Array[CrossRutDef] = []
 
 @export_group("Jumps")
 ## Jump crests shaped into the road, as Vector3(distance, height, length).
@@ -106,6 +108,7 @@ extends Resource
 @export var bridges: Array[BridgeDef] = []
 @export var rock_steps: Array[RockStepDef] = []
 @export var boulder_fields: Array[BoulderFieldDef] = []
+@export var fallen_trees: Array[FallenTreeDef] = []
 @export var talus: Array[TalusDef] = []
 @export var fords: Array[FordDef] = []
 

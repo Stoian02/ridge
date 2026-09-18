@@ -95,6 +95,13 @@ func crawl_zone_ahead(distance: float) -> bool:
 	for field: TalusDef in def.talus:
 		if field.end() >= from and field.start <= to:
 			return true
+	for tree: FallenTreeDef in def.fallen_trees:
+		if tree.distance + tree.length * 0.5 >= from and tree.distance - tree.length * 0.5 <= to:
+			return true
+	for rut: CrossRutDef in def.cross_ruts:
+		var span := rut.bounds()
+		if span.y >= from and span.x <= to:
+			return true
 	for ford: FordDef in def.fords:
 		var reach := ford.half_width() + ford.bank_run
 		if ford.distance + reach >= from and ford.distance - reach <= to:

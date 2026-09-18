@@ -108,6 +108,14 @@ func test_parallel_chunks_match_the_original_serial_builder() -> void:
 	muddy.rollers = [Vector3(60.0, 0.3, 8.0)]
 	muddy.shadowless_sections = [Vector2(0.0, 120.0)]
 	muddy.road_view_distance = 300.0
+	var channel := CrossRutDef.new()
+	channel.distance = 100.0  # diagonal straddles two collision chunks
+	channel.skew = -0.9
+	var second: CrossRutDef = channel.duplicate()
+	second.distance = 101.0
+	second.skew = 0.7
+	muddy.cross_ruts = [channel, second]
+	muddy.width_stretches = [Vector4(80.0, 70.0, 5.75, 1.0)]
 	muddy.surface_stretches[0].transition_surfaces = [load("res://levels/muddy_valley/soft_mud.tres")]
 	muddy.surface_stretches[0].transition_length = 8.0
 	muddy.surface_stretches[0].extra_rut_paths = [Vector4(-1.0, 1.0, 60.0, 0.0), Vector4(1.0, 0.7, 80.0, 2.0)]

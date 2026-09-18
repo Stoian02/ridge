@@ -87,6 +87,26 @@ func test_ford_zone_includes_both_bank_approaches() -> void:
 	assert_almost_eq(driver.target_speed(275.0), 4.5, 0.0001)
 
 
+func test_fallen_tree_and_diagonal_washout_allow_time_to_slow_and_clear_rear_wheels() -> void:
+	var tree := FallenTreeDef.new()
+	tree.distance = 100.0
+	tree.length = 12.0
+	trail.fallen_trees = [tree]
+	var rut := CrossRutDef.new()
+	rut.distance = 200.0
+	rut.lateral_from = -3.0
+	rut.lateral_to = 3.0
+	rut.skew = -1.0
+	rut.width = 2.0
+	trail.cross_ruts = [rut]
+	var driver := _driver()
+	for distance: float in [74.0, 100.0, 111.0, 176.0, 200.0, 209.0]:
+		_assert_zone(driver, distance, true)
+		assert_almost_eq(driver.target_speed(distance), 4.5, 0.0001)
+	for distance: float in [73.9, 111.1, 175.9, 209.1]:
+		_assert_zone(driver, distance, false)
+
+
 func test_narrow_shelf_slows_before_its_taper_and_stays_slow_until_clear() -> void:
 	trail.width_stretches = [Vector4(200.0, 100.0, 4.5, 0.0)]
 	var driver := _driver()
