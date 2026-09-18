@@ -1,6 +1,6 @@
 # Ridge — notes for coding agents
 
-Start with the latest handover: `docs/notes/handover-2026-09-17-rock-canyon.md` (build Milestone 5, Rock Canyon, on branch `m5-rock-canyon`). It covers:
+Start with the latest handover: `docs/notes/handover-2026-09-18-codex-m5.md` (Milestone 5 in progress on branch `m5-rock-canyon`: Tasks 1–5 done, Task 6 WIP, 7–11 to do), then `docs/notes/handover-2026-09-17-rock-canyon.md` for the repo rules. They cover:
 - the current branch and state
 - the open request
 - how to run tests
