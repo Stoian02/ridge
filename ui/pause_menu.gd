@@ -22,6 +22,7 @@ var show_restart := true
 var rig: DrivingRig
 
 var _steering: Button
+var _throttle: Button
 var _sound: Button
 var _telemetry: Button
 var _recording: Button
@@ -104,6 +105,15 @@ func _on_steering() -> void:
 	_refresh_labels()
 
 
+func _on_throttle() -> void:
+	var controls := rig.touch_controls
+	var next: TouchThrottleLogic.Mode = TouchThrottleLogic.Mode.LEVER \
+			if controls.throttle_mode == TouchThrottleLogic.Mode.PEDAL else TouchThrottleLogic.Mode.PEDAL
+	controls.set_throttle_mode(next)
+	GameState.set_throttle_mode(TouchControls.throttle_mode_name(next))
+	_refresh_labels()
+
+
 ## Steps the Sound setting to the next quieter step, wrapping from Off to 100%.
 func _on_sound() -> void:
 	var steps := Progress.SOUND_STEPS
@@ -142,6 +152,7 @@ func _refresh_labels() -> void:
 		return
 	var buttons_mode := rig.touch_controls.steer_mode == TouchSteerLogic.Mode.BUTTONS
 	_steering.text = "Steering: %s" % ("Buttons" if buttons_mode else "Analog")
+	_throttle.text = "Throttle: %s" % ("Lever" if rig.touch_controls.throttle_mode == TouchThrottleLogic.Mode.LEVER else "Pedal")
 	_telemetry.text = "Telemetry: %s" % ("On" if rig.telemetry.visible else "Off")
 	_recording.text = "Rec: %s" % ("On" if rig.recorder.is_recording() else "Off")
 
@@ -171,6 +182,8 @@ func _build_ui() -> void:
 	navigation.add_child(UiKit.button("Main menu", main_menu_pressed.emit))
 	_steering = UiKit.button("Steering", _on_steering)
 	settings.add_child(_steering)
+	_throttle = UiKit.button("Throttle", _on_throttle)
+	settings.add_child(_throttle)
 	_sound = UiKit.button("Sound", _on_sound)
 	settings.add_child(_sound)
 	_add_traction_slider(settings)

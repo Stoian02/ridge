@@ -2,7 +2,7 @@ class_name DrivingRig
 extends Node3D
 ## The car with everything needed to drive it: chase camera, touch controls,
 ## telemetry and run recorder. Levels place one, use place_car() to put the car
-## somewhere, and listen to pause_requested. The steering style comes from the save.
+## somewhere, and listen to pause_requested. Steering and throttle styles come from the save.
 ## The car is the player's selected one (spec §3.4) unless car_override is set.
 
 signal pause_requested
@@ -39,6 +39,7 @@ func _ready() -> void:
 	GameState.traction_control_strength_changed.connect(_apply_traction_control_strength)
 	touch_controls.pause_requested.connect(pause_requested.emit)
 	touch_controls.set_steer_mode(TouchControls.mode_from_name(GameState.progress.steer_mode))
+	touch_controls.set_throttle_mode(TouchControls.throttle_mode_from_name(GameState.progress.throttle_mode))
 	effects = CarEffects.new()
 	effects.name = "CarEffects"
 	# CarAudio reads the wheel motion CarEffects works out each frame, so CarEffects must run first.

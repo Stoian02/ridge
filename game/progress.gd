@@ -1,17 +1,21 @@
 class_name Progress
 extends RefCounted
 ## The player's progress in memory (spec §5.3): per level, the best time with that
-## run's checkpoint splits and the most stars earned; plus the steering style and
+## run's checkpoint splits and the most stars earned; plus steering/throttle controls and
 ## the last car chosen.
 ## Converts to and from the save file's Dictionary (spec §5.5).
 
 const VERSION := 1
 const STEER_ANALOG := "analog"
 const STEER_BUTTONS := "buttons"
+const THROTTLE_PEDAL := "pedal"
+const THROTTLE_LEVER := "lever"
 ## The starter car's id (see CarCatalog).
 const DEFAULT_CAR := "rally"
 
 var steer_mode: String = STEER_ANALOG
+## Touch throttle: the original on/off pedal, or the absolute lever slider.
+var throttle_mode: String = THROTTLE_PEDAL
 ## Id of the car the player last chose in car select.
 var selected_car: String = DEFAULT_CAR
 ## The Sound setting (M3B spec §7): one of SOUND_STEPS, 0 = off.
@@ -83,7 +87,8 @@ func to_dictionary() -> Dictionary:
 			splits[str(index)] = record["best_splits"][index]
 		levels[id] = {"best_time": record["best_time"], "best_splits": splits, "stars": record["stars"]}
 	return {"version": VERSION, "settings": {"steer_mode": steer_mode, "selected_car": selected_car,
-			"sound_volume": sound_volume, "traction_control_strength": traction_control_strength}, "levels": levels}
+			"sound_volume": sound_volume, "traction_control_strength": traction_control_strength,
+			"throttle_mode": throttle_mode}, "levels": levels}
 
 
 ## Reads save data. Unknown keys are ignored; missing or wrongly typed values take
@@ -93,6 +98,8 @@ static func from_dictionary(data: Dictionary) -> Progress:
 	var settings = data.get("settings")
 	if settings is Dictionary and settings.get("steer_mode") in [STEER_ANALOG, STEER_BUTTONS]:
 		progress.steer_mode = settings["steer_mode"]
+	if settings is Dictionary and settings.get("throttle_mode") in [THROTTLE_PEDAL, THROTTLE_LEVER]:
+		progress.throttle_mode = settings["throttle_mode"]
 	var car_id = settings.get("selected_car") if settings is Dictionary else null
 	if car_id is String and car_id != "":
 		progress.selected_car = car_id

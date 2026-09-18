@@ -67,6 +67,13 @@ func set_steer_mode(mode: String) -> void:
 	save()
 
 
+func set_throttle_mode(mode: String) -> void:
+	if mode not in [Progress.THROTTLE_PEDAL, Progress.THROTTLE_LEVER]:
+		return
+	progress.throttle_mode = mode
+	save()
+
+
 ## The Sound setting (M3B spec §7): stores, applies and saves it.
 func set_sound_volume(value: float) -> void:
 	progress.sound_volume = clampf(value, 0.0, 1.0)
