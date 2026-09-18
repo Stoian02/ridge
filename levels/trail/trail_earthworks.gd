@@ -10,6 +10,34 @@ const FORD_BANK := 4.0
 const FORD_TAPER := 8.0
 
 
+## Lower every grid corner supporting a damaged road cell. Sampling only at
+## hole centres leaves coarse terrain triangles bridging the depression. Sum
+## overlapping depths conservatively; the road mesh still supplies the floor.
+static func apply_road_damage(field: TerrainField, sampler: RoadSampler, trail: TrailDef) -> void:
+	if trail.damage_sections.is_empty():
+		return
+	var profile := RoadProfile.new(trail, sampler.length)
+	var cuts := {}
+	var diagonal := field.spacing * sqrt(2.0)
+	for hole: Vector4 in profile.damage_potholes:
+		var centre := sampler.position(hole.x) + sampler.right(hole.x) * hole.y
+		var reach := hole.z + diagonal
+		var cells := ceili(reach / field.spacing)
+		var cx := roundi((centre.x - field.origin.x) / field.spacing)
+		var cz := roundi((centre.z - field.origin.y) / field.spacing)
+		for row in range(maxi(0, cz - cells), mini(field.rows, cz + cells + 1)):
+			var dz := field.origin.y + row * field.spacing - centre.z
+			for column in range(maxi(0, cx - cells), mini(field.columns, cx + cells + 1)):
+				var dx := field.origin.x + column * field.spacing - centre.x
+				if dx * dx + dz * dz <= reach * reach:
+					var i := row * field.columns + column
+					var previous: float = cuts.get(i, 0.0)
+					cuts[i] = previous + hole.w
+	for i: int in cuts:
+		var depth: float = cuts[i]
+		field.heights[i] -= depth
+
+
 static func apply_tunnels(field: TerrainField, sampler: RoadSampler, trail: TrailDef) -> void:
 	if trail.tunnels.is_empty():
 		return

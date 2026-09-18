@@ -13,6 +13,7 @@
 [ext_resource type="Script" path="res://levels/trail/rock_step_def.gd" id="11"]
 [ext_resource type="Script" path="res://levels/trail/boulder_field_def.gd" id="12"]
 [ext_resource type="Script" path="res://levels/trail/ford_def.gd" id="14"]
+[ext_resource type="Script" path="res://levels/trail/road_damage_def.gd" id="15"]
 
 [sub_resource type="Resource" id="Tarmac"]
 script = ExtResource("2")
@@ -21,7 +22,28 @@ length = 220.0
 surface = ExtResource("4")
 affects_shoulders = false
 color = Color(0.24, 0.23, 0.24, 1)
-blend_length = 4.0
+blend_length = 10.0
+
+[sub_resource type="Resource" id="BrokenAsphalt"]
+script = ExtResource("15")
+start = 30.0
+length = 190.0
+density = Vector2(8, 62)
+radius_range = Vector2(0.45, 1.5)
+depth_range = Vector2(0.035, 0.32)
+initial_severity = 0.15
+seed = 481
+
+[sub_resource type="Resource" id="RoughDirt"]
+script = ExtResource("15")
+start = 220.0
+length = 80.0
+density = Vector2(80, 100)
+radius_range = Vector2(0.5, 1.65)
+depth_range = Vector2(0.09, 0.42)
+initial_severity = 0.85
+end_fade = 9.0
+seed = 482
 
 [sub_resource type="Resource" id="DeepMud"]
 script = ExtResource("2")
@@ -31,11 +53,23 @@ surface = ExtResource("5")
 transition_surfaces = Array[ExtResource("10")]([ExtResource("6")])
 transition_length = 12.0
 color = Color(0.22, 0.16, 0.11, 1)
-rut_depth = 0.15
+rut_depth = 0.18
 water_rut_depth = 0.09
 rut_spacing = 1.6
 rut_width = 0.9
+extra_rut_paths = Array[Vector4]([Vector4(-1.1, 1.15, 92, 0.5), Vector4(1.2, 1, 125, 3)])
 blend_length = 12.0
+
+[sub_resource type="Resource" id="ChurnedMud"]
+script = ExtResource("15")
+start = 312.0
+length = 236.0
+density = Vector2(25, 42)
+radius_range = Vector2(0.5, 1.35)
+depth_range = Vector2(0.04, 0.17)
+initial_severity = 0.7
+end_fade = 10.0
+seed = 483
 
 [sub_resource type="Resource" id="Scree1"]
 script = ExtResource("2")
@@ -192,7 +226,9 @@ road_width = 8.0
 shoulder_width = 2.5
 use_curve_banking = true
 detail_step = 0.25
-width_stretches = Array[Vector4]([Vector4(1500, 400, 4.5, 0)])
+road_view_distance = 400.0
+shadowless_sections = Array[Vector2]([Vector2(0, 560)])
+width_stretches = Array[Vector4]([Vector4(1500, 400, 4.5, 0), Vector4(560, 100, 12, 4)])
 width_blend = 10.0
 base_surface = ExtResource("3")
 painted_lines = false
@@ -200,8 +236,10 @@ surface_stretches = Array[ExtResource("2")]([SubResource("Tarmac"), SubResource(
 undulation_amplitude = 0.08
 undulation_wavelengths = Vector2(17, 29)
 rough_sections = Array[Vector3]([Vector3(700, 450, 12)])
+damage_sections = Array[ExtResource("15")]([SubResource("BrokenAsphalt"), SubResource("RoughDirt"), SubResource("ChurnedMud")])
 pothole_radius_range = Vector2(0.3, 0.7)
 pothole_depth_range = Vector2(0.05, 0.12)
+rollers = Array[Vector3]([Vector3(65, 0.035, 9), Vector3(92, 0.05, 8), Vector3(119, 0.07, 8), Vector3(143, 0.1, 7), Vector3(165, 0.13, 7), Vector3(185, 0.16, 6), Vector3(207, 0.2, 7), Vector3(226, 0.23, 8), Vector3(239, 0.3, 9), Vector3(251, 0.25, 7), Vector3(262, 0.34, 9), Vector3(276, 0.28, 8), Vector3(288, 0.22, 9), Vector3(329, 0.1, 12), Vector3(356, 0.14, 11), Vector3(390, 0.12, 10), Vector3(421, 0.17, 12), Vector3(452, 0.2, 14), Vector3(480, 0.15, 11), Vector3(513, 0.18, 14), Vector3(539, 0.12, 12)])
 checkpoint_distances = PackedFloat32Array(300, 700, 1250, 1500, 1900)
 end_margin = 70.0
 rock_steps = Array[ExtResource("11")]([SubResource("Step1"), SubResource("Step2"), SubResource("Step3")])

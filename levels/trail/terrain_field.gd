@@ -49,6 +49,8 @@ var creek_levels := PackedFloat32Array()
 ## How strongly each sample is tinted toward wear_color (0..1); empty where nothing wears the ground.
 var wear := PackedFloat32Array()
 var wear_color := Color.WHITE
+## Local sandstone colour weight; absent on levels without terraced walls.
+var wall_strata := PackedFloat32Array()
 ## Grid samples removed around tunnel approaches; the structure closes the sides.
 var portal_holes := PackedByteArray()
 var lowest_height := 0.0
@@ -94,7 +96,9 @@ static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 	TrailEarthworks.apply_tunnels(field, sampler, trail)
 	TrailEarthworks.apply_bridges(field, sampler, trail)
 	TrailEarthworks.apply_fords(field, sampler, trail)
-	if not trail.tunnels.is_empty() or not trail.bridges.is_empty() or not trail.fords.is_empty():
+	TrailEarthworks.apply_road_damage(field, sampler, trail)
+	if not trail.tunnels.is_empty() or not trail.bridges.is_empty() or not trail.fords.is_empty() \
+			or not trail.damage_sections.is_empty():
 		field.lowest_height = INF
 		for height: float in field.heights:
 			field.lowest_height = minf(field.lowest_height, height)
@@ -369,10 +373,15 @@ static func _carve_band(input: Dictionary, stamps: Array[Vector3], rights: Array
 ## and a drop never raises ground that is already lower (spec §10.1). A nearby
 ## road can cap the wall's influence without changing its intended plateau.
 static func walled_height(natural: float, road_height: float, delta: float, edge: float, blend: float,
-		clearance_weight: float = 1.0) -> float:
+		clearance_weight: float = 1.0, terrace: float = 0.0) -> float:
 	if edge < blend:
 		return natural
 	var rise := smoothstep(blend, blend + WALL_RISE, edge)
+	if terrace > 0.0 and delta > 0.0:
+		var t := (edge - blend) / (WALL_RISE * 2.0)
+		var ledges := 0.26 * smoothstep(0.0, 0.22, t) + 0.32 * smoothstep(0.36, 0.6, t) \
+				+ 0.42 * smoothstep(0.76, 1.0, t)
+		rise = lerpf(rise, ledges, terrace)
 	var plateau_end := blend + WALL_RISE + WALL_PLATEAU
 	var fall := 1.0 - smoothstep(plateau_end, plateau_end + WALL_FALLOFF, edge)
 	var target := lerpf(natural, road_height + delta, minf(rise * fall, clearance_weight))
@@ -394,15 +403,25 @@ func _raise_walls(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 	var wall_edges := PackedFloat32Array()
 	var wall_deltas := PackedFloat32Array()
 	var wall_heights := PackedFloat32Array()
+	var terraces := PackedFloat32Array()
+	var setbacks := PackedFloat32Array()
 	wall_edges.resize(cell_count)
 	wall_edges.fill(FAR)
 	wall_deltas.resize(cell_count)
 	wall_heights.resize(cell_count)
+	var shaped := not terrain.terraced_wall_sections.is_empty()
+	if shaped:
+		terraces.resize(cell_count)
+		setbacks.resize(cell_count)
+		wall_strata.resize(cell_count)
 	var reach := trail.half_total_width() + terrain.corridor_blend + WALL_RISE + WALL_PLATEAU + WALL_FALLOFF
+	if shaped:
+		reach += 8.0  # the largest recess must still blend back fully at the outer edge
 	for section: Vector4 in terrain.wall_sections:
 		var distance := maxf(section.x, 0.0)
 		var end := minf(section.x + section.y, sampler.length)
 		while distance <= end:
+			var terrace: float = terrain.terrace_weight(distance) if shaped else 0.0
 			var left := terrain.wall_delta(distance, -1.0)
 			var right := terrain.wall_delta(distance, 1.0)
 			var centre := sampler.position(distance)
@@ -423,6 +442,13 @@ func _raise_walls(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 							wall_edges[i] = edge
 							wall_deltas[i] = delta
 							wall_heights[i] = centre.y + lateral * bank
+							if shaped:
+								terraces[i] = terrace
+								# Independent, broad recesses on each side, always away
+								# from the protected driving corridor.
+								var phase: float = 1.7 if lateral > 0.0 else 0.0
+								setbacks[i] = terrace * (4.0 + 2.5 * sin(distance * 0.071 + phase)
+										+ 1.5 * sin(distance * 0.19 + phase))
 				lateral += WALL_STEP
 			distance += WALL_STEP
 	# A height query/terrain triangle can reach the opposite corner of a grid
@@ -435,8 +461,13 @@ func _raise_walls(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 	for i in cell_count:
 		if wall_edges[i] < FAR:
 			var weight := smoothstep(protected_edge, full_edge, clearances[i])
+			var terrace: float = terraces[i] if shaped else 0.0
+			var setback: float = setbacks[i] if shaped else 0.0
 			heights[i] = walled_height(heights[i], wall_heights[i], wall_deltas[i], wall_edges[i],
-					terrain.corridor_blend, weight)
+					terrain.corridor_blend + setback, weight, terrace)
+			if shaped:
+				wall_strata[i] = terrace * weight * smoothstep(terrain.corridor_blend,
+						terrain.corridor_blend + WALL_RISE, wall_edges[i])
 			lowest_height = minf(lowest_height, heights[i])
 
 

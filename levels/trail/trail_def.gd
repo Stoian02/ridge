@@ -19,6 +19,12 @@ extends Resource
 @export var detail_step: float = 0.25
 ## Length of road built as one mesh and collision chunk.
 @export var chunk_length: float = 100.0
+## Mesh-only visibility distance; 0 keeps the original unlimited drawing.
+## Collision is never culled. Match this to the level's terrain/fog horizon.
+@export var road_view_distance: float = 0.0
+## Ground-supported road sections which need not be redrawn into shadow maps.
+## (start, length); receiving shadows and all collision stay enabled.
+@export var shadowless_sections: Array[Vector2] = []
 
 @export_group("Width profile")
 ## Stretches where the road changes width, as Vector4(start, length, road width,
@@ -54,6 +60,8 @@ extends Resource
 @export var pothole_depth_range: Vector2 = Vector2(0.06, 0.12)
 ## Potholes and patches keep this far from the ends of a rough stretch.
 @export var rough_margin: float = 3.0
+## Individually seeded, graded damage with its own size/depth range and terrain clearance.
+@export var damage_sections: Array[RoadDamageDef] = []
 
 @export_group("Jumps")
 ## Jump crests shaped into the road, as Vector3(distance, height, length).
@@ -155,3 +163,10 @@ func _width_stretch_at(distance: float) -> Vector3:
 
 func has_creek() -> bool:
 	return creek_length > 0.0
+
+
+func casts_shadow(from: float, to: float) -> bool:
+	for section: Vector2 in shadowless_sections:
+		if from >= section.x - 0.001 and to <= section.x + section.y + 0.001:
+			return false
+	return true

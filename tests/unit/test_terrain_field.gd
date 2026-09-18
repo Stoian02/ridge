@@ -86,6 +86,37 @@ func test_parallel_carving_matches_serial_with_bends_noise_and_creek() -> void:
 	assert_eq(parallel.lowest_height, serial.lowest_height)
 
 
+func test_local_terraces_and_road_damage_match_in_parallel_and_serial() -> void:
+	terrain.corridor_blend = 8.0
+	terrain.wall_sections = [Vector4(-25, 160, 60, 70)]
+	terrain.terraced_wall_sections = [Vector2(-25, 160)]
+	var damage := RoadDamageDef.new()
+	damage.start = 40.0
+	damage.length = 60.0
+	damage.depth_range = Vector2(0.2, 0.5)
+	trail.damage_sections = [damage]
+	var sampler := _sampler([Vector3.ZERO, Vector3(0, 0, -200)])
+	var serial := TerrainField.generate(sampler, trail, terrain, false)
+	var parallel := TerrainField.generate(sampler, trail, terrain, true)
+	assert_eq(parallel.heights, serial.heights)
+	assert_eq(parallel.wall_strata, serial.wall_strata)
+	assert_eq(parallel.lowest_height, serial.lowest_height)
+	assert_eq(terrain.terrace_weight(0.0), 1.0)
+	assert_eq(terrain.terrace_weight(150.0), 0.0)
+	assert_true(TerrainDef.new().terraced_wall_sections.is_empty())
+	assert_gt(serial.height_at(50.0, -50.0), 45.0)
+	assert_almost_eq(serial.height_at(0.0, -170.0), -terrain.under_road_drop, 0.0001,
+			"outside the authored opening the old road clearance is unchanged")
+	var profile := RoadProfile.new(trail, sampler.length)
+	for hole: Vector4 in profile.damage_potholes:
+		for angle: float in [0.0, PI * 0.5, PI, PI * 1.5]:
+			var distance := hole.x + cos(angle) * hole.z * 0.6
+			var lateral := hole.y + sin(angle) * hole.z * 0.6
+			var point := sampler.surface_point(distance, lateral, profile)
+			assert_lt(serial.height_at(point.x, point.z), point.y - 0.02,
+					"all interpolated hole-floor samples clear the terrain")
+
+
 func test_switchback_legs_leave_no_cliff_between_them() -> void:
 	# Down one leg, a tight turn, and back up a parallel leg 30 m away and 12 m higher.
 	var field := TerrainField.generate(_sampler([

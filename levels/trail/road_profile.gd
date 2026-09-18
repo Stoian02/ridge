@@ -19,6 +19,8 @@ var def: TrailDef
 var road_length: float
 ## Potholes as Vector4(distance, lateral, radius, depth), sorted by distance.
 var potholes: Array[Vector4] = []
+## The locally authored holes also needing clearance in the underlying terrain.
+var damage_potholes: Array[Vector4] = []
 ## Patches as Rect2: position = (start distance, lateral from), size = (length, width).
 var patches: Array[Rect2] = []
 ## Ranges needing detailed cross-sections, as Vector2(start, end), sorted and merged.
@@ -51,6 +53,14 @@ func _init(trail_def: TrailDef, length: float) -> void:
 		for i in int(cluster.y):
 			_add_random_pothole(rng, cluster.x - CLUSTER_SPREAD, cluster.x + CLUSTER_SPREAD)
 		ranges.append(Vector2(cluster.x - CLUSTER_DETAIL, cluster.x + CLUSTER_DETAIL))
+	for section: RoadDamageDef in def.damage_sections:
+		var holes := section.generate(def)
+		damage_potholes.append_array(holes)
+		potholes.append_array(holes)
+		# Keep fine geometry around each hole, not the intact gaps in early
+		# asphalt. A half-metre rim lets the coarse row spacing enter safely.
+		for hole: Vector4 in holes:
+			ranges.append(Vector2(hole.x - hole.z - 0.5, hole.x + hole.z + 0.5))
 	for stretch in def.surface_stretches:
 		for end: float in [stretch.start, stretch.end()]:
 			ranges.append(Vector2(end - stretch.blend_length, end + stretch.blend_length))
@@ -167,6 +177,14 @@ func in_detail_range(distance: float) -> bool:
 	return false
 
 
+func row_step(distance: float) -> float:
+	var step: float = def.detail_step if in_detail_range(distance) else def.sample_step
+	var stretch := stretch_at(distance)
+	if stretch != null and not stretch.extra_rut_paths.is_empty():
+		step = minf(step, 0.5)
+	return step
+
+
 ## The surface stretch covering `distance`, or null where the road has its base surface.
 func stretch_at(distance: float) -> SurfaceStretch:
 	for stretch in def.surface_stretches:
@@ -227,6 +245,11 @@ func rut_height(distance: float, lateral: float) -> float:
 	var depth := stretch.rut_depth * stretch.weight(distance)
 	var half_spacing := stretch.rut_spacing * 0.5
 	var half_width := stretch.rut_width * 0.5
+	if not stretch.extra_rut_paths.is_empty():
+		var deepest := 0.0
+		for centre: float in stretch.rut_centres(distance):
+			deepest = minf(deepest, RoughShapes.rut(lateral - centre, half_width, depth))
+		return deepest
 	return RoughShapes.rut(lateral + half_spacing, half_width, depth) \
 			+ RoughShapes.rut(lateral - half_spacing, half_width, depth)
 

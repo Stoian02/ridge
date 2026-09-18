@@ -63,6 +63,18 @@ func test_far_mesh_uses_every_second_sample() -> void:
 	assert_eq(vertices[size + 1], field.sample_position(2, 2))
 
 
+func test_sandstone_bands_are_local_and_agree_between_detail_levels() -> void:
+	var old_colors: PackedColorArray = _near_meshes()[0].mesh.surface_get_arrays(0)[Mesh.ARRAY_COLOR]
+	field.wall_strata.resize(field.heights.size())
+	field.wall_strata[0] = 1.0
+	builder.build(field)
+	var near: PackedColorArray = _near_meshes()[0].mesh.surface_get_arrays(0)[Mesh.ARRAY_COLOR]
+	var far: PackedColorArray = _far_meshes()[0].mesh.surface_get_arrays(0)[Mesh.ARRAY_COLOR]
+	assert_ne(near[0], old_colors[0], "the opted-in sandstone is tinted")
+	assert_eq(near[1], old_colors[1], "adjacent ordinary ground retains its colour")
+	assert_eq(near[0], far[0], "identical band colour across the LOD change")
+
+
 func test_triangles_face_up() -> void:
 	var mesh: ArrayMesh = _near_meshes()[0].mesh
 	var arrays := mesh.surface_get_arrays(0)

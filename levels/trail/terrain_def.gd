@@ -41,6 +41,18 @@ extends Resource
 ## side. Deltas ease in and out over wall_blend inside each end.
 @export var wall_sections: Array[Vector4] = []
 @export var wall_blend: float = 25.0
+## Local sandstone ledges and layered colour, as (start, length). Empty preserves
+## the plain walls elsewhere; this adds no meshes, textures or draw calls.
+@export var terraced_wall_sections: Array[Vector2] = []
+
+
+func terrace_weight(distance: float) -> float:
+	var weight := 0.0
+	for section: Vector2 in terraced_wall_sections:
+		var blend := maxf(wall_blend, 0.001)
+		weight = maxf(weight, minf(smoothstep(section.x, section.x + blend, distance),
+				1.0 - smoothstep(section.x + section.y - blend, section.x + section.y, distance)))
+	return weight
 
 
 ## The wall delta at `distance` on `side` (-1 = left, +1 = right): the covering

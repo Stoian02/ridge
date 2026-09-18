@@ -219,7 +219,7 @@ func test_the_4x4_crawls_a_ledge_with_less_wheelspin_at_part_throttle() -> void:
 	assert_lt(means[0], means[1], "part throttle has less mean contact slip in the same obstacle window")
 
 
-func test_the_4x4_crosses_the_deep_mud_gully_from_a_standstill() -> void:
+func test_the_4x4_climbs_the_mud_from_a_standstill_and_reaches_the_clearing() -> void:
 	var level := _load()
 	var car := level.rig.car
 	var driver := TrailDriver.new(car, level.trail.sampler, level.trail.profile)
@@ -237,7 +237,7 @@ func test_the_4x4_crosses_the_deep_mud_gully_from_a_standstill() -> void:
 	var seconds := 90.0
 	watch_signals(level.resets)
 	for tick in ScenarioHelper.ticks(90.0):
-		if level.trail.sampler.closest_distance(car.global_position) >= 560.0:
+		if level.trail.sampler.closest_distance(car.global_position) >= 620.0:
 			seconds = tick / float(Engine.physics_ticks_per_second)
 			break
 		driver.drive()
@@ -248,9 +248,9 @@ func test_the_4x4_crosses_the_deep_mud_gully_from_a_standstill() -> void:
 			lowest_speed = minf(lowest_speed, car.forward_speed())
 		if _surface_under(car) == &"deep_mud":
 			saw_deep_mud = true
-	gut.p("deep mud gully from rest, 320 to 560 m: %.2f s, minimum speed after launch %.2f km/h; %s" % [
+	gut.p("mud climb from rest, 320 m to the 620 m clearing: %.2f s, minimum speed after launch %.2f km/h; %s" % [
 			seconds, lowest_speed * 3.6, _diagnostics(level)])
-	assert_lt(seconds, 90.0, "the 4x4 gets through the gully")
+	assert_lt(seconds, 90.0, "the 4x4 climbs through the bends into the clearing")
 	assert_true(saw_deep_mud, "deep mud was under the wheels")
 	assert_eq(get_signal_emit_count(level.resets, "car_reset"), 0)
 	await _free(level)

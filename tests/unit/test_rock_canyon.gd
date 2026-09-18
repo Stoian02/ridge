@@ -34,7 +34,7 @@ func test_surfaces_along_the_route() -> void:
 	assert_eq(TRAIL.base_surface.id, &"dirt")
 	assert_false(TRAIL.painted_lines)
 	var deep: SurfaceStretch = TRAIL.surface_stretches.filter(func(s: SurfaceStretch) -> bool: return s.surface.id == &"deep_mud")[0]
-	assert_almost_eq(deep.rut_depth, 0.15, 0.0001, "water-filled ruts sink about 15 cm")
+	assert_almost_eq(deep.rut_depth, 0.18, 0.0001, "multiple driven lines sink about 18 cm")
 	assert_almost_eq(deep.water_rut_depth, 0.09, 0.0001, "shallow standing water inside the wheel ruts")
 	assert_almost_eq(deep.start, 300.0, 0.0001)
 	assert_almost_eq(deep.length, 260.0, 0.0001)
@@ -44,7 +44,7 @@ func test_surfaces_along_the_route() -> void:
 
 
 func test_structures_match_the_spec() -> void:
-	assert_eq(TRAIL.width_stretches, [Vector4(1500.0, 400.0, 4.5, 0.0)] as Array[Vector4])
+	assert_eq(TRAIL.width_stretches, [Vector4(1500.0, 400.0, 4.5, 0.0), Vector4(560.0, 100.0, 12.0, 4.0)] as Array[Vector4])
 	assert_almost_eq(TRAIL.road_width_at(1700.0), 4.5, 0.0001)
 	assert_almost_eq(TRAIL.shoulder_width_at(1700.0), 0.0, 0.0001)
 	assert_eq(TRAIL.rock_steps.size(), 3)
@@ -66,7 +66,7 @@ func test_structures_match_the_spec() -> void:
 	assert_eq(TRAIL.fords[0].waterfall_height, 14.0)
 	assert_eq(TRAIL.fords[0].waterfall_offset, -22.0)
 	assert_eq(Array(TRAIL.checkpoint_distances), [300.0, 700.0, 1250.0, 1500.0, 1900.0])
-	assert_eq(TERRAIN.wall_sections.size(), 4)
+	assert_eq(TERRAIN.wall_sections.size(), 7)
 	assert_eq(TERRAIN.wall_sections[3], Vector4(1500.0, 400.0, 25.0, -40.0), "the shelf: cliff left, air right")
 	assert_eq(TERRAIN.view_distance, 350.0)
 	assert_eq(TERRAIN.detail_distance, 140.0)
@@ -82,6 +82,44 @@ func test_catalog_entry() -> void:
 	assert_eq(LEVEL.two_star_time, 285.0, "placeholder pending the owner's runs")
 	assert_eq(LEVEL.three_star_time, 255.0)
 	assert_true(ResourceLoader.exists(LEVEL.scene_path))
+
+
+func test_mud_climbs_through_opposing_turns_then_opens_into_a_clearing() -> void:
+	assert_between(sampler.forward(315.0).y, 0.015, 0.04, "climb starts with the mud")
+	assert_between(sampler.forward(410.0).y, 0.045, 0.065)
+	assert_between(sampler.forward(505.0).y, 0.09, 0.11, "last climbing bend reaches about 10%")
+	assert_gt(sampler.position(560.0).y - sampler.position(300.0).y, 14.0)
+	var turning := 0.0
+	for distance: float in range(305, 550, 5):
+		var a := sampler.forward(distance)
+		var b := sampler.forward(distance + 5.0)
+		turning += absf(Vector2(a.x, a.z).angle_to(Vector2(b.x, b.z)))
+	assert_gt(turning, 4.5, "multiple substantial turns, not the old gentle gully")
+	assert_lt(absf(sampler.forward(610.0).y), 0.015, "almost level clearing")
+	assert_eq(TRAIL.road_width_at(610.0), 12.0)
+	assert_eq(TRAIL.shoulder_width_at(610.0), 4.0)
+	assert_eq(profile.surface_at(610.0).id, &"dirt")
+	assert_eq(TERRAIN.wall_delta(610.0, -1.0), 0.0)
+	assert_eq(TERRAIN.wall_delta(610.0, 1.0), 0.0)
+
+
+func test_multiple_wheel_paths_weave_and_cross_without_stacking_depth() -> void:
+	var mud := TRAIL.surface_stretches[1]
+	assert_eq(mud.extra_rut_paths.size(), 2)
+	assert_eq(mud.rut_centres(350.0).size(), 6, "three choices of paired wheel paths")
+	assert_ne(mud.rut_centres(350.0), mud.rut_centres(380.0), "additional lines wander across the road")
+	var overlaps := 0
+	for distance: float in range(320, 540, 2):
+		var centres := mud.rut_centres(distance)
+		for i in centres.size():
+			var depth := profile.rut_height(distance, centres[i])
+			assert_almost_eq(depth, -mud.rut_depth, 0.0001, "crossings never double the trench depth")
+			assert_lt(absf(centres[i]) + mud.rut_width * 0.5, TRAIL.road_width_at(distance) * 0.5)
+			for j in range(i + 1, centres.size()):
+				if absf(centres[i] - centres[j]) < 0.15:
+					overlaps += 1
+	assert_gt(overlaps, 10, "lines visibly cross and overlap in several places")
+	assert_gt(profile.roller_height(452.0), 0.15)
 
 
 func test_the_level_builds_every_part_with_its_surfaces_and_structures() -> void:
@@ -110,8 +148,45 @@ func test_the_level_builds_every_part_with_its_surfaces_and_structures() -> void
 	assert_eq(level.scatter_builder.post_count, 0, "no roadside posts in the canyon")
 	assert_gt(level.scatter_builder.rock_count, 100)
 	var space := level.get_world_3d().direct_space_state
+	var deepest := 0.0
+	for hole: Vector4 in profile.damage_potholes:
+		var point := sampler.surface_point(hole.x, hole.y, profile)
+		deepest = maxf(deepest, hole.w)
+		assert_lt(level.field.height_at(point.x, point.z), point.y - 0.02,
+				"underlying ground clears the hole at %.1f m" % hole.x)
+		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(
+				point + Vector3.UP * 2.0, point + Vector3.DOWN * 2.0))
+		assert_false(hit.is_empty(), "physical hole floor at %.1f m" % hole.x)
+		if not hit.is_empty():
+			var body: Node = hit["collider"]
+			assert_eq(body.get_parent(), level.road_builder, "wheels hit road, not filled-in terrain")
+			assert_almost_eq(hit["position"].y, point.y, 0.1, "collision follows the depressed mesh")
+	assert_gt(deepest, 0.35)
+	var mud := TRAIL.surface_stretches[1]
+	for distance: float in range(320, 545, 10):
+		for lateral: float in mud.rut_centres(distance):
+			var point := sampler.surface_point(distance, lateral, profile)
+			assert_lt(level.field.height_at(point.x, point.z), point.y - 0.02,
+					"all six wheel lines clear the terrain at %.0f m" % distance)
+	# Adjacent chunk rows must coincide, including moving ruts on sharp bends.
+	var meshes := level.road_builder.get_children().filter(func(n: Node) -> bool: return n is MeshInstance3D)
+	var row_width := RoadBuilder.cross_section(TRAIL).size()
+	for mesh: MeshInstance3D in meshes:
+		assert_eq(mesh.visibility_range_end, 400.0, "do not draw road beyond the terrain horizon")
+	for i in range(1, meshes.size()):
+		var previous: PackedVector3Array = meshes[i - 1].mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		var next: PackedVector3Array = meshes[i].mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		for column in row_width:
+			assert_eq(previous[previous.size() - row_width + column], next[column], "no crack between road chunks")
+	for distance: float in [15.0, 80.0, 150.0, 250.0]:
+		for side: float in [-1.0, 1.0]:
+			var point := sampler.position(distance) + sampler.right(distance) * side * 50.0
+			assert_gt(level.field.height_at(point.x, point.z) - sampler.position(distance).y,
+					45.0, "tall canyon on both sides at %.0f m" % distance)
 	for check: Array in [[100.0, &"asphalt"], [400.0, &"deep_mud"], [1290.0, &"wet_rock"], [1590.0, &"rock"], [1950.0, &"scree"]]:
-		var point := sampler.surface_point(check[0], 0.0, level.profile)
+		# Probe inside triangles: exactly on the 400 m chunk vertex the float-
+		# precision ray test can reject both edges (neighbouring probes hit road).
+		var point := sampler.surface_point(check[0] + 0.03, 0.07, level.profile)
 		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(point + Vector3.UP * 2.0, point + Vector3.DOWN * 2.0))
 		assert_false(hit.is_empty(), "road under %.0f m" % check[0])
 		if not hit.is_empty():

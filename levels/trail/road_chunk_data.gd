@@ -12,6 +12,7 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 	var ups: PackedVector3Array = input["ups"]
 	var heights: PackedFloat64Array = input["heights"]
 	var ruts: Array[PackedFloat64Array] = input["ruts"]
+	var rut_centres: Array[PackedFloat64Array] = input["rut_centres"]
 	var road_colors: Array[Color] = input["road_colors"]
 	var patch_colors: Array[Color] = input["patch_colors"]
 	var left_colors: Array[Color] = input["left_colors"]
@@ -66,10 +67,14 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 					break
 			var rut_height := 0.0
 			if rut[0] > 0.0:
-				for centre: float in [-rut[2], rut[2]]:
+				for centre: float in rut_centres[row]:
 					var t := absf(lateral - centre) / rut[1]
 					if t < 1.0:
-						rut_height += -rut[0] * (0.5 + 0.5 * cos(PI * t))
+						var depression := -rut[0] * (0.5 + 0.5 * cos(PI * t))
+						if rut[3] > 0.0:
+							rut_height = minf(rut_height, depression)
+						else:
+							rut_height += depression
 			var step_height := 0.0
 			for step: PackedFloat64Array in steps:
 				if distance <= step[0]:

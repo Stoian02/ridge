@@ -25,12 +25,26 @@ extends Resource
 @export var rut_spacing: float = 1.55
 ## Width of each rut (m).
 @export var rut_width: float = 0.8
+## Additional driven lines: (lateral offset, weave amplitude, wavelength, phase).
+## Each carries a pair of wheel tracks. Overlaps take the deeper rut rather
+## than adding depths into an accidental trench. Empty keeps the original pair.
+@export var extra_rut_paths: Array[Vector4] = []
 ## The colour and the ruts fade in over this distance inside each end (m).
 @export var blend_length: float = 2.0
 
 
 func end() -> float:
 	return start + length
+
+
+func rut_centres(distance: float) -> PackedFloat64Array:
+	var half := rut_spacing * 0.5
+	var centres := PackedFloat64Array([-half, half])
+	for path: Vector4 in extra_rut_paths:
+		var offset := path.x + path.y * sin(TAU * (distance - start) / maxf(path.z, 1.0) + path.w)
+		centres.append(offset - half)
+		centres.append(offset + half)
+	return centres
 
 
 func contains(distance: float) -> bool:

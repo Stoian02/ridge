@@ -71,6 +71,10 @@ func build(sampler: RoadSampler, profile: RoadProfile, def: TrailDef) -> void:
 			var instance := MeshInstance3D.new()
 			instance.mesh = mesh
 			instance.material_override = materials[i]
+			instance.visibility_range_end = def.road_view_distance
+			var rows: PackedFloat32Array = inputs[i]["distances"]
+			if not def.casts_shadow(rows[0], rows[-1]):
+				instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			add_child(instance)
 			var surfaces: Array[SurfaceDef] = inputs[i]["surfaces"]
 			var faces: Array[PackedVector3Array] = results[i]["faces"]
@@ -88,6 +92,7 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 	var ups := PackedVector3Array()
 	var heights := PackedFloat64Array()
 	var ruts: Array[PackedFloat64Array] = []
+	var rut_centres: Array[PackedFloat64Array] = []
 	var road_colors: Array[Color] = []
 	var patch_colors: Array[Color] = []
 	var left_colors: Array[Color] = []
@@ -100,15 +105,19 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 		ups.append(sampler.up(distance))
 		heights.append(profile.longitudinal_height(distance))
 		var stretch := profile.stretch_at(distance)
-		var rut := PackedFloat64Array([0.0, 1.0, 0.0])
+		var rut := PackedFloat64Array([0.0, 1.0, 0.0, 0.0])
+		var centres_at := PackedFloat64Array()
 		var road_color := def.asphalt_color
 		var patch_color := def.patch_color
 		if stretch != null:
 			var weight := stretch.weight(distance)
-			rut = PackedFloat64Array([stretch.rut_depth * weight, stretch.rut_width * 0.5, stretch.rut_spacing * 0.5])
+			rut = PackedFloat64Array([stretch.rut_depth * weight, stretch.rut_width * 0.5,
+					stretch.rut_spacing * 0.5, float(not stretch.extra_rut_paths.is_empty())])
+			centres_at = stretch.rut_centres(distance)
 			road_color = road_color.lerp(stretch.color, weight)
 			patch_color = patch_color.lerp(stretch.color, weight)
 		ruts.append(rut)
+		rut_centres.append(centres_at)
 		road_colors.append(road_color)
 		patch_colors.append(patch_color)
 		left_colors.append(_color(profile, def, distance, -def.half_total_width(), Part.SHOULDER))
@@ -145,7 +154,7 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 			steps.append(PackedFloat64Array([step.distance, step.height, step.lateral_from, step.lateral_to,
 					step.ramp_length, step.face_length]))
 	return {"stations": stations, "distances": distances, "centres": centres, "rights": rights, "skip_rows": skip_rows,
-			"ups": ups, "heights": heights, "ruts": ruts, "road_colors": road_colors,
+			"ups": ups, "heights": heights, "ruts": ruts, "rut_centres": rut_centres, "road_colors": road_colors,
 			"patch_colors": patch_colors, "left_colors": left_colors, "right_colors": right_colors,
 			"line_color": def.line_color, "potholes": potholes, "patches": profile.patches,
 			"road_surfaces": road_surfaces, "shoulder_surfaces": shoulder_surfaces,
@@ -213,7 +222,7 @@ static func row_distances(length: float, profile: RoadProfile, def: TrailDef) ->
 	var distance := 0.0
 	while distance < length - 0.001:
 		distances.append(distance)
-		var next: float = distance + (def.detail_step if profile.in_detail_range(distance) else def.sample_step)
+		var next := distance + profile.row_step(distance)
 		while next_boundary < boundaries.size() and boundaries[next_boundary] <= distance + 0.001:
 			next_boundary += 1
 		if next_boundary < boundaries.size() and boundaries[next_boundary] < next - 0.001:
@@ -342,6 +351,9 @@ func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stati
 	var mesh_instance := MeshInstance3D.new()
 	mesh_instance.mesh = mesh
 	mesh_instance.material_override = material
+	mesh_instance.visibility_range_end = def.road_view_distance
+	if not def.casts_shadow(distances[0], distances[-1]):
+		mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mesh_instance)
 
 	for surface in surfaces:

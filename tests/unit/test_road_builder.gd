@@ -101,8 +101,16 @@ func test_parallel_chunks_match_the_original_serial_builder() -> void:
 	var muddy := _muddy_def()
 	muddy.rough_sections = [Vector3(40, 120, 25)]
 	muddy.undulation_amplitude = 0.1
+	var damage := RoadDamageDef.new()
+	damage.start = 5.0
+	damage.length = 100.0
+	muddy.damage_sections = [damage]
+	muddy.rollers = [Vector3(60.0, 0.3, 8.0)]
+	muddy.shadowless_sections = [Vector2(0.0, 120.0)]
+	muddy.road_view_distance = 300.0
 	muddy.surface_stretches[0].transition_surfaces = [load("res://levels/muddy_valley/soft_mud.tres")]
 	muddy.surface_stretches[0].transition_length = 8.0
+	muddy.surface_stretches[0].extra_rut_paths = [Vector4(-1.0, 1.0, 60.0, 0.0), Vector4(1.0, 0.7, 80.0, 2.0)]
 	for definition: TrailDef in [def, muddy]:
 		var road_profile := RoadProfile.new(definition, sampler.length)
 		builder.threaded = true
@@ -116,6 +124,9 @@ func test_parallel_chunks_match_the_original_serial_builder() -> void:
 			var a := builder.get_child(i)
 			var b := serial.get_child(i)
 			if a is MeshInstance3D and b is MeshInstance3D:
+				assert_eq(a.cast_shadow, b.cast_shadow)
+				assert_eq(a.visibility_range_end, definition.road_view_distance)
+				assert_eq(a.visibility_range_end, b.visibility_range_end)
 				var aa: Array = a.mesh.surface_get_arrays(0)
 				var bb: Array = b.mesh.surface_get_arrays(0)
 				for slot: int in [Mesh.ARRAY_VERTEX, Mesh.ARRAY_NORMAL, Mesh.ARRAY_COLOR, Mesh.ARRAY_INDEX]:

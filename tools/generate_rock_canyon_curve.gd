@@ -1,6 +1,6 @@
 extends SceneTree
 ## Rock Canyon (M5 spec §3.2): asphalt canyon mouth, a drop into the shaded mud
-## gully, the climbing boulder wash, the talus scar and ford, a switchback up to
+## climb with weaving wheel tracks and a clearing, the boulder wash, talus and ford, a switchback up to
 ## the narrow shelf, and the final scree push to the rim. Segment ends are noted
 ## as cumulative distances.
 
@@ -10,11 +10,15 @@ const SEGMENTS := [
 	["arc", 150.0, 30.0, 0.02],        # ~198 m: easy bends on tarmac
 	["straight", 22.0, 0.02],          # 220 m: the last tarmac
 	["straight", 80.0, -0.05],         # 300 m: drop into the side-gully
-	["arc", 120.0, -40.0, 0.0],        # ~384 m: the deep mud gully, flat
-	["straight", 96.0, 0.0],           # ~480 m
-	["arc", 90.0, 35.0, 0.0],          # ~535 m
-	["straight", 25.0, 0.0],           # 560 m: the gully ends
-	["straight", 140.0, 0.04],         # 700 m: climb out; the wash begins
+	["arc", 48.0, -65.0, 0.025],      # ~355 m: start climbing as the mud begins
+	["straight", 18.0, 0.04],          # ~373 m
+	["arc", 36.0, 90.0, 0.055],        # ~429 m: tighter opposing turn
+	["straight", 12.0, 0.075],         # ~441 m
+	["arc", 32.0, -80.0, 0.085],       # ~486 m: the climb steepens
+	["arc", 42.0, 50.0, 0.10],         # ~523 m: last climbing bend, old 25-degree exit heading
+	["straight", 37.4, 0.055],         # ~560 m: ease over the brow
+	["straight", 90.0, 0.005],         # ~650 m: wide, almost level clearing
+	["straight", 50.0, 0.04],          # 700 m: rejoin the untouched wash sequence
 	["arc", 110.0, -45.0, 0.035],      # ~787 m
 	["straight", 100.0, 0.04],         # ~887 m
 	["arc", 100.0, 50.0, 0.045],       # ~974 m

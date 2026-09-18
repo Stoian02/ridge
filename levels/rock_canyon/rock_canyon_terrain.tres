@@ -6,6 +6,7 @@
 script = ExtResource("1")
 margin = 200.0
 corridor_blend = 8.0
+under_road_drop = 0.35
 detail_distance = 140.0
 view_distance = 350.0
 noise_amplitude = 26.0
@@ -13,6 +14,7 @@ noise_wavelength = 150.0
 rock_slope_deg = 30.0
 dirt_color = Color(0.66, 0.34, 0.22, 1)
 rock_color = Color(0.74, 0.44, 0.3, 1)
-wall_sections = Array[Vector4]([Vector4(300, 260, 18, 18), Vector4(700, 450, 30, 30), Vector4(1150, 180, 26, 14), Vector4(1500, 400, 25, -40)])
+wall_sections = Array[Vector4]([Vector4(300, 260, 18, 18), Vector4(700, 450, 30, 30), Vector4(1150, 180, 26, 14), Vector4(1500, 400, 25, -40), Vector4(-30, 390, 58, 66), Vector4(45, 130, 18, 5), Vector4(185, 125, 7, 17)])
 wall_blend = 25.0
+terraced_wall_sections = Array[Vector2]([Vector2(-30, 390)])
 seed = 41

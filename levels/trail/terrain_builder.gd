@@ -139,6 +139,8 @@ func _mesh_arrays(field: TerrainField, first_column: int, first_row: int, size: 
 	var holes := field.portal_holes
 	var wear := field.wear
 	var has_wear := not wear.is_empty()
+	var strata := field.wall_strata
+	var has_strata := not strata.is_empty()
 	var columns := field.columns
 	var last_column := columns - 1
 	var last_row := field.rows - 1
@@ -174,6 +176,13 @@ func _mesh_arrays(field: TerrainField, first_column: int, first_row: int, size: 
 			var slope_deg := rad_to_deg(acos(clampf(normal.y, -1.0, 1.0)))
 			var rockiness := smoothstep(rock_deg - COLOR_BLEND_DEG, rock_deg + COLOR_BLEND_DEG, slope_deg)
 			var color := dirt_color.lerp(rock_color, rockiness)
+			if has_strata and strata[row_offset + center] > 0.0:
+				var point := vertices[out]
+				var layer := point.y + sin(point.x * 0.025) * 1.5 + sin(point.z * 0.018)
+				var band := smoothstep(-0.25, 0.25, sin(layer * 0.72))
+				var sandstone := rock_color * lerpf(0.76, 1.13, band)
+				sandstone.a = 1.0
+				color = color.lerp(sandstone, strata[row_offset + center] * 0.85)
 			if has_wear:
 				color = color.lerp(wear_color, wear[row_offset + center])
 			colors[out] = color
