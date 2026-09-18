@@ -1,6 +1,7 @@
 extends Control
 ## Level select (spec §3.3): one card per catalog level with its best time and stars,
-## or a lock saying which level to finish first. A card opens car select for its level. Back, Escape or the back gesture
+## or a lock saying which level to finish first, plus an optional car recommendation.
+## A card opens car select for its level. Back, Escape or the back gesture
 ## return to the main menu.
 
 const CARD_SIZE := Vector2(560.0, 340.0)
@@ -10,9 +11,12 @@ const CARD_STAR_SIZE := 64.0
 func _ready() -> void:
 	var column := UiKit.centered_column(self, UiKit.BACKGROUND)
 	column.add_child(UiKit.label("Select level", UiKit.HEADING_FONT))
-	var cards := HBoxContainer.new()
-	cards.alignment = BoxContainer.ALIGNMENT_CENTER
-	cards.add_theme_constant_override("separation", 30)
+	var cards := GridContainer.new()
+	cards.name = "LevelCards"
+	# Keep the original one-row layout for three levels; four need two rows.
+	cards.columns = 2 if GameState.catalog.levels.size() > 3 else maxi(1, GameState.catalog.levels.size())
+	cards.add_theme_constant_override("h_separation", 30)
+	cards.add_theme_constant_override("v_separation", 30)
 	column.add_child(cards)
 	for level in GameState.catalog.levels:
 		cards.add_child(_card(level))
@@ -47,6 +51,9 @@ func _card(level: LevelDef) -> Button:
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(content)
 	content.add_child(UiKit.label(level.display_name, UiKit.HEADING_FONT))
+	var recommended := level.recommended_text(GameState.car_catalog)
+	if not recommended.is_empty():
+		content.add_child(UiKit.label(recommended, 32))
 	if unlocked:
 		var stars := StarRow.new()
 		stars.star_size = CARD_STAR_SIZE

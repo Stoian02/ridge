@@ -3,7 +3,8 @@ extends Control
 ## description and what it is best on, or how many stars unlock it. The last car
 ## chosen is highlighted. Tapping an unlocked card saves it and starts
 ## GameState.pending_scene. Back, Escape or the back gesture return to level select,
-## or to the main menu when heading for Free Drive.
+## or to the main menu when heading for Free Drive. A destination can recommend
+## a car without changing which cars are unlocked or selectable.
 
 const CARD_SIZE := Vector2(560.0, 640.0)
 const PREVIEW_SIZE := Vector2i(480, 280)
@@ -15,6 +16,11 @@ func _ready() -> void:
 	var column := UiKit.centered_column(self, UiKit.BACKGROUND)
 	column.add_child(UiKit.label("Choose your car", UiKit.HEADING_FONT))
 	column.add_child(UiKit.label(destination_text(GameState.pending_scene)))
+	var level := GameState.level_for_scene(GameState.pending_scene)
+	if level != null:
+		var recommended := level.recommended_text(GameState.car_catalog)
+		if not recommended.is_empty():
+			column.add_child(UiKit.label(recommended))
 	var cards := HBoxContainer.new()
 	cards.alignment = BoxContainer.ALIGNMENT_CENTER
 	cards.add_theme_constant_override("separation", 30)
