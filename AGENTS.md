@@ -1,6 +1,6 @@
 # Ridge — notes for coding agents
 
-Start with the latest opening-section pass: `docs/notes/rock-canyon-opening-2026-09-18.md` (canyon walls, broken asphalt, rough dirt and a twisting muddy climb into a clearing; stop here for owner PC playtest). Then read `docs/notes/m5-rock-canyon-notes.md` for the full Milestone 5 completion state on `m5-rock-canyon` (not merged), and `docs/notes/handover-2026-09-17-rock-canyon.md` for the repo rules. The completion notes supersede the older Task 6 WIP handover and record the approved fixed-rock talus fallback. They cover:
+Start with the latest checkpoint-to-waterfall pass: `docs/notes/rock-canyon-waterfall-approach-2026-09-18.md` (narrow rock crawl, diagonal fallen tree, steeper dirt and a washed-out S-bend; stop at the waterfall for owner PC playtest). The preceding opening is documented in `docs/notes/rock-canyon-opening-2026-09-18.md`. Then read `docs/notes/m5-rock-canyon-notes.md` for the full Milestone 5 completion state on `m5-rock-canyon` (not merged), and `docs/notes/handover-2026-09-17-rock-canyon.md` for the repo rules. The completion notes supersede the older Task 6 WIP handover; the latest pass replaces their fixed-talus layout, while keeping dynamic talus disabled. They cover:
 - the current branch and state
 - the open request
 - how to run tests
