@@ -5,7 +5,8 @@ extends RefCounted
 ## Near the road, the ground follows a smoothed road elevation and is carved to
 ## meet the shoulders (see Corridor). A creek, if the trail has one, is cut as a
 ## shallow channel beside the road. Wall sections raise or drop the ground beyond
-## the corridor blend into canyon walls.
+## the corridor blend into canyon walls. Fords cross the corridor with supported
+## riverbeds and banks, plus an upstream ledge for each waterfall.
 ## Grid rows run along +Z and columns along +X; index = row * columns + column.
 
 ## Sentinel edge distance for samples far from any road.
@@ -72,6 +73,8 @@ static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 			point.y += bridge.height_offset(distance)
 		for step: RockStepDef in trail.rock_steps:
 			point.y += step.ramp_offset(distance)
+		for ford: FordDef in trail.fords:
+			point.y += ford.height_offset(distance)
 		var across := sampler.right(distance)
 		var flat := Vector2(across.x, across.z)
 		stamps.append(point)
@@ -90,7 +93,8 @@ static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 	field._cut_creek(sampler, trail)
 	TrailEarthworks.apply_tunnels(field, sampler, trail)
 	TrailEarthworks.apply_bridges(field, sampler, trail)
-	if not trail.tunnels.is_empty() or not trail.bridges.is_empty():
+	TrailEarthworks.apply_fords(field, sampler, trail)
+	if not trail.tunnels.is_empty() or not trail.bridges.is_empty() or not trail.fords.is_empty():
 		field.lowest_height = INF
 		for height: float in field.heights:
 			field.lowest_height = minf(field.lowest_height, height)

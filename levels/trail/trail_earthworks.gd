@@ -4,6 +4,11 @@ extends RefCounted
 ## has holes in the heightmap where a sloping roof would block the opening;
 ## the road and the portal's retaining walls close that cut.
 
+## Ford banks rise alongside the river, then blend outside its water ribbon.
+const FORD_BANK := 4.0
+## River ends and the upstream ledge blend into the surrounding ground.
+const FORD_TAPER := 8.0
+
 
 static func apply_tunnels(field: TerrainField, sampler: RoadSampler, trail: TrailDef) -> void:
 	if trail.tunnels.is_empty():
@@ -80,3 +85,58 @@ static func nearest_samples(field: TerrainField, sampler: RoadSampler, start: fl
 							dx * right.x + dz * right.z)
 		distance += 1.0
 	return result
+
+
+## Cuts the river through high ground and supports it across low ground. Under
+## the road only lowering is permitted, preserving every road-mesh depression.
+## The falls get an upstream ledge; FordBuilder closes its exposed rock face.
+static func apply_fords(field: TerrainField, sampler: RoadSampler, trail: TrailDef) -> void:
+	if trail.fords.is_empty():
+		return
+	var profile := RoadProfile.new(trail, sampler.length)
+	for ford: FordDef in trail.fords:
+		var centre := sampler.position(ford.distance)
+		var floor := ford.floor_height(sampler, profile)
+		var across := ford.across(sampler)
+		var along := Vector3.UP.cross(across)
+		var near := minf(ford.waterfall_offset, ford.river_reach)
+		var far := maxf(ford.waterfall_offset, ford.river_reach)
+		var water_half := ford.water_half_width()
+		var bank_end := maxf(water_half, ford.half_width() + FORD_BANK)
+		var reach := maxf(absf(near), absf(far)) + FORD_TAPER * 2.0 + bank_end + FORD_BANK
+		var cx := roundi((centre.x - field.origin.x) / field.spacing)
+		var cz := roundi((centre.z - field.origin.y) / field.spacing)
+		var cells := ceili(reach / field.spacing)
+		var half_road := sampler.half_width_at(ford.distance) + field.spacing
+		var bank_height := floor + maxf(ford.depth, ford.water_depth + 0.05)
+		var upstream_sign := signf(ford.waterfall_offset - ford.river_reach)
+		for row in range(maxi(0, cz - cells), mini(field.rows, cz + cells + 1)):
+			var dz := field.origin.y + row * field.spacing - centre.z
+			for column in range(maxi(0, cx - cells), mini(field.columns, cx + cells + 1)):
+				var dx := field.origin.x + column * field.spacing - centre.x
+				var lateral := dx * across.x + dz * across.z
+				var offset := absf(dx * along.x + dz * along.z)
+				if lateral < near - FORD_TAPER * 2.0 or lateral > far + FORD_TAPER * 2.0 or offset > bank_end + FORD_BANK:
+					continue
+				var i := row * field.columns + column
+				var natural := field.heights[i]
+				var bank := smoothstep(ford.half_width(), ford.half_width() + FORD_BANK, offset)
+				var taper := minf(smoothstep(near - FORD_TAPER, near, lateral),
+						1.0 - smoothstep(far, far + FORD_TAPER, lateral))
+				var outer := 1.0 - smoothstep(bank_end, bank_end + FORD_BANK, offset)
+				var target := lerpf(floor, maxf(natural, bank_height), bank)
+				var shaped := lerpf(natural, target, taper * outer)
+				if absf(lateral) <= half_road:
+					shaped = minf(natural, shaped)
+				# A plateau behind the falls supports the top of the rock return.
+				# Its blend extends past the grid interpolation footprint, so the
+				# narrow waterfall does not stand on an unsupported grid sample.
+				var upstream := (lateral - ford.waterfall_offset) * upstream_sign
+				if upstream > 0.0:
+					var side := ford.waterfall_width * 0.5 + FordDef.ROCK_MARGIN + field.spacing
+					var ledge := smoothstep(0.0, field.spacing, upstream) \
+							* (1.0 - smoothstep(FordDef.LEDGE_RUN + field.spacing,
+									FordDef.LEDGE_RUN + field.spacing + FORD_TAPER, upstream)) \
+							* (1.0 - smoothstep(side, side + FORD_BANK, offset))
+					shaped = maxf(shaped, lerpf(shaped, floor + ford.waterfall_height, ledge))
+				field.heights[i] = shaped

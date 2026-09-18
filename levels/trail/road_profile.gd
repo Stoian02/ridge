@@ -2,7 +2,7 @@ class_name RoadProfile
 extends RefCounted
 ## Surface height offsets along a trail: gentle undulation everywhere, potholes
 ## (and patched tarmac on asphalt) in rough ranges, jump crests, wheel ruts in
-## surface stretches, and the permanent level changes of rock steps. Built once
+## surface stretches, permanent rock-step rises and eased river crossings. Built once
 ## from a TrailDef. All randomness comes from its seed, so the same settings
 ## always give the same road.
 
@@ -60,6 +60,9 @@ func _init(trail_def: TrailDef, length: float) -> void:
 		ranges.append(Vector2(roller.x - roller.z * 0.5, roller.x + roller.z * 0.5))
 	for step: RockStepDef in def.rock_steps:
 		ranges.append(Vector2(step.distance - 1.0, step.distance + step.ramp_length + 1.0))
+	for ford: FordDef in def.fords:
+		ranges.append(Vector2(ford.distance - ford.half_width() - ford.bank_run,
+				ford.distance + ford.half_width() + ford.bank_run))
 
 	potholes.sort_custom(func(a: Vector4, b: Vector4) -> bool: return a.x < b.x)
 	for pothole in potholes:
@@ -75,7 +78,15 @@ func height(distance: float, lateral: float) -> float:
 
 
 func longitudinal_height(distance: float) -> float:
-	return undulation(distance) + jump_height(distance) + bridge_height(distance) + roller_height(distance)
+	return undulation(distance) + jump_height(distance) + bridge_height(distance) \
+			+ roller_height(distance) + ford_height(distance)
+
+
+func ford_height(distance: float) -> float:
+	var total := 0.0
+	for ford: FordDef in def.fords:
+		total += ford.height_offset(distance)
+	return total
 
 
 func roller_height(distance: float) -> float:
