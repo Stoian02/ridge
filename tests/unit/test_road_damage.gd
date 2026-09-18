@@ -35,7 +35,7 @@ func test_asphalt_damage_becomes_more_frequent_larger_and_deeper() -> void:
 
 func test_tuning_the_opening_does_not_move_later_potholes_or_undulation() -> void:
 	var original: TrailDef = TRAIL.duplicate(true)
-	original.damage_sections = []
+	original.damage_sections = original.damage_sections.filter(func(s: RoadDamageDef) -> bool: return s.start >= 560.0)
 	original.rollers = []
 	var before := RoadProfile.new(original, CURVE.get_baked_length())
 	var after := RoadProfile.new(TRAIL, CURVE.get_baked_length())

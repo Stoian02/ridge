@@ -14,6 +14,8 @@
 [ext_resource type="Script" path="res://levels/trail/boulder_field_def.gd" id="12"]
 [ext_resource type="Script" path="res://levels/trail/ford_def.gd" id="14"]
 [ext_resource type="Script" path="res://levels/trail/road_damage_def.gd" id="15"]
+[ext_resource type="Script" path="res://levels/trail/cross_rut_def.gd" id="16"]
+[ext_resource type="Script" path="res://levels/trail/fallen_tree_def.gd" id="17"]
 
 [sub_resource type="Resource" id="Tarmac"]
 script = ExtResource("2")
@@ -71,12 +73,13 @@ initial_severity = 0.7
 end_fade = 10.0
 seed = 483
 
-[sub_resource type="Resource" id="Scree1"]
+[sub_resource type="Resource" id="CrawlRock"]
 script = ExtResource("2")
-start = 760.0
-length = 30.0
-surface = ExtResource("7")
-color = Color(0.66, 0.5, 0.4, 1)
+start = 720.0
+length = 170.0
+surface = ExtResource("8")
+color = Color(0.64, 0.45, 0.34, 1)
+blend_length = 8.0
 
 [sub_resource type="Resource" id="Scree2"]
 script = ExtResource("2")
@@ -92,12 +95,64 @@ length = 40.0
 surface = ExtResource("7")
 color = Color(0.66, 0.5, 0.4, 1)
 
-[sub_resource type="Resource" id="TalusScree"]
+[sub_resource type="Resource" id="ErodedRock"]
 script = ExtResource("2")
 start = 1150.0
-length = 100.0
-surface = ExtResource("7")
-color = Color(0.66, 0.5, 0.4, 1)
+length = 90.0
+surface = ExtResource("8")
+color = Color(0.67, 0.48, 0.35, 1)
+blend_length = 8.0
+
+[sub_resource type="Resource" id="BrokenClimb"]
+script = ExtResource("15")
+start = 990.0
+length = 152.0
+density = Vector2(28, 42)
+radius_range = Vector2(0.55, 1.25)
+depth_range = Vector2(0.07, 0.24)
+initial_severity = 0.75
+end_fade = 8.0
+seed = 484
+
+[sub_resource type="Resource" id="CrossRut1"]
+script = ExtResource("16")
+distance = 1161.0
+lateral_from = -3.5
+lateral_to = 2.1
+skew = 0.8
+width = 2.6
+depth = 0.2
+
+[sub_resource type="Resource" id="CrossRut2"]
+script = ExtResource("16")
+distance = 1185.0
+lateral_from = -2.1
+lateral_to = 3.5
+skew = -0.9
+width = 2.8
+depth = 0.27
+
+[sub_resource type="Resource" id="CrossRut3"]
+script = ExtResource("16")
+distance = 1210.0
+lateral_from = -3.5
+lateral_to = 2.3
+skew = 1.0
+width = 2.4
+depth = 0.25
+
+[sub_resource type="Resource" id="CrossRut4"]
+script = ExtResource("16")
+distance = 1231.0
+lateral_from = -2.0
+lateral_to = 3.5
+skew = -0.7
+width = 2.8
+depth = 0.18
+
+[sub_resource type="Resource" id="FallenTree"]
+script = ExtResource("17")
+distance = 940.0
 
 [sub_resource type="Resource" id="WetRock"]
 script = ExtResource("2")
@@ -128,45 +183,45 @@ color = Color(0.66, 0.5, 0.4, 1)
 
 [sub_resource type="Resource" id="Step1"]
 script = ExtResource("11")
-distance = 812.0
+distance = 758.0
 height = 0.35
-lateral_from = -6.5
-lateral_to = 6.5
+lateral_from = -3.875
+lateral_to = 3.875
 seed = 53
 
 [sub_resource type="Resource" id="Step2"]
 script = ExtResource("11")
-distance = 947.0
+distance = 814.0
 height = 0.5
 lateral_from = 1.0
-lateral_to = 3.5
+lateral_to = 3.8
 seed = 54
 
 [sub_resource type="Resource" id="Step3"]
 script = ExtResource("11")
-distance = 1078.0
+distance = 868.0
 height = 0.3
-lateral_from = -6.5
-lateral_to = 6.5
+lateral_from = -3.8
+lateral_to = -0.3
 seed = 55
 
 [sub_resource type="Resource" id="Wash1"]
 script = ExtResource("12")
 start = 720.0
-length = 140.0
-count = 24
-size_range = Vector2(0.3, 0.45)
-lateral_range = Vector2(0, 9)
+length = 70.0
+count = 18
+size_range = Vector2(0.35, 0.52)
+lateral_range = Vector2(1.1, 4.8)
 slab_fraction = 0.3
 seed = 61
 
 [sub_resource type="Resource" id="Wash2"]
 script = ExtResource("12")
-start = 980.0
-length = 140.0
-count = 24
-size_range = Vector2(0.3, 0.45)
-lateral_range = Vector2(0, 9)
+start = 815.0
+length = 75.0
+count = 20
+size_range = Vector2(0.3, 0.5)
+lateral_range = Vector2(0.6, 4.8)
 slab_fraction = 0.3
 seed = 62
 
@@ -203,15 +258,15 @@ lateral_range = Vector2(2.5, 2.6)
 slab_fraction = 0.0
 seed = 65
 
-[sub_resource type="Resource" id="FixedTalusFallback"]
+[sub_resource type="Resource" id="WashoutSlabs"]
 script = ExtResource("12")
-start = 1150.0
-length = 100.0
-count = 40
-size_range = Vector2(0.18, 0.32)
-off_road_size_range = Vector2(0.18, 0.32)
-lateral_range = Vector2(0, 4)
-slab_fraction = 0.0
+start = 1154.0
+length = 82.0
+count = 14
+size_range = Vector2(0.45, 0.75)
+off_road_size_range = Vector2(0.6, 0.9)
+lateral_range = Vector2(1.3, 3.7)
+slab_fraction = 1.0
 seed = 71
 
 [sub_resource type="Resource" id="Ford"]
@@ -228,22 +283,24 @@ use_curve_banking = true
 detail_step = 0.25
 road_view_distance = 400.0
 shadowless_sections = Array[Vector2]([Vector2(0, 560)])
-width_stretches = Array[Vector4]([Vector4(1500, 400, 4.5, 0), Vector4(560, 100, 12, 4)])
+width_stretches = Array[Vector4]([Vector4(1500, 400, 4.5, 0), Vector4(560, 100, 12, 4), Vector4(704, 196, 5.75, 1), Vector4(900, 90, 10, 3), Vector4(990, 250, 5.75, 1)])
 width_blend = 10.0
 base_surface = ExtResource("3")
 painted_lines = false
-surface_stretches = Array[ExtResource("2")]([SubResource("Tarmac"), SubResource("DeepMud"), SubResource("Scree1"), SubResource("Scree2"), SubResource("Scree3"), SubResource("TalusScree"), SubResource("WetRock"), SubResource("Slabs"), SubResource("FinalScree")])
+surface_stretches = Array[ExtResource("2")]([SubResource("Tarmac"), SubResource("DeepMud"), SubResource("CrawlRock"), SubResource("Scree2"), SubResource("Scree3"), SubResource("ErodedRock"), SubResource("WetRock"), SubResource("Slabs"), SubResource("FinalScree")])
 undulation_amplitude = 0.08
 undulation_wavelengths = Vector2(17, 29)
 rough_sections = Array[Vector3]([Vector3(700, 450, 12)])
-damage_sections = Array[ExtResource("15")]([SubResource("BrokenAsphalt"), SubResource("RoughDirt"), SubResource("ChurnedMud")])
+damage_sections = Array[ExtResource("15")]([SubResource("BrokenAsphalt"), SubResource("RoughDirt"), SubResource("ChurnedMud"), SubResource("BrokenClimb")])
+cross_ruts = Array[ExtResource("16")]([SubResource("CrossRut1"), SubResource("CrossRut2"), SubResource("CrossRut3"), SubResource("CrossRut4")])
 pothole_radius_range = Vector2(0.3, 0.7)
 pothole_depth_range = Vector2(0.05, 0.12)
 rollers = Array[Vector3]([Vector3(65, 0.035, 9), Vector3(92, 0.05, 8), Vector3(119, 0.07, 8), Vector3(143, 0.1, 7), Vector3(165, 0.13, 7), Vector3(185, 0.16, 6), Vector3(207, 0.2, 7), Vector3(226, 0.23, 8), Vector3(239, 0.3, 9), Vector3(251, 0.25, 7), Vector3(262, 0.34, 9), Vector3(276, 0.28, 8), Vector3(288, 0.22, 9), Vector3(329, 0.1, 12), Vector3(356, 0.14, 11), Vector3(390, 0.12, 10), Vector3(421, 0.17, 12), Vector3(452, 0.2, 14), Vector3(480, 0.15, 11), Vector3(513, 0.18, 14), Vector3(539, 0.12, 12)])
 checkpoint_distances = PackedFloat32Array(300, 700, 1250, 1500, 1900)
 end_margin = 70.0
 rock_steps = Array[ExtResource("11")]([SubResource("Step1"), SubResource("Step2"), SubResource("Step3")])
-boulder_fields = Array[ExtResource("12")]([SubResource("Wash1"), SubResource("Wash2"), SubResource("Washout1"), SubResource("Washout2"), SubResource("Squeeze"), SubResource("FixedTalusFallback")])
+boulder_fields = Array[ExtResource("12")]([SubResource("Wash1"), SubResource("Wash2"), SubResource("Washout1"), SubResource("Washout2"), SubResource("Squeeze"), SubResource("WashoutSlabs")])
+fallen_trees = Array[ExtResource("17")]([SubResource("FallenTree")])
 fords = Array[ExtResource("14")]([SubResource("Ford")])
 asphalt_color = Color(0.6, 0.42, 0.3, 1)
 shoulder_color = Color(0.58, 0.38, 0.26, 1)

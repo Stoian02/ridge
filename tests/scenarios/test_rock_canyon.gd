@@ -1,7 +1,7 @@
 extends GutTest
 ## Rock Canyon's intended car completes the trail; the low cars' limitations
 ## are recorded. Isolated obstacle checks exercise controlled throttle, deep
-## mud, the grounded ford crossing and the approved fixed-rock talus fallback.
+## mud, the grounded ford crossing, rock crawl, fallen tree and eroded S-bend.
 
 const ROCK_CANYON := preload("res://levels/rock_canyon/rock_canyon.tscn")
 const OFFROAD := preload("res://car/cars/offroad_4x4.tres")
@@ -291,42 +291,75 @@ func test_the_ford_is_crossed_on_wet_rock_without_leaving_the_ground() -> void:
 	await _free(level)
 
 
-func test_fixed_talus_fallback_is_crossed_without_stopping_or_flipping() -> void:
+func test_rock_crawl_from_checkpoint_reaches_the_tree_clearing() -> void:
+	await _drive_technical_section(705.0, 912.0, 90.0, "narrow rock crawl")
+
+
+func test_washed_out_s_bend_reaches_the_waterfall_approach() -> void:
+	await _drive_technical_section(1140.0, 1262.0, 60.0, "washed-out S-bend")
+
+
+func _drive_technical_section(start: float, finish: float, limit: float, label: String) -> void:
 	var level := _load()
 	var car := level.rig.car
 	var driver := TrailDriver.new(car, level.trail.sampler, level.trail.profile)
 	await TrailScenarios.wait_for_go(level)
-	await TrailScenarios.place_on_road(level, 1140.0)
+	await TrailScenarios.place_on_road(level, start)
 	assert_true(level.trail.trail.talus.is_empty(), "the failed loose-stone field is explicitly disabled")
-	assert_eq(level.trail.talus_builder.stones.size(), 0, "no dynamic stones in the shipped fallback")
-	var field_index := level.trail.trail.boulder_fields.size() - 1
-	var field := level.trail.trail.boulder_fields[field_index]
-	assert_eq(field.start, 1150.0)
-	assert_eq(field.length, 100.0)
-	var builder := level.trail.boulder_builder
-	assert_gte(builder.placed[field_index].size(), 36, "the scree field retains fixed rubble")
-	var collision := builder.get_node("Field%dCollision" % field_index) as StaticBody3D
-	assert_eq(SurfaceLookup.surface_of(collision).id, &"rock", "fixed stones have rock collision")
-	assert_eq(collision.get_child_count(), builder.placed[field_index].size())
-	var rock_position: Vector3 = builder.placed[field_index][0].origin
-	var hit := level.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(
-			rock_position + Vector3.UP * 2.0, rock_position + Vector3.DOWN * 2.0))
-	assert_false(hit.is_empty(), "fixed rubble exists above the scree bed")
-	if not hit.is_empty():
-		assert_eq(SurfaceLookup.surface_of(hit["collider"]).id, &"rock")
+	assert_eq(level.trail.talus_builder.stones.size(), 0, "fixed obstacles only")
 	var lowest_up := 1.0
 	var reached := false
+	var elapsed := limit
+	var max_lateral := 0.0
 	watch_signals(level.resets)
-	for tick in ScenarioHelper.ticks(60.0):
-		if level.trail.sampler.closest_distance(car.global_position) >= 1262.0:
+	for tick in ScenarioHelper.ticks(limit):
+		if level.trail.sampler.closest_distance(car.global_position) >= finish:
 			reached = true
+			elapsed = tick / float(Engine.physics_ticks_per_second)
 			break
 		driver.drive()
 		await get_tree().physics_frame
 		lowest_up = minf(lowest_up, car.global_basis.y.y)
-	gut.p("fixed talus fallback: reached=%s, rocks=%d, lowest upright %.3f; %s" % [
-			reached, builder.placed[field_index].size(), lowest_up, _diagnostics(level)])
-	assert_true(reached, "the car passes through the fixed talus fallback")
-	assert_gt(lowest_up, 0.8, "stays upright throughout the field")
+		max_lateral = maxf(max_lateral, absf(level.trail.sampler.lateral_offset(car.global_position)))
+	gut.p("%s: reached=%s in %.2f s, lowest upright %.3f, max lateral %.2f m; %s" % [
+			label, reached, elapsed, lowest_up, max_lateral, _diagnostics(level)])
+	assert_true(reached, "the car passes through " + label)
+	assert_gt(lowest_up, 0.8, "stays upright throughout the section")
+	assert_lt(max_lateral, 2.0, "crosses the obstacles on the road, not the shoulder")
 	assert_eq(get_signal_emit_count(level.resets, "car_reset"), 0)
 	await _free(level)
+
+
+func test_fallen_tree_is_crossable_slowly_at_the_centre_and_thin_end() -> void:
+	for lateral: float in [0.0, 2.5]:
+		var level := _load()
+		var car := level.rig.car
+		var tree := level.trail.trail.fallen_trees[0]
+		var sampler := level.trail.sampler
+		await TrailScenarios.wait_for_go(level)
+		await TrailScenarios.place_at_offset(level, tree.distance - 8.0, lateral)
+		var reached := false
+		var saw_logs := false
+		var lowest_up := 1.0
+		var elapsed := 25.0
+		watch_signals(level.resets)
+		for tick in ScenarioHelper.ticks(25.0):
+			var at := sampler.closest_distance(car.global_position)
+			if at > tree.distance + 9.0:
+				reached = true
+				elapsed = tick / float(Engine.physics_ticks_per_second)
+				break
+			TrailScenarios.drive_toward(car, sampler.position(at + 7.0) + sampler.right(at + 7.0) * lateral, 2.5)
+			car.input.virtual_throttle = minf(car.input.virtual_throttle, 0.6)
+			await get_tree().physics_frame
+			lowest_up = minf(lowest_up, car.global_basis.y.y)
+			for wheel in car.wheels:
+				if wheel.in_contact and wheel.surface != null and wheel.surface.id == &"logs":
+					saw_logs = true
+		gut.p("fallen tree at lateral %+.1f m: crossed=%s, logs=%s, %.2f s, lowest upright %.3f; %s" % [
+				lateral, reached, saw_logs, elapsed, lowest_up, _diagnostics(level)])
+		assert_true(reached, "crossed the trunk slowly without needing a run-up")
+		assert_true(saw_logs, "actually drove over the tree")
+		assert_gt(lowest_up, 0.8)
+		assert_eq(get_signal_emit_count(level.resets, "car_reset"), 0)
+		await _free(level)

@@ -1,6 +1,7 @@
 extends SceneTree
 ## Rock Canyon (M5 spec §3.2): asphalt canyon mouth, a drop into the shaded mud
-## climb with weaving wheel tracks and a clearing, the boulder wash, talus and ford, a switchback up to
+## climb with weaving wheel tracks and a clearing, rock crawl, fallen tree and
+## washed-out S-bend to the ford, a switchback up to
 ## the narrow shelf, and the final scree push to the rim. Segment ends are noted
 ## as cumulative distances.
 
@@ -18,13 +19,15 @@ const SEGMENTS := [
 	["arc", 42.0, 50.0, 0.10],         # ~523 m: last climbing bend, old 25-degree exit heading
 	["straight", 37.4, 0.055],         # ~560 m: ease over the brow
 	["straight", 90.0, 0.005],         # ~650 m: wide, almost level clearing
-	["straight", 50.0, 0.04],          # 700 m: rejoin the untouched wash sequence
-	["arc", 110.0, -45.0, 0.035],      # ~787 m
-	["straight", 100.0, 0.04],         # ~887 m
-	["arc", 100.0, 50.0, 0.045],       # ~974 m
-	["straight", 100.0, 0.05],         # ~1074 m
-	["arc", 130.0, -34.0, 0.04],       # ~1151 m: the talus field
-	["straight", 100.0, 0.02],         # ~1251 m
+	["straight", 50.0, 0.04],          # 700 m: checkpoint, opening kept intact
+	["arc", 110.0, -45.0, 0.055],      # ~787 m: narrowing rock crawl
+	["straight", 100.0, 0.065],        # ~887 m: staggered shelves and boulders
+	["arc", 100.0, 50.0, 0.065],       # ~974 m: dirt clearing with the diagonal fallen tree
+	["straight", 100.0, 0.095],        # ~1074 m: steeper broken dirt climb
+	["arc", 130.0, -34.0, 0.09],       # ~1151 m: turn into the washout
+	["arc", 47.746483, 30.0, 0.045],   # ~1176 m: eroded S, offset shelves and diagonal channels
+	["arc", 47.746483, -60.0, 0.035],  # ~1226 m
+	["arc", 47.746483, 30.0, 0.025],   # ~1251 m: same exit heading, flatter waterfall approach
 	["straight", 80.0, 0.0],           # ~1331 m: the ford, level
 	["straight", 60.0, 0.08],          # ~1391 m: the wash steepens
 	["arc", 30.0, 180.0, 0.09],        # ~1485 m: switchback

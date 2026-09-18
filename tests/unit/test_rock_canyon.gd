@@ -27,8 +27,8 @@ func test_route_length_climb_and_separation() -> void:
 
 
 func test_surfaces_along_the_route() -> void:
-	for check: Array in [[100.0, &"asphalt"], [250.0, &"dirt"], [303.0, &"mud"], [400.0, &"deep_mud"], [800.0, &"dirt"],
-			[770.0, &"scree"], [1200.0, &"scree"], [1283.0, &"wet_rock"], [1290.0, &"wet_rock"], [1590.0, &"rock"],
+	for check: Array in [[100.0, &"asphalt"], [250.0, &"dirt"], [303.0, &"mud"], [400.0, &"deep_mud"], [800.0, &"rock"],
+			[770.0, &"rock"], [940.0, &"dirt"], [1200.0, &"rock"], [1283.0, &"wet_rock"], [1290.0, &"wet_rock"], [1590.0, &"rock"],
 			[1700.0, &"dirt"], [1950.0, &"scree"]]:
 		assert_eq(profile.surface_at(check[0]).id, check[1], "surface at %.0f m" % check[0])
 	assert_eq(TRAIL.base_surface.id, &"dirt")
@@ -44,29 +44,35 @@ func test_surfaces_along_the_route() -> void:
 
 
 func test_structures_match_the_spec() -> void:
-	assert_eq(TRAIL.width_stretches, [Vector4(1500.0, 400.0, 4.5, 0.0), Vector4(560.0, 100.0, 12.0, 4.0)] as Array[Vector4])
+	assert_eq(TRAIL.width_stretches[0], Vector4(1500.0, 400.0, 4.5, 0.0), "later shelf unchanged")
+	assert_eq(TRAIL.width_stretches[1], Vector4(560.0, 100.0, 12.0, 4.0), "first clearing unchanged")
 	assert_almost_eq(TRAIL.road_width_at(1700.0), 4.5, 0.0001)
 	assert_almost_eq(TRAIL.shoulder_width_at(1700.0), 0.0, 0.0001)
 	assert_eq(TRAIL.rock_steps.size(), 3)
-	assert_eq(TRAIL.rock_steps.map(func(s: RockStepDef) -> float: return s.distance), [812.0, 947.0, 1078.0])
+	assert_eq(TRAIL.rock_steps.map(func(s: RockStepDef) -> float: return s.distance), [758.0, 814.0, 868.0])
 	assert_eq(TRAIL.rock_steps.map(func(s: RockStepDef) -> float: return s.height), [0.35, 0.5, 0.3])
-	assert_true(TRAIL.rock_steps[0].covers(-6.0) and TRAIL.rock_steps[0].covers(6.0), "the first step spans the whole road")
+	var crawl_half := TRAIL.half_total_width_at(TRAIL.rock_steps[0].distance)
+	assert_eq(TRAIL.rock_steps[0].lateral_from, -crawl_half)
+	assert_eq(TRAIL.rock_steps[0].lateral_to, crawl_half, "first step spans the road without overhanging its new edges")
 	assert_false(TRAIL.rock_steps[1].covers(-1.0), "the second leaves a ramp on the left")
 	assert_true(TRAIL.rock_steps[1].covers(2.0))
-	assert_eq(TRAIL.boulder_fields.size(), 6, "five authored obstacle fields plus the approved fixed-talus fallback")
+	assert_eq(TRAIL.boulder_fields.size(), 6, "two crawl fields, three unchanged shelf fields, washout slabs")
 	assert_eq(TRAIL.boulder_fields[0].start, 720.0)
 	assert_eq(TRAIL.boulder_fields[4].count, 2, "the squeeze is two blocks")
 	assert_true(TRAIL.talus.is_empty(), "loose stones disabled after the desktop chassis-wedge acceptance failure")
-	var fallback: BoulderFieldDef = TRAIL.boulder_fields.back()
-	assert_eq(fallback.start, 1150.0)
-	assert_eq(fallback.length, 100.0)
-	assert_eq(fallback.count, 40)
+	var washout: BoulderFieldDef = TRAIL.boulder_fields.back()
+	assert_eq(washout.start, 1154.0)
+	assert_eq(washout.length, 82.0)
+	assert_eq(washout.count, 14)
+	assert_eq(washout.slab_fraction, 1.0)
+	assert_eq(TRAIL.cross_ruts.size(), 4)
+	assert_eq(TRAIL.fallen_trees.size(), 1)
 	assert_eq(TRAIL.fords.size(), 1)
 	assert_between(TRAIL.fords[0].distance, 1250.0, 1330.0)
 	assert_eq(TRAIL.fords[0].waterfall_height, 14.0)
 	assert_eq(TRAIL.fords[0].waterfall_offset, -22.0)
 	assert_eq(Array(TRAIL.checkpoint_distances), [300.0, 700.0, 1250.0, 1500.0, 1900.0])
-	assert_eq(TERRAIN.wall_sections.size(), 7)
+	assert_eq(TERRAIN.wall_sections.size(), 8)
 	assert_eq(TERRAIN.wall_sections[3], Vector4(1500.0, 400.0, 25.0, -40.0), "the shelf: cliff left, air right")
 	assert_eq(TERRAIN.view_distance, 350.0)
 	assert_eq(TERRAIN.detail_distance, 140.0)
@@ -135,12 +141,13 @@ func test_the_level_builds_every_part_with_its_surfaces_and_structures() -> void
 	await wait_physics_frames(2)
 	gut.p("Rock Canyon: %.0f m, built in %.2f s (%s)" % [sampler.length, level.build_seconds, level.phase_summary()])
 	assert_lt(level.build_seconds, 3.0, "desktop build time")
-	for part in ["Generated/RockSteps", "Generated/Boulders", "Generated/Talus", "Generated/Fords"]:
+	for part in ["Generated/RockSteps", "Generated/Boulders", "Generated/Talus", "Generated/Fords", "Generated/FallenTrees"]:
 		assert_not_null(level.get_node_or_null(part), part)
 	assert_eq(level.rock_step_builder.step_count, 3)
 	assert_eq(level.boulder_builder.placed.size(), 6)
 	assert_true(level.talus_builder.stones.is_empty(), "no dynamic stones in the shipped fallback")
-	assert_gte(level.boulder_builder.placed.back().size(), 36, "40 fixed stones less any on the 1250 m gate")
+	assert_eq(level.boulder_builder.placed.back().size(), 14, "offset slabs replace the scattered talus")
+	assert_eq(level.fallen_tree_builder.get_child_count(), 2, "one merged visible tree and its collider")
 	assert_eq(level.ford_builder.water_levels.size(), 1)
 	assert_gt(level.rut_water_builder.puddle_ranges.size(), 4, "standing water survives the actual gully's banking and undulation")
 	assert_eq(level.checkpoints.reset_transforms.size(), 7, "start, five checkpoints, finish")
@@ -192,8 +199,8 @@ func test_the_level_builds_every_part_with_its_surfaces_and_structures() -> void
 		if not hit.is_empty():
 			gut.p("%.0f m ray: %s at %.3f, road %.3f" % [check[0], hit["collider"].name, hit["position"].y, point.y])
 			assert_eq(SurfaceLookup.surface_of(hit["collider"]).id, check[1], "surface at %.0f m" % check[0])
-	var face_from := sampler.surface_point(809.0, 0.0, level.profile) + Vector3.UP * 0.1
-	var face_to := sampler.surface_point(815.0, 0.0, level.profile) + Vector3.UP * 0.1
+	var face_from := sampler.surface_point(755.0, 0.0, level.profile) + Vector3.UP * 0.1
+	var face_to := sampler.surface_point(761.0, 0.0, level.profile) + Vector3.UP * 0.1
 	var face := space.intersect_ray(PhysicsRayQueryParameters3D.create(face_from, face_to))
 	assert_false(face.is_empty(), "the first rock step's face")
 	if not face.is_empty():
