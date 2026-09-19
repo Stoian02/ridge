@@ -70,9 +70,12 @@ func test_visual_follows_local_coordinates_and_reset_restores_pose_and_sleep() -
 		assert_eq(builder.stones[i].angular_velocity, Vector3.ZERO)
 
 
-func test_rock_canyon_still_has_no_dynamic_stones() -> void:
+func test_rock_canyon_dynamic_stones_are_confined_to_the_approved_shelf() -> void:
 	var trail: TrailDef = load("res://levels/rock_canyon/rock_canyon_trail.tres")
-	assert_true(trail.talus.is_empty(), "owner must test the prototype before shelf integration")
+	assert_false(trail.talus.is_empty(), "owner approved integration after the prototype")
+	for def: TalusDef in trail.talus:
+		assert_gte(def.start, 1500.0)
+		assert_lte(def.end(), 1900.0, "easier finish remains unchanged")
 
 
 func test_banked_floor_collision_matches_the_visible_height_profile() -> void:

@@ -29,6 +29,7 @@ var rock_step_builder: RockStepBuilder
 var boulder_builder: BoulderBuilder
 var fallen_tree_builder: FallenTreeBuilder
 var talus_builder: TalusBuilder
+var shelf_builder: ShelfBuilder
 var ford_builder: FordBuilder
 var shortcut_builder: ShortcutBuilder
 var terrain_builder: TerrainBuilder
@@ -123,10 +124,16 @@ func build() -> void:
 	fallen_tree_builder.build(sampler, profile, trail)
 	_lap(&"fallen_trees")
 
+	shelf_builder = ShelfBuilder.new()
+	shelf_builder.name = "Shelf"
+	generated.add_child(shelf_builder)
+	shelf_builder.build(sampler, profile, field, trail)
+	_lap(&"shelf")
+
 	talus_builder = TalusBuilder.new()
 	talus_builder.name = "Talus"
 	generated.add_child(talus_builder)
-	talus_builder.build(sampler, profile, field, trail)
+	talus_builder.build(sampler, profile, field, trail, boulder_builder)
 	_lap(&"talus")
 
 	ford_builder = FordBuilder.new()

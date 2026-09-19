@@ -29,7 +29,7 @@ func test_route_length_climb_and_separation() -> void:
 func test_surfaces_along_the_route() -> void:
 	for check: Array in [[100.0, &"asphalt"], [250.0, &"dirt"], [303.0, &"mud"], [400.0, &"deep_mud"], [800.0, &"rock"],
 			[770.0, &"rock"], [940.0, &"dirt"], [1200.0, &"rock"], [1283.0, &"wet_rock"], [1290.0, &"wet_rock"], [1590.0, &"rock"],
-			[1700.0, &"dirt"], [1950.0, &"scree"]]:
+			[1700.0, &"scree"], [1950.0, &"scree"]]:
 		assert_eq(profile.surface_at(check[0]).id, check[1], "surface at %.0f m" % check[0])
 	assert_eq(TRAIL.base_surface.id, &"dirt")
 	assert_false(TRAIL.painted_lines)
@@ -59,7 +59,7 @@ func test_structures_match_the_spec() -> void:
 	assert_eq(TRAIL.boulder_fields.size(), 10, "dense mixed-size crawl, unchanged shelf, and both slabs and rubble in the S-bend")
 	assert_eq(TRAIL.boulder_fields[0].start, 710.0)
 	assert_eq(TRAIL.boulder_fields[4].count, 2, "the squeeze is two blocks")
-	assert_true(TRAIL.talus.is_empty(), "loose stones disabled after the desktop chassis-wedge acceptance failure")
+	assert_eq(TRAIL.talus.size(), 10, "dense loose stones only on the approved CP4-5 shelf")
 	var washout: BoulderFieldDef = TRAIL.boulder_fields[5]
 	assert_eq(washout.start, 1154.0)
 	assert_eq(washout.length, 82.0)
@@ -145,7 +145,9 @@ func test_the_level_builds_every_part_with_its_surfaces_and_structures() -> void
 		assert_not_null(level.get_node_or_null(part), part)
 	assert_eq(level.rock_step_builder.step_count, 3)
 	assert_eq(level.boulder_builder.placed.size(), 10)
-	assert_true(level.talus_builder.stones.is_empty(), "no dynamic stones in the shipped fallback")
+	assert_gt(level.talus_builder.stones.size(), 4500, "full-length dense loose-rock shelf")
+	assert_eq(level.shelf_builder.wall_chunks, 10)
+	assert_eq(level.shelf_builder.gravel_chunks, 10)
 	assert_eq(level.boulder_builder.placed[5].size(), 14, "offset slabs remain in the S-bend")
 	assert_eq(level.boulder_builder.placed[9].size(), 40, "S-bends also have scattered stones")
 	assert_eq(level.fallen_tree_builder.get_child_count(), 2, "one merged visible tree and its collider")

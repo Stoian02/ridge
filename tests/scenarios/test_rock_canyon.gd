@@ -305,8 +305,8 @@ func _drive_technical_section(start: float, finish: float, limit: float, label: 
 	var driver := TrailDriver.new(car, level.trail.sampler, level.trail.profile)
 	await TrailScenarios.wait_for_go(level)
 	await TrailScenarios.place_on_road(level, start)
-	assert_true(level.trail.trail.talus.is_empty(), "the failed loose-stone field is explicitly disabled")
-	assert_eq(level.trail.talus_builder.stones.size(), 0, "fixed obstacles only")
+	for def: TalusDef in level.trail.trail.talus:
+		assert_gte(def.start, 1500.0, "accepted crawl and waterfall approach still use fixed rocks")
 	var lowest_up := 1.0
 	var reached := false
 	var elapsed := limit

@@ -33,6 +33,12 @@ extends Resource
 @export var width_stretches: Array[Vector4] = []
 ## The widths ease from the trail's to a stretch's over this distance inside each of its ends (m).
 @export var width_blend: float = 10.0
+## Optional (distance, outward-bank degrees) knots, smoothly interpolated.
+## Positive angles put the left edge above the right. Zero outside the knots.
+@export var bank_profile: Array[Vector2] = []
+## Close rock cuts on the left: (start, length, face height, reach into hillside).
+## Separate closed meshes preserve the terrain grid's protection of nearby roads.
+@export var shelf_walls: Array[Vector4] = []
 
 @export_group("Surface")
 ## The road's surface outside any stretch. Shoulders are dirt outside stretches.
@@ -166,6 +172,17 @@ func _width_stretch_at(distance: float) -> Vector3:
 
 func has_creek() -> bool:
 	return creek_length > 0.0
+
+
+func bank_degrees_at(distance: float) -> float:
+	if bank_profile.size() < 2 or distance < bank_profile[0].x or distance > bank_profile[-1].x:
+		return 0.0
+	for i in range(1, bank_profile.size()):
+		var a := bank_profile[i - 1]
+		var b := bank_profile[i]
+		if distance <= b.x:
+			return lerpf(a.y, b.y, smoothstep(a.x, b.x, distance))
+	return 0.0
 
 
 func casts_shadow(from: float, to: float) -> bool:

@@ -38,6 +38,15 @@ func _init(driven_car: Car, road: RoadSampler, road_profile: RoadProfile = null)
 func drive() -> void:
 	var distance := sampler.closest_distance(car.global_position)
 	var target := sampler.position(distance + LOOKAHEAD)
+	var knots := sampler.trail.bank_profile
+	if knots.size() > 1 and distance > knots[0].x - LOOKAHEAD and distance < knots[-1].x:
+		# A human corrects uphill on an outward bank. Use a nearer target and
+		# lateral-velocity correction, just as in the Test Ground bank scenario.
+		var right := sampler.right(distance)
+		var bank := -atan2(right.y, Vector2(right.x, right.z).length())
+		var uphill := 3.0 * tan(bank) * minf(1.0, 2.0 / maxf(absf(car.forward_speed()), 0.1))
+		var drift := clampf(car.linear_velocity.dot(right) * 0.7, -0.8, 0.8)
+		target = sampler.position(distance + 3.0) - right * (uphill + drift)
 	var to_target := target - car.global_position
 	var heading := -car.global_basis.z
 	var flat_heading := Vector2(heading.x, heading.z).normalized()
@@ -72,6 +81,10 @@ func target_speed(distance: float) -> float:
 		wanted = clampf(grip_speed * CAUTION, MIN_SPEED, fastest)
 	if crawl_zone_ahead(distance):
 		wanted = minf(wanted, CRAWL_SPEED)
+	# Test inputs only: approach the deliberately severe loose bank at a crawl.
+	# No steering aid or speed limit is applied to the player's car.
+	if sampler.trail.bank_degrees_at(distance + 8.0) > 9.0:
+		wanted = minf(wanted, 2.0)
 	return wanted
 
 

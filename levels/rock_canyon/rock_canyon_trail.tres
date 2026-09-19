@@ -16,6 +16,7 @@
 [ext_resource type="Script" path="res://levels/trail/road_damage_def.gd" id="15"]
 [ext_resource type="Script" path="res://levels/trail/cross_rut_def.gd" id="16"]
 [ext_resource type="Script" path="res://levels/trail/fallen_tree_def.gd" id="17"]
+[ext_resource type="Script" path="res://levels/trail/talus_def.gd" id="18"]
 
 [sub_resource type="Resource" id="Tarmac"]
 script = ExtResource("2")
@@ -204,6 +205,22 @@ affects_shoulders = false
 color = Color(0.62, 0.4, 0.31, 1)
 roughness = 0.7
 
+[sub_resource type="Resource" id="ShelfScree1"]
+script = ExtResource("2")
+start = 1500.0
+length = 60.0
+surface = ExtResource("7")
+color = Color(0.51, 0.42, 0.33, 1)
+blend_length = 6.0
+
+[sub_resource type="Resource" id="ShelfScree2"]
+script = ExtResource("2")
+start = 1620.0
+length = 280.0
+surface = ExtResource("7")
+color = Color(0.51, 0.42, 0.33, 1)
+blend_length = 6.0
+
 [sub_resource type="Resource" id="FinalScree"]
 script = ExtResource("2")
 start = 1900.0
@@ -360,6 +377,167 @@ distance = 1290.0
 water_color = Color(0.36, 0.5, 0.55, 1)
 seed = 83
 
+
+[sub_resource type="Resource" id="ShelfTalus0"]
+script = ExtResource("18")
+start = 1500.0
+length = 40.0
+count = 480
+size_range = Vector2(0.075, 0.125)
+height_scale = 0.45
+continuous_collision = true
+mass_range = Vector2(6, 16)
+contact_friction = 0.20
+avoid_overlap = true
+cover_road = true
+gravel_bed = true
+color = Color(0.59, 0.54, 0.46, 1)
+seed = 920
+
+[sub_resource type="Resource" id="ShelfTalus1"]
+script = ExtResource("18")
+start = 1540.0
+length = 40.0
+count = 480
+size_range = Vector2(0.075, 0.125)
+height_scale = 0.45
+continuous_collision = true
+mass_range = Vector2(6, 16)
+contact_friction = 0.20
+avoid_overlap = true
+cover_road = true
+gravel_bed = true
+color = Color(0.72, 0.65, 0.53, 1)
+seed = 921
+
+[sub_resource type="Resource" id="ShelfTalus2"]
+script = ExtResource("18")
+start = 1580.0
+length = 40.0
+count = 480
+size_range = Vector2(0.075, 0.125)
+height_scale = 0.45
+continuous_collision = true
+mass_range = Vector2(6, 16)
+contact_friction = 0.20
+avoid_overlap = true
+cover_road = true
+gravel_bed = true
+color = Color(0.59, 0.54, 0.46, 1)
+seed = 922
+
+[sub_resource type="Resource" id="ShelfTalus3"]
+script = ExtResource("18")
+start = 1620.0
+length = 40.0
+count = 480
+size_range = Vector2(0.075, 0.125)
+height_scale = 0.45
+continuous_collision = true
+mass_range = Vector2(6, 16)
+contact_friction = 0.20
+avoid_overlap = true
+cover_road = true
+gravel_bed = true
+color = Color(0.72, 0.65, 0.53, 1)
+seed = 923
+
+[sub_resource type="Resource" id="ShelfTalus4"]
+script = ExtResource("18")
+start = 1660.0
+length = 40.0
+count = 480
+size_range = Vector2(0.075, 0.125)
+height_scale = 0.45
+continuous_collision = true
+mass_range = Vector2(6, 16)
+contact_friction = 0.20
+avoid_overlap = true
+cover_road = true
+gravel_bed = true
+color = Color(0.59, 0.54, 0.46, 1)
+seed = 924
+
+[sub_resource type="Resource" id="ShelfTalus5"]
+script = ExtResource("18")
+start = 1700.0
+length = 40.0
+count = 480
+size_range = Vector2(0.075, 0.125)
+height_scale = 0.45
+continuous_collision = true
+mass_range = Vector2(6, 16)
+contact_friction = 0.20
+avoid_overlap = true
+cover_road = true
+gravel_bed = true
+color = Color(0.72, 0.65, 0.53, 1)
+seed = 925
+
+[sub_resource type="Resource" id="ShelfTalus6"]
+script = ExtResource("18")
+start = 1740.0
+length = 40.0
+count = 480
+size_range = Vector2(0.075, 0.125)
+height_scale = 0.45
+continuous_collision = true
+mass_range = Vector2(6, 16)
+contact_friction = 0.20
+avoid_overlap = true
+cover_road = true
+gravel_bed = true
+color = Color(0.59, 0.54, 0.46, 1)
+seed = 926
+
+[sub_resource type="Resource" id="ShelfTalus7"]
+script = ExtResource("18")
+start = 1780.0
+length = 40.0
+count = 480
+size_range = Vector2(0.075, 0.125)
+height_scale = 0.45
+continuous_collision = true
+mass_range = Vector2(6, 16)
+contact_friction = 0.20
+avoid_overlap = true
+cover_road = true
+gravel_bed = true
+color = Color(0.72, 0.65, 0.53, 1)
+seed = 927
+
+[sub_resource type="Resource" id="ShelfTalus8"]
+script = ExtResource("18")
+start = 1820.0
+length = 40.0
+count = 480
+size_range = Vector2(0.075, 0.125)
+height_scale = 0.45
+continuous_collision = true
+mass_range = Vector2(6, 16)
+contact_friction = 0.20
+avoid_overlap = true
+cover_road = true
+gravel_bed = true
+color = Color(0.59, 0.54, 0.46, 1)
+seed = 928
+
+[sub_resource type="Resource" id="ShelfTalus9"]
+script = ExtResource("18")
+start = 1860.0
+length = 40.0
+count = 480
+size_range = Vector2(0.075, 0.125)
+height_scale = 0.45
+continuous_collision = true
+mass_range = Vector2(6, 16)
+contact_friction = 0.20
+avoid_overlap = true
+cover_road = true
+gravel_bed = true
+color = Color(0.72, 0.65, 0.53, 1)
+seed = 929
+
 [resource]
 script = ExtResource("1")
 road_width = 8.0
@@ -370,9 +548,11 @@ road_view_distance = 400.0
 shadowless_sections = Array[Vector2]([Vector2(0, 560)])
 width_stretches = Array[Vector4]([Vector4(1500, 400, 4.5, 0), Vector4(560, 100, 12, 4), Vector4(704, 196, 5.75, 1), Vector4(900, 90, 10, 3), Vector4(990, 250, 5.75, 1)])
 width_blend = 10.0
+bank_profile = Array[Vector2]([Vector2(1500, 0), Vector2(1525, 6), Vector2(1580, 12), Vector2(1630, 5), Vector2(1685, 14), Vector2(1730, 7), Vector2(1790, 13), Vector2(1845, 6), Vector2(1880, 9), Vector2(1900, 0)])
+shelf_walls = Array[Vector4]([Vector4(1500, 400, 10, 24)])
 base_surface = ExtResource("3")
 painted_lines = false
-surface_stretches = Array[ExtResource("2")]([SubResource("Tarmac"), SubResource("DeepMud"), SubResource("CrawlRock"), SubResource("Scree2"), SubResource("Scree3"), SubResource("ErodedRock"), SubResource("WetRock"), SubResource("Slabs"), SubResource("FinalScree")])
+surface_stretches = Array[ExtResource("2")]([SubResource("Tarmac"), SubResource("DeepMud"), SubResource("CrawlRock"), SubResource("Scree2"), SubResource("Scree3"), SubResource("ErodedRock"), SubResource("WetRock"), SubResource("Slabs"), SubResource("FinalScree"), SubResource("ShelfScree1"), SubResource("ShelfScree2")])
 undulation_amplitude = 0.08
 undulation_wavelengths = Vector2(17, 29)
 rough_sections = Array[Vector3]([Vector3(700, 450, 12)])
@@ -386,6 +566,7 @@ end_margin = 70.0
 rock_steps = Array[ExtResource("11")]([SubResource("Step1"), SubResource("Step2"), SubResource("Step3")])
 boulder_fields = Array[ExtResource("12")]([SubResource("Wash1"), SubResource("Wash2"), SubResource("Washout1"), SubResource("Washout2"), SubResource("Squeeze"), SubResource("WashoutSlabs"), SubResource("CrawlBoulders"), SubResource("CrawlOuterBoulders"), SubResource("CrawlSmallStones"), SubResource("S_ScatteredRocks")])
 fallen_trees = Array[ExtResource("17")]([SubResource("FallenTree")])
+talus = Array[ExtResource("18")]([SubResource("ShelfTalus0"), SubResource("ShelfTalus1"), SubResource("ShelfTalus2"), SubResource("ShelfTalus3"), SubResource("ShelfTalus4"), SubResource("ShelfTalus5"), SubResource("ShelfTalus6"), SubResource("ShelfTalus7"), SubResource("ShelfTalus8"), SubResource("ShelfTalus9")])
 fords = Array[ExtResource("14")]([SubResource("Ford")])
 asphalt_color = Color(0.6, 0.42, 0.3, 1)
 shoulder_color = Color(0.58, 0.38, 0.26, 1)

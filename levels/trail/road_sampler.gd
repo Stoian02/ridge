@@ -40,7 +40,20 @@ func forward(distance: float) -> Vector3:
 func up(distance: float) -> Vector3:
 	var tilted_up: Vector3 = curve.sample_baked_up_vector(clampf(distance, 0.0, length), true) if use_curve_banking else Vector3.UP
 	var along := forward(distance)
-	return (tilted_up - along * tilted_up.dot(along)).normalized()
+	var orthogonal := (tilted_up - along * tilted_up.dot(along)).normalized()
+	if trail.bank_profile.size() < 2:
+		return orthogonal
+	var first := trail.bank_profile[0].x
+	var last := trail.bank_profile[-1].x
+	if distance <= first or distance >= last:
+		return orthogonal
+	# Curve transport can already have accumulated roll even without authored
+	# tilt. The shelf angles are absolute relative to gravity, not added to it.
+	var level_up := (Vector3.UP - along * along.y).normalized()
+	var desired := level_up.rotated(along, deg_to_rad(trail.bank_degrees_at(distance)))
+	var weight := minf(smoothstep(first, first + 25.0, distance),
+			1.0 - smoothstep(last - 20.0, last, distance))
+	return orthogonal.slerp(desired, weight).normalized()
 
 
 func right(distance: float) -> Vector3:
