@@ -1,5 +1,11 @@
 # CP4–CP5 loose-rock shelf — owner playtest handoff
 
+**Follow-up:** the owner has passed this shelf by driving carefully and accepted
+its difficulty. See `shelf-surface-fix-2026-09-19.md` for the subsequent visible
+road/collision and natural-cliff fixes. This document retains the original
+implementation measurements and scripted failures as historical evidence;
+the old pending-owner-playtest gate below is superseded.
+
 Work stays on `m5-rock-canyon`. Not merged or pushed. Earlier canyon/crawl/tree/
 waterfall work and the centre-line curve are unchanged. `project.godot` and
 untracked `tmux-session.sh` belong to the owner and are untouched.
