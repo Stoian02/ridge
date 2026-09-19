@@ -22,13 +22,45 @@ var stones: Array[RigidBody3D] = []
 var instance_transforms: Array[Transform3D] = []
 
 var _multimeshes: Array[MultiMesh] = []
-## Per stone: its field's MultiMesh index, its instance slot and its radius.
+## Per stone: field/instance slot, geometry scale and conservative footprint.
 var _fields := PackedInt32Array()
 var _slots := PackedInt32Array()
-var _radii := PackedFloat32Array()
+var _scales: Array[Vector3] = []
+var _footprints := PackedFloat32Array()
+var _rest_transforms: Array[Transform3D] = []
+var _was_awake := PackedByteArray()
 
 
 func build(sampler: RoadSampler, profile: RoadProfile, field: TerrainField, trail: TrailDef) -> void:
+	_clear()
+	var gates := CheckpointPlacer.distances_for(sampler.length, trail)
+	for i in trail.talus.size():
+		_build_field(sampler, profile, field, trail.talus[i], gates, i)
+
+
+## A standalone test patch. height_at(x, z) returns the supporting floor in
+## this builder's local coordinates; distance runs along -Z, lateral along X.
+## Check all hull vertices against that floor and reject overlapping placements.
+func build_patch(definitions: Array[TalusDef], height_at: Callable) -> void:
+	_clear()
+	for i in definitions.size():
+		_build_field(null, null, null, definitions[i], PackedFloat32Array(), i, height_at)
+
+
+## Test Ground reset: move the car clear first, then restore the original layout.
+func reset_stones() -> void:
+	for i in stones.size():
+		var stone := stones[i]
+		stone.linear_velocity = Vector3.ZERO
+		stone.angular_velocity = Vector3.ZERO
+		stone.transform = _rest_transforms[i]
+		stone.force_update_transform()
+		stone.sleeping = true
+		_was_awake[i] = 0
+		_sync_instance(i)
+
+
+func _clear() -> void:
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
@@ -37,10 +69,10 @@ func build(sampler: RoadSampler, profile: RoadProfile, field: TerrainField, trai
 	_multimeshes.clear()
 	_fields.clear()
 	_slots.clear()
-	_radii.clear()
-	var gates := CheckpointPlacer.distances_for(sampler.length, trail)
-	for i in trail.talus.size():
-		_build_field(sampler, profile, field, trail.talus[i], gates, i)
+	_scales.clear()
+	_footprints.clear()
+	_rest_transforms.clear()
+	_was_awake.clear()
 
 
 func awake_count() -> int:
@@ -53,20 +85,32 @@ func awake_count() -> int:
 
 func _physics_process(_delta: float) -> void:
 	for i in stones.size():
-		var stone := stones[i]
-		if stone.sleeping:
+		if stones[i].sleeping and _was_awake[i] == 0:
 			continue
-		var transform := Transform3D(stone.global_basis * Basis.from_scale(Vector3.ONE * _radii[i]), stone.global_position)
-		_multimeshes[_fields[i]].set_instance_transform(_slots[i], transform)
-		instance_transforms[i] = transform
+		_sync_instance(i)
+		_was_awake[i] = 0 if stones[i].sleeping else 1
+
+
+func _sync_instance(i: int) -> void:
+	var stone := stones[i]
+	var transform := Transform3D(stone.basis * Basis.from_scale(_scales[i]), stone.position)
+	# Write the final pose even on the tick a stone falls asleep. Local transforms
+	# also keep visuals aligned when a whole patch is translated in Test Ground.
+	if transform.is_equal_approx(instance_transforms[i]):
+		return
+	_multimeshes[_fields[i]].set_instance_transform(_slots[i], transform)
+	instance_transforms[i] = transform
 
 
 func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainField, def: TalusDef,
-		gates: PackedFloat32Array, index: int) -> void:
+		gates: PackedFloat32Array, index: int, height_at: Callable = Callable()) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = def.seed
 	var mesh := LowPolyMeshes.rock(def.color, def.seed)
 	var points := mesh.get_faces()
+	var unit_footprint := 0.0
+	for point in points:
+		unit_footprint = maxf(unit_footprint, Vector2(point.x, point.z).length())
 	var physics := PhysicsMaterial.new()
 	physics.friction = FRICTION
 	physics.bounce = BOUNCE
@@ -76,7 +120,7 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 	var placed: Array[Transform3D] = []
 	# Never draws past the road's sampled length, where RoadSampler.forward()
 	# and surface_point() would be out of range.
-	var end := minf(def.end(), sampler.length - 1.0)
+	var end: float = def.end() if sampler == null else minf(def.end(), sampler.length - 1.0)
 	for n in (def.count if def.start < end else 0):
 		# Every random draw happens before a stone can be skipped, so the layout
 		# of the others never depends on the gates.
@@ -85,21 +129,41 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 		var lateral := side * rng.randf_range(def.lateral_range.x, def.lateral_range.y)
 		var yaw := rng.randf() * TAU
 		var radius := rng.randf_range(def.size_range.x, def.size_range.y)
+		var footprint := radius * unit_footprint
 		var mass := rng.randf_range(def.mass_range.x, def.mass_range.y)
 		if Array(gates).any(func(gate: float) -> bool: return absf(gate - distance) < GATE_CLEARANCE):
 			continue
 		var origin: Vector3
-		if absf(lateral) <= sampler.half_width_at(distance):
+		if height_at.is_valid():
+			origin = Vector3(lateral, 0.0, -distance)
+			for attempt in 24:
+				if not _patch_overlaps(origin, footprint):
+					break
+				origin.x = side * rng.randf_range(def.lateral_range.x, def.lateral_range.y)
+				origin.z = -rng.randf_range(def.start, end)
+			if _patch_overlaps(origin, footprint):
+				continue
+		elif absf(lateral) <= sampler.half_width_at(distance):
 			origin = sampler.surface_point(distance, lateral, profile)
 		else:
 			origin = sampler.position(distance) + sampler.right(distance) * lateral
 			origin.y = field.height_at(origin.x, origin.z)
-		origin.y += -mesh.get_aabb().position.y * radius + REST_GAP
 		var rotation := Basis(Vector3.UP, yaw)
-		var scaled := rotation * Basis.from_scale(Vector3.ONE * radius)
+		var scale := Vector3(radius, radius * def.height_scale, radius)
+		var scaled := rotation * Basis.from_scale(scale)
+		if height_at.is_valid():
+			var support := -INF
+			for point in points:
+				var vertex := scaled * point
+				var floor_height: float = height_at.call(origin.x + vertex.x, origin.z + vertex.z)
+				support = maxf(support, floor_height - vertex.y)
+			origin.y = support + REST_GAP
+		else:
+			origin.y += -mesh.get_aabb().position.y * scale.y + REST_GAP
 		var stone := RigidBody3D.new()
 		stone.name = "Stone%d_%d" % [index, n]
 		stone.mass = mass
+		stone.continuous_cd = def.continuous_collision
 		stone.physics_material_override = physics
 		stone.can_sleep = true
 		stone.sleeping = true
@@ -108,7 +172,7 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 		var local := PackedVector3Array()
 		local.resize(points.size())
 		for p in points.size():
-			local[p] = Basis.from_scale(Vector3.ONE * radius) * points[p]
+			local[p] = Basis.from_scale(scale) * points[p]
 		hull.points = local
 		var shape := CollisionShape3D.new()
 		shape.shape = hull
@@ -123,7 +187,10 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 		instance_transforms.append(Transform3D(scaled, origin))
 		_fields.append(index)
 		_slots.append(placed.size())
-		_radii.append(radius)
+		_scales.append(scale)
+		_footprints.append(footprint)
+		_rest_transforms.append(stone.transform)
+		_was_awake.append(0)
 		placed.append(Transform3D(scaled, origin))
 	multimesh.instance_count = placed.size()
 	for i in placed.size():
@@ -140,3 +207,11 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 	instance.visibility_range_end = VIEW_DISTANCE
 	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(instance)
+
+
+func _patch_overlaps(origin: Vector3, radius: float) -> bool:
+	for i in stones.size():
+		var separation := Vector2(origin.x - stones[i].position.x, origin.z - stones[i].position.z)
+		if separation.length() < radius + _footprints[i] + 0.06:
+			return true
+	return false

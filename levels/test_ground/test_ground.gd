@@ -13,6 +13,7 @@ extends Node3D
 ##   - a rutted mud strip 90 m to the right
 ##   - a suspension course further right: an axle twister, whoops, curb steps
 ##     (10-40 cm), and ground clearance logs (15, 25, 35 cm)
+##   - loose rocks at the far right, beyond the logs: flat, then 0-14 degree camber
 ##   - a skidpad behind the spawn: a flat asphalt circle 30 m across
 ## Press R (or the Reset button) to return to the spawn point; Pause, Escape or the
 ## back gesture open a pause menu without Restart.
@@ -39,6 +40,7 @@ const TWISTER_X := 125.0
 const WHOOPS_X := 145.0
 const STEPS_X := 165.0
 const LOGS_X := 185.0
+const LOOSE_ROCKS_X := 210.0
 ## Curb step heights (m) and log diameters (m), in the order you reach them.
 const STEP_HEIGHTS: Array[float] = [0.1, 0.2, 0.3, 0.4]
 const LOG_DIAMETERS: Array[float] = [0.15, 0.25, 0.35]
@@ -60,6 +62,7 @@ var pause_menu: PauseMenu
 var _spawn: Transform3D
 ## Marker posts as Vector4(base x, base y, base z, height), merged into one mesh.
 var _posts: Array[Vector4] = []
+var loose_rocks: LooseRockCourse
 
 
 func _ready() -> void:
@@ -79,6 +82,7 @@ func _ready() -> void:
 
 func _on_reset_requested() -> void:
 	rig.place_car(_spawn)
+	loose_rocks.talus.reset_stones()
 
 
 func _build_layout() -> void:
@@ -103,8 +107,24 @@ func _build_layout() -> void:
 	_add_side_slope(ASPHALT, ASPHALT_SLOPE_X, "SIDE SLOPE - ASPHALT")
 	_add_side_slope(DIRT, DIRT_SLOPE_X, "SIDE SLOPE - DIRT")
 	_add_suspension_course()
+	_add_loose_rocks()
 	_add_skidpad()
 	_build_posts()
+
+
+func _add_loose_rocks() -> void:
+	loose_rocks = LooseRockCourse.new()
+	loose_rocks.name = "LooseRockCourse"
+	loose_rocks.position = Vector3(LOOSE_ROCKS_X, 0.0, STRIP_ENTRY_Z)
+	add_child(loose_rocks)
+	# Keep the title beside the lane, not between the chase camera and the car.
+	_add_label("LOOSE ROCKS\nPROTOTYPE", Vector3(LOOSE_ROCKS_X + 8.0, 3.0, STRIP_ENTRY_Z + 4.0), 72, TITLE_RANGE)
+	_add_label("Reset restores\nthe stones", Vector3(LOOSE_ROCKS_X + 8.0, 1.7, STRIP_ENTRY_Z + 4.0), 40)
+	for marker: Vector2 in [Vector2(12.0, 0.0), Vector2(48.0, 12.0), Vector2(64.0, 5.0), Vector2(74.0, 14.0)]:
+		var at := Vector3(LOOSE_ROCKS_X + 3.5, 0.0, STRIP_ENTRY_Z - marker.x)
+		_add_post(at, 1.0)
+		_add_label("FLAT" if marker.y == 0.0 else "%d°" % roundi(marker.y), at + Vector3(0.0, 1.6, 0.0), 80)
+	_add_label("LOOSE ROCKS: FAR RIGHT\nPast the clearance logs", Vector3(8.0, 2.5, -8.0), 48, 45.0)
 
 
 ## A distance board every 10 m down the left edge of the runway, counted from the spawn.

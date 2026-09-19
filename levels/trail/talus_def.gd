@@ -8,6 +8,12 @@ extends Resource
 @export var count: int = 40
 ## Stone radii (m).
 @export var size_range: Vector2 = Vector2(0.18, 0.32)
+## Vertical scale of both mesh and hull. Flatter fragments are less prone to
+## becoming chassis-height wedges; 1 retains the original rounded stones.
+@export_range(0.2, 1.5) var height_scale: float = 1.0
+## Swept collision for small fragments pushed quickly by tyres; prevents them
+## skipping through a thin floor between physics ticks.
+@export var continuous_collision: bool = false
 ## Stone masses (kg): light enough that the 2150 kg 4x4 pushes through.
 @export var mass_range: Vector2 = Vector2(30.0, 120.0)
 ## How far from the centre line stones may sit (m); alternate stones go left and right.

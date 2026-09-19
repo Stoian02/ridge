@@ -6,7 +6,7 @@ extends StaticBody3D
 ## the features (potholes, bumps, ruts...) are carved into that raised base.
 ## Local axes: x across the strip, z along it. Cars enter at the +Z end.
 
-enum Profile { ROUGH_ASPHALT, RUTTED_MUD, SIDE_SLOPE, TWISTER, WHOOPS }
+enum Profile { ROUGH_ASPHALT, RUTTED_MUD, SIDE_SLOPE, TWISTER, WHOOPS, LOOSE_ROCK_SLOPE }
 
 ## Metres between height samples.
 const SPACING := 0.25
@@ -109,12 +109,27 @@ static func feature_offset(which: Profile, x: float, along: float, patch_size: V
 			return rutted_mud_offset(x, along)
 		Profile.SIDE_SLOPE:
 			return (patch_size.x * 0.5 - x) * tan(deg_to_rad(slope_angle_deg(along, patch_size.y)))
+		Profile.LOOSE_ROCK_SLOPE:
+			return (patch_size.x * 0.5 - x) * tan(deg_to_rad(loose_rock_angle_deg(along)))
 		Profile.TWISTER:
 			return twister_offset(x, along, patch_size.y)
 		Profile.WHOOPS:
 			return whoops_offset(along, patch_size.y)
 		_:
 			return rough_asphalt_offset(x, along)
+
+
+## Prototype: a flat comparison patch, then smoothly changing outward camber.
+## The low (+X) edge stays at the base height; both ends return to flat ground.
+static func loose_rock_angle_deg(along: float) -> float:
+	var stations: Array[Vector2] = [Vector2(32.0, 0.0), Vector2(48.0, 12.0),
+			Vector2(54.0, 12.0), Vector2(64.0, 5.0), Vector2(74.0, 14.0), Vector2(84.0, 0.0)]
+	if along <= stations[0].x or along >= stations[-1].x:
+		return 0.0
+	for i in stations.size() - 1:
+		if along <= stations[i + 1].x:
+			return lerpf(stations[i].y, stations[i + 1].y, smoothstep(stations[i].x, stations[i + 1].x, along))
+	return 0.0
 
 
 ## The side slope's tilt (degrees) `along` metres from the entry end of a strip `length` long.
@@ -198,7 +213,7 @@ func _add_mesh(columns: int, rows: int, heights: PackedFloat32Array) -> void:
 			var point := _sample_position(column, row)
 			var along := size.y * 0.5 - point.y
 			# A side slope's height is its tilt, not a feature, so it isn't shaded by it.
-			var feature := 0.0 if profile == Profile.SIDE_SLOPE else feature_offset(profile, point.x, along, size)
+			var feature := 0.0 if profile in [Profile.SIDE_SLOPE, Profile.LOOSE_ROCK_SLOPE] else feature_offset(profile, point.x, along, size)
 			var shade := clampf(1.0 + feature * SHADE_PER_METRE, 0.5, 1.3)
 			tool.set_color(Color(base_color.r * shade, base_color.g * shade, base_color.b * shade))
 			tool.add_vertex(Vector3(point.x, heights[row * columns + column], point.y))
