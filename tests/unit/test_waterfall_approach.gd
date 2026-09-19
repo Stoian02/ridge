@@ -79,7 +79,8 @@ func test_channel_terrain_clearance_and_visible_road_collision_match() -> void:
 				assert_false(hit.is_empty())
 				if not hit.is_empty():
 					assert_eq(hit["collider"].get_parent(), road)
-					assert_almost_eq(hit["position"].y, point.y, 0.06)
+					assert_almost_eq(hit["position"].y, point.y, 0.06,
+							"rut %.0f, lateral %.2f, along offset %.2f" % [rut.distance, lateral, offset])
 
 
 func test_fallen_tree_has_exact_visible_collision_and_a_lower_thin_end() -> void:
@@ -137,3 +138,65 @@ func test_empty_new_features_leave_existing_trails_unchanged() -> void:
 	builder.build(sampler, profile, trail)
 	assert_eq(builder.get_child_count(), 0)
 	assert_eq(profile.cross_rut_height(1185.0, 0.0), 0.0)
+
+
+func test_dense_rock_bed_has_mixed_sizes_through_to_the_widening() -> void:
+	var sampler := RoadSampler.new(CURVE, TRAIL.use_curve_banking, TRAIL)
+	var profile := RoadProfile.new(TRAIL, sampler.length)
+	var field := TerrainField.generate(sampler, TRAIL, TERRAIN)
+	var builder := BoulderBuilder.new()
+	add_child_autofree(builder)
+	builder.build(sampler, profile, field, TRAIL)
+	var count := 0
+	var large := 0
+	var small := 0
+	var central := 0
+	var coverage := PackedInt32Array()
+	coverage.resize(18)
+	var widening := sampler.position(890.0)
+	var widening_forward := sampler.forward(890.0)
+	for field_index: int in [0, 1, 6, 7, 8]:
+		var definition := TRAIL.boulder_fields[field_index]
+		var mesh := LowPolyMeshes.rock(definition.color, definition.seed)
+		for transform: Transform3D in builder.placed[field_index]:
+			count += 1
+			var at := sampler.closest_distance(transform.origin)
+			var lateral := sampler.lateral_offset(transform.origin)
+			var radius := transform.basis.get_scale().x
+			large += int(radius >= 1.0)
+			small += int(radius < 0.4)
+			central += int(absf(lateral) < 1.3)
+			coverage[clampi(int((at - 710.0) / 10.0), 0, coverage.size() - 1)] += 1
+			var furthest := -INF
+			for point: Vector3 in mesh.get_faces():
+				furthest = maxf(furthest, (transform * point - widening).dot(widening_forward))
+			assert_lt(furthest, 0.0, "no boulder reaches the widening/tree clearing")
+	assert_eq(count, 700)
+	assert_eq(large, 80, "substantial boulders, not only small gravel")
+	assert_gt(small, 190)
+	assert_gt(central, 170, "the centre is a real rocky driving surface too")
+	for bucket in coverage.size():
+		assert_gt(coverage[bucket], 15, "no empty road interval in ten-metre bucket %d" % bucket)
+	assert_eq(TRAIL.fallen_trees[0].distance, 940.0, "accepted tree stays put")
+
+
+func test_s_bend_holes_are_deeper_but_do_not_stack_on_the_cross_channels() -> void:
+	var total := 0
+	var deepest := 0.0
+	for section: RoadDamageDef in TRAIL.damage_sections:
+		if section.start < 1150.0:
+			continue
+		for hole: Vector4 in section.generate(TRAIL):
+			total += 1
+			deepest = maxf(deepest, hole.w)
+			assert_gt(hole.x - hole.z, 1150.0)
+			assert_lt(hole.x + hole.z, 1240.0)
+			for rut: CrossRutDef in TRAIL.cross_ruts:
+				var span := rut.bounds()
+				assert_true(hole.x + hole.z < span.x or hole.x - hole.z > span.y,
+						"pothole and trench cannot sum into a hidden deep trap")
+	assert_gte(total, 18)
+	assert_gt(deepest, 0.3)
+	for rut: CrossRutDef in TRAIL.cross_ruts:
+		assert_between(rut.depth, 0.27, 0.38)
+	assert_eq(TRAIL.boulder_fields[9].count, 40)

@@ -8,7 +8,8 @@ func test_authored_damage_is_repeatable_and_stays_inside_its_section() -> void:
 	for section: RoadDamageDef in TRAIL.damage_sections:
 		var holes := section.generate(TRAIL)
 		assert_eq(holes, section.generate(TRAIL))
-		assert_gt(holes.size(), 50)
+		var expected := roundi(section.length * (section.density.x + section.density.y) / 200.0)
+		assert_eq(holes.size(), expected, "authored density also applies to short S-bend pockets")
 		for hole: Vector4 in holes:
 			assert_gte(hole.x - hole.z, section.start - 0.0001)
 			assert_lte(hole.x + hole.z, section.end() + 0.0001)

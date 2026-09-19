@@ -56,11 +56,11 @@ func test_structures_match_the_spec() -> void:
 	assert_eq(TRAIL.rock_steps[0].lateral_to, crawl_half, "first step spans the road without overhanging its new edges")
 	assert_false(TRAIL.rock_steps[1].covers(-1.0), "the second leaves a ramp on the left")
 	assert_true(TRAIL.rock_steps[1].covers(2.0))
-	assert_eq(TRAIL.boulder_fields.size(), 6, "two crawl fields, three unchanged shelf fields, washout slabs")
-	assert_eq(TRAIL.boulder_fields[0].start, 720.0)
+	assert_eq(TRAIL.boulder_fields.size(), 10, "dense mixed-size crawl, unchanged shelf, and both slabs and rubble in the S-bend")
+	assert_eq(TRAIL.boulder_fields[0].start, 710.0)
 	assert_eq(TRAIL.boulder_fields[4].count, 2, "the squeeze is two blocks")
 	assert_true(TRAIL.talus.is_empty(), "loose stones disabled after the desktop chassis-wedge acceptance failure")
-	var washout: BoulderFieldDef = TRAIL.boulder_fields.back()
+	var washout: BoulderFieldDef = TRAIL.boulder_fields[5]
 	assert_eq(washout.start, 1154.0)
 	assert_eq(washout.length, 82.0)
 	assert_eq(washout.count, 14)
@@ -144,9 +144,10 @@ func test_the_level_builds_every_part_with_its_surfaces_and_structures() -> void
 	for part in ["Generated/RockSteps", "Generated/Boulders", "Generated/Talus", "Generated/Fords", "Generated/FallenTrees"]:
 		assert_not_null(level.get_node_or_null(part), part)
 	assert_eq(level.rock_step_builder.step_count, 3)
-	assert_eq(level.boulder_builder.placed.size(), 6)
+	assert_eq(level.boulder_builder.placed.size(), 10)
 	assert_true(level.talus_builder.stones.is_empty(), "no dynamic stones in the shipped fallback")
-	assert_eq(level.boulder_builder.placed.back().size(), 14, "offset slabs replace the scattered talus")
+	assert_eq(level.boulder_builder.placed[5].size(), 14, "offset slabs remain in the S-bend")
+	assert_eq(level.boulder_builder.placed[9].size(), 40, "S-bends also have scattered stones")
 	assert_eq(level.fallen_tree_builder.get_child_count(), 2, "one merged visible tree and its collider")
 	assert_eq(level.ford_builder.water_levels.size(), 1)
 	assert_gt(level.rut_water_builder.puddle_ranges.size(), 4, "standing water survives the actual gully's banking and undulation")
@@ -155,14 +156,21 @@ func test_the_level_builds_every_part_with_its_surfaces_and_structures() -> void
 	assert_eq(level.scatter_builder.post_count, 0, "no roadside posts in the canyon")
 	assert_gt(level.scatter_builder.rock_count, 100)
 	var space := level.get_world_3d().direct_space_state
+	# Probe road/terrain beneath authored rocks as well as exposed holes.
+	# A visible rock covering part of a crater is intentional, not terrain fill.
+	var rock_bodies: Array[RID] = []
+	for child: Node in level.boulder_builder.get_children():
+		if child is StaticBody3D:
+			rock_bodies.append(child.get_rid())
 	var deepest := 0.0
 	for hole: Vector4 in profile.damage_potholes:
 		var point := sampler.surface_point(hole.x, hole.y, profile)
 		deepest = maxf(deepest, hole.w)
 		assert_lt(level.field.height_at(point.x, point.z), point.y - 0.02,
 				"underlying ground clears the hole at %.1f m" % hole.x)
-		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(
-				point + Vector3.UP * 2.0, point + Vector3.DOWN * 2.0))
+		var query := PhysicsRayQueryParameters3D.create(point + Vector3.UP * 2.0, point + Vector3.DOWN * 2.0)
+		query.exclude = rock_bodies
+		var hit := space.intersect_ray(query)
 		assert_false(hit.is_empty(), "physical hole floor at %.1f m" % hole.x)
 		if not hit.is_empty():
 			var body: Node = hit["collider"]
