@@ -113,3 +113,21 @@ func test_slabs_are_tilted_across_the_road() -> void:
 		var up := transform.basis.y.normalized()
 		assert_between(up.y, cos(deg_to_rad(BoulderBuilder.SLAB_TILT_DEG.y + 0.1)), cos(deg_to_rad(BoulderBuilder.SLAB_TILT_DEG.x - 0.1)), "slab %d tilt" % i)
 		assert_lt(transform.basis.get_scale().y, transform.basis.get_scale().x, "flat")
+
+
+func test_burial_lowers_visible_rocks_and_collision_together_without_reshuffling() -> void:
+	var original: Array = builder.placed[0].duplicate()
+	var body: StaticBody3D = builder.get_node("Field0Collision")
+	var original_hull: PackedVector3Array = body.get_child(0).shape.points
+	def.burial_depth = 0.23
+	builder.build(sampler, profile, field, trail)
+	assert_eq(builder.placed[0].size(), original.size())
+	var buried_body: StaticBody3D = builder.get_node("Field0Collision")
+	for i in original.size():
+		var before: Transform3D = original[i]
+		var after: Transform3D = builder.placed[0][i]
+		assert_eq(after.basis, before.basis)
+		assert_almost_eq(after.origin, before.origin - Vector3.UP * def.burial_depth, Vector3.ONE * 0.0001)
+		assert_eq(buried_body.get_child(i).position, after.origin)
+	var buried_hull: PackedVector3Array = buried_body.get_child(0).shape.points
+	assert_eq(buried_hull, original_hull, "burial moves the complete hull, never scales only collision")

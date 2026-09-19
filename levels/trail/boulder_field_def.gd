@@ -10,6 +10,9 @@ extends Resource
 @export var size_range: Vector2 = Vector2(0.3, 0.45)
 ## Radii of boulders beyond the shoulders, which are scenery and walls to the line (m).
 @export var off_road_size_range: Vector2 = Vector2(0.6, 1.2)
+## Sink the hull into its supporting surface (m), exposing broad crawlable
+## crowns on large bed stones. Zero preserves existing fields exactly.
+@export_range(0.0, 1.0) var burial_depth: float = 0.0
 ## How far from the centre line boulders may sit (m); alternate boulders go left and right.
 @export var lateral_range: Vector2 = Vector2(0.0, 9.0)
 ## Share built as low tilted slabs instead of rounded boulders.

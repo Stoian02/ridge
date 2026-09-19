@@ -76,7 +76,7 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 		else:
 			origin = sampler.position(distance) + sampler.right(distance) * lateral
 			origin.y = field.height_at(origin.x, origin.z)
-		origin += Vector3.UP * radius * BURY
+		origin += Vector3.UP * (radius * BURY - def.burial_depth)
 		var basis: Basis
 		if slab:
 			var along := sampler.forward(distance)
