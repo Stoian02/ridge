@@ -20,6 +20,14 @@ extends Resource
 @export var lateral_range: Vector2 = Vector2(0.0, 4.0)
 @export var color: Color = Color(0.66, 0.5, 0.4)
 @export var seed: int = 71
+## Contact friction of the stone hull, not the tyre/surface grip table.
+@export_range(0.0, 1.0) var contact_friction: float = 1.0
+## Opt-in dense placement: no overlapping hull footprints, including boulders.
+@export var avoid_overlap: bool = false
+## Fill the road's changing width, leaving only each stone's edge clearance.
+@export var cover_road: bool = false
+## Fine, non-colliding gravel shading between the actual movable fragments.
+@export var gravel_bed: bool = false
 
 
 func end() -> float:

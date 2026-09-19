@@ -28,14 +28,24 @@ var _slots := PackedInt32Array()
 var _scales: Array[Vector3] = []
 var _footprints := PackedFloat32Array()
 var _rest_transforms: Array[Transform3D] = []
-var _was_awake := PackedByteArray()
+## Only awake stones need transform polling; thousands of sleeping stones do not.
+var _active: Dictionary = {}
+## One-metre XZ bins of (x, z, radius), used only while placing non-overlapping fields.
+var _occupied: Dictionary = {}
 
 
-func build(sampler: RoadSampler, profile: RoadProfile, field: TerrainField, trail: TrailDef) -> void:
+func build(sampler: RoadSampler, profile: RoadProfile, field: TerrainField, trail: TrailDef,
+		boulders: BoulderBuilder = null) -> void:
 	_clear()
+	if boulders != null:
+		for transforms: Array in boulders.placed:
+			for placed: Transform3D in transforms:
+				# Conservative bound for the lumpy rock and stretched slab meshes.
+				_occupy(placed.origin, placed.basis.get_scale().length() * 1.2)
 	var gates := CheckpointPlacer.distances_for(sampler.length, trail)
 	for i in trail.talus.size():
 		_build_field(sampler, profile, field, trail.talus[i], gates, i)
+	_occupied.clear()
 
 
 ## A standalone test patch. height_at(x, z) returns the supporting floor in
@@ -45,10 +55,12 @@ func build_patch(definitions: Array[TalusDef], height_at: Callable) -> void:
 	_clear()
 	for i in definitions.size():
 		_build_field(null, null, null, definitions[i], PackedFloat32Array(), i, height_at)
+	_occupied.clear()
 
 
 ## Test Ground reset: move the car clear first, then restore the original layout.
 func reset_stones() -> void:
+	_active.clear()
 	for i in stones.size():
 		var stone := stones[i]
 		stone.linear_velocity = Vector3.ZERO
@@ -56,7 +68,6 @@ func reset_stones() -> void:
 		stone.transform = _rest_transforms[i]
 		stone.force_update_transform()
 		stone.sleeping = true
-		_was_awake[i] = 0
 		_sync_instance(i)
 
 
@@ -72,7 +83,8 @@ func _clear() -> void:
 	_scales.clear()
 	_footprints.clear()
 	_rest_transforms.clear()
-	_was_awake.clear()
+	_active.clear()
+	_occupied.clear()
 
 
 func awake_count() -> int:
@@ -84,11 +96,18 @@ func awake_count() -> int:
 
 
 func _physics_process(_delta: float) -> void:
-	for i in stones.size():
-		if stones[i].sleeping and _was_awake[i] == 0:
-			continue
+	for i: int in _active.keys():
 		_sync_instance(i)
-		_was_awake[i] = 0 if stones[i].sleeping else 1
+		if stones[i].sleeping:
+			_active.erase(i)
+
+
+func _sleep_changed(i: int) -> void:
+	if stones[i].sleeping:
+		_sync_instance(i)
+		_active.erase(i)
+	else:
+		_active[i] = true
 
 
 func _sync_instance(i: int) -> void:
@@ -112,7 +131,7 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 	for point in points:
 		unit_footprint = maxf(unit_footprint, Vector2(point.x, point.z).length())
 	var physics := PhysicsMaterial.new()
-	physics.friction = FRICTION
+	physics.friction = def.contact_friction
 	physics.bounce = BOUNCE
 	var multimesh := MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
@@ -131,6 +150,8 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 		var radius := rng.randf_range(def.size_range.x, def.size_range.y)
 		var footprint := radius * unit_footprint
 		var mass := rng.randf_range(def.mass_range.x, def.mass_range.y)
+		if def.cover_road and sampler != null:
+			lateral = side * rng.randf_range(0.0, maxf(0.0, sampler.road_half_width_at(distance) - footprint - 0.04))
 		if Array(gates).any(func(gate: float) -> bool: return absf(gate - distance) < GATE_CLEARANCE):
 			continue
 		var origin: Vector3
@@ -148,7 +169,18 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 		else:
 			origin = sampler.position(distance) + sampler.right(distance) * lateral
 			origin.y = field.height_at(origin.x, origin.z)
+		if def.avoid_overlap and sampler != null:
+			for attempt in 24:
+				if not _patch_overlaps(origin, footprint):
+					break
+				distance = rng.randf_range(def.start, end)
+				lateral = side * rng.randf_range(0.0, maxf(0.0, sampler.road_half_width_at(distance) - footprint - 0.04)) if def.cover_road else side * rng.randf_range(def.lateral_range.x, def.lateral_range.y)
+				origin = sampler.surface_point(distance, lateral, profile)
+			if _patch_overlaps(origin, footprint) or Array(gates).any(func(gate: float) -> bool: return absf(gate - distance) < GATE_CLEARANCE):
+				continue
 		var rotation := Basis(Vector3.UP, yaw)
+		if def.cover_road and sampler != null:
+			rotation = Basis.looking_at(sampler.forward(distance), sampler.up(distance)) * rotation
 		var scale := Vector3(radius, radius * def.height_scale, radius)
 		var scaled := rotation * Basis.from_scale(scale)
 		if height_at.is_valid():
@@ -158,6 +190,8 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 				var floor_height: float = height_at.call(origin.x + vertex.x, origin.z + vertex.z)
 				support = maxf(support, floor_height - vertex.y)
 			origin.y = support + REST_GAP
+		elif def.cover_road and sampler != null:
+			origin += sampler.up(distance) * (-mesh.get_aabb().position.y * scale.y + REST_GAP)
 		else:
 			origin.y += -mesh.get_aabb().position.y * scale.y + REST_GAP
 		var stone := RigidBody3D.new()
@@ -184,13 +218,14 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 		stone.force_update_transform()
 		stone.sleeping = true
 		stones.append(stone)
+		stone.sleeping_state_changed.connect(_sleep_changed.bind(stones.size() - 1))
 		instance_transforms.append(Transform3D(scaled, origin))
 		_fields.append(index)
 		_slots.append(placed.size())
 		_scales.append(scale)
 		_footprints.append(footprint)
+		_occupy(origin, footprint)
 		_rest_transforms.append(stone.transform)
-		_was_awake.append(0)
 		placed.append(Transform3D(scaled, origin))
 	multimesh.instance_count = placed.size()
 	for i in placed.size():
@@ -210,8 +245,19 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 
 
 func _patch_overlaps(origin: Vector3, radius: float) -> bool:
-	for i in stones.size():
-		var separation := Vector2(origin.x - stones[i].position.x, origin.z - stones[i].position.z)
-		if separation.length() < radius + _footprints[i] + 0.06:
-			return true
+	var reach := radius + 0.06
+	for x in range(floori(origin.x - reach), floori(origin.x + reach) + 1):
+		for z in range(floori(origin.z - reach), floori(origin.z + reach) + 1):
+			for circle: Vector3 in _occupied.get(Vector2i(x, z), []):
+				if Vector2(origin.x - circle.x, origin.z - circle.y).length() < radius + circle.z + 0.06:
+					return true
 	return false
+
+
+func _occupy(origin: Vector3, radius: float) -> void:
+	for x in range(floori(origin.x - radius), floori(origin.x + radius) + 1):
+		for z in range(floori(origin.z - radius), floori(origin.z + radius) + 1):
+			var key := Vector2i(x, z)
+			if not _occupied.has(key):
+				_occupied[key] = []
+			(_occupied[key] as Array).append(Vector3(origin.x, origin.z, radius))

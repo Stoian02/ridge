@@ -1,7 +1,6 @@
 class_name LooseRockCourse
 extends Node3D
-## Owner-playtest prototype only. Rock Canyon keeps its fixed-rock fallback until
-## this interaction is approved. Local entry is z = 0, driving toward -Z.
+## Isolated loose-rock practice lane. Local entry is z = 0, driving toward -Z.
 
 const SIZE := Vector2(4.5, 90.0)
 const SURFACE := preload("res://surfaces/scree.tres")
@@ -51,9 +50,10 @@ static func _field(start: float, length: float, count: int, sizes: Vector2,
 	def.length = length
 	def.count = count
 	def.size_range = sizes
-	def.mass_range = masses
-	def.height_scale = 0.65
+	def.mass_range = masses * 2.0
+	def.height_scale = 0.45
 	def.continuous_collision = true
+	def.contact_friction = 0.20
 	def.lateral_range = Vector2(0.0, 1.8)
 	def.color = Color(0.72, 0.66, 0.55) if sizes.y <= 0.10 else Color(0.52, 0.46, 0.39)
 	def.seed = seed_value

@@ -35,6 +35,7 @@ func _ready() -> void:
 	_add_overlays()
 	run.run_finished.connect(_on_run_finished)
 	run.countdown_started.connect(results.hide_results)
+	run.countdown_started.connect(trail.talus_builder.reset_stones)
 	run.setup(rig, tracker, resets, trail.start_transform())
 	print("%s built in %.2f s (%s)" % [name, trail.build_seconds, trail.phase_summary()])
 

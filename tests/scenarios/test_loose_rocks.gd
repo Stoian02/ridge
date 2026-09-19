@@ -160,6 +160,10 @@ func test_stop_on_rocks_reverse_then_pull_away_and_reset() -> void:
 		await get_tree().physics_frame
 		if car.global_position.z > stop_z + 4.0:
 			break
+	gut.p("Reverse: delta %.3f, speed %.3f, gear %d, load %.0f, contacts %s" % [
+		car.global_position.z - stop_z, car.forward_speed(), car.drivetrain.gear,
+		car.wheels.reduce(func(total: float, wheel: Wheel) -> float: return total + wheel.tire_load, 0.0),
+		car.wheels.map(func(wheel: Wheel) -> String: return "%s slip %.2f" % [wheel.surface.id if wheel.surface != null else &"air", wheel.slip_ratio])])
 	assert_gt(car.global_position.z, stop_z + 3.0, "can reverse out through disturbed stones")
 	car.input.virtual_brake = 0.0
 	car.input.virtual_throttle = 0.5
