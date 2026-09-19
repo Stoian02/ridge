@@ -17,6 +17,8 @@ var contact_point: Vector3 = Vector3.ZERO
 ## Global ground normal at the contact point.
 var contact_normal: Vector3 = Vector3.UP
 var surface: SurfaceDef = null
+## The movable support, if any. Static/frozen ground keeps the original force path.
+var contact_body: RigidBody3D = null
 ## Metres squeezed from full extension (0 = hanging at full droop).
 var compression: float = 0.0
 ## m/s, + while compressing.
@@ -42,6 +44,10 @@ var _steer_pivot: Node3D
 var _spin_pivot: Node3D
 var _spin_visual_angle: float = 0.0
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+## Explicit suspension can deliver a one-tick damping spike when a cast changes
+## from floor to a light stone. Bound that support's linear velocity change,
+## scaling BOTH sides of the contact and the tyre's spin reaction together.
+const MAX_SUPPORT_DELTA_SPEED := 8.0
 
 
 ## Called once by the car in its _ready().
@@ -61,6 +67,9 @@ func setup(car_stats: CarStats, table: GripTable, car_body: CollisionObject3D) -
 
 
 func reset() -> void:
+	contact_body = null
+	in_contact = false
+	surface = null
 	spin_speed = 0.0
 	compression = 0.0
 	compression_speed = 0.0
@@ -72,6 +81,7 @@ func reset() -> void:
 ## Step 1 of a tick: find the ground and measure the suspension.
 func update_contact(delta: float) -> void:
 	var previous_compression := compression
+	contact_body = null
 	_cast.force_shapecast_update()
 	in_contact = _cast.is_colliding()
 	if not in_contact:
@@ -82,6 +92,7 @@ func update_contact(delta: float) -> void:
 	contact_point = _cast.get_collision_point(0)
 	contact_normal = _cast.get_collision_normal(0)
 	surface = SurfaceLookup.surface_of(_cast.get_collider(0))
+	contact_body = _cast.get_collider(0) as RigidBody3D
 	# How far the wheel centre travelled down from the mount before touching.
 	# Soft surfaces let the wheel sink a little further.
 	var hit_distance := _cast.get_closest_collision_safe_fraction() * stats.suspension_length
@@ -115,6 +126,14 @@ func compute_force(delta: float, anti_roll: float, body: RigidBody3D) -> Vector3
 	# How the contact patch moves over the ground.
 	var patch_velocity := body.linear_velocity \
 			+ body.angular_velocity.cross(contact_point - body.global_position)
+	var support_state: PhysicsDirectBodyState3D = null
+	if is_instance_valid(contact_body) and not contact_body.freeze:
+		support_state = PhysicsServer3D.body_get_direct_state(contact_body.get_rid())
+		if support_state != null:
+			var car_state := PhysicsServer3D.body_get_direct_state(body.get_rid())
+			if car_state != null:
+				patch_velocity = car_state.get_velocity_at_local_position(contact_point - body.global_position)
+			patch_velocity -= support_state.get_velocity_at_local_position(contact_point - contact_body.global_position)
 	var forward_speed := patch_velocity.dot(forward)
 	var sideways_speed := patch_velocity.dot(right)
 	var tread_speed := spin_speed * stats.wheel_radius
@@ -130,21 +149,55 @@ func compute_force(delta: float, anti_roll: float, body: RigidBody3D) -> Vector3
 
 	# Never let a force overshoot within one tick: this is what stops low-speed jitter.
 	var corner_mass := maxf(tire_load / _gravity, 1.0)
+	# A light stone responds much faster than the car. Include its translation
+	# AND rotation in the no-overshoot limits, instead of treating it as a floor
+	# of infinite mass. Leave static-ground arithmetic unchanged.
+	var long_mass := corner_mass
+	var side_mass := corner_mass
+	if support_state != null:
+		var arm := contact_point - contact_body.global_position - support_state.center_of_mass
+		long_mass = _coupled_mass(corner_mass, support_state, arm, forward)
+		side_mass = _coupled_mass(corner_mass, support_state, arm, right)
 	var wheel_held := brake_torque > 0.0 and is_zero_approx(spin_speed)
 	var long_limit := TireModel.max_longitudinal_force(tread_speed - forward_speed,
-			stats.wheel_radius, stats.wheel_inertia, corner_mass, wheel_held, delta)
+			stats.wheel_radius, stats.wheel_inertia, long_mass, wheel_held, delta)
 	var longitudinal := clampf(tire.x, -long_limit, long_limit)
-	var lateral_limit := TireModel.max_lateral_force(sideways_speed, corner_mass, delta)
+	var lateral_limit := TireModel.max_lateral_force(sideways_speed, side_mass, delta)
 	var lateral := clampf(tire.y, -lateral_limit, lateral_limit)
 
-	_update_spin(delta, longitudinal)
+	var spin_reaction := longitudinal
 
 	# Rolling resistance and surface drag slow the car down but never reverse it.
 	var resistance := surface.rolling_resistance * tire_load + surface.drag * absf(forward_speed)
-	resistance = minf(resistance, absf(forward_speed) * corner_mass / delta)
+	resistance = minf(resistance, absf(forward_speed) * long_mass / delta)
 	longitudinal -= signf(forward_speed) * resistance
 
-	return car_up * tire_load + forward * longitudinal + right * lateral
+	var force := car_up * tire_load + forward * longitudinal + right * lateral
+	if support_state != null and support_state.inverse_mass > 0.0:
+		var limit := MAX_SUPPORT_DELTA_SPEED / (support_state.inverse_mass * delta)
+		var fraction := minf(1.0, limit / maxf(force.length(), 0.001))
+		force *= fraction
+		tire_load *= fraction
+		spin_reaction *= fraction
+	_update_spin(delta, spin_reaction)
+	return force
+
+
+## Apply the same contact force to the car and its opposite to a movable support.
+## No artificial kick: both suspension load and tyre force act at the real hit.
+func apply_contact_force(force: Vector3, body: RigidBody3D) -> void:
+	if not in_contact:
+		return
+	body.apply_force(force, contact_point - body.global_position)
+	if is_instance_valid(contact_body) and contact_body != body and not contact_body.freeze:
+		contact_body.apply_force(-force, contact_point - contact_body.global_position)
+
+
+static func _coupled_mass(corner_mass: float, state: PhysicsDirectBodyState3D,
+		arm: Vector3, direction: Vector3) -> float:
+	var torque_axis := arm.cross(direction)
+	var inverse_mass := state.inverse_mass + torque_axis.dot(state.inverse_inertia_tensor * torque_axis)
+	return 1.0 / (1.0 / corner_mass + maxf(inverse_mass, 0.0))
 
 
 ## Step 3 of a tick: place and spin the visual wheel.

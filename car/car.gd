@@ -54,8 +54,7 @@ func _physics_process(delta: float) -> void:
 	var anti_roll := [front_bar, -front_bar, rear_bar, -rear_bar]
 	for i in wheels.size():
 		var force := wheels[i].compute_force(delta, anti_roll[i], self)
-		if wheels[i].in_contact:
-			apply_force(force, wheels[i].contact_point - global_position)
+		wheels[i].apply_contact_force(force, self)
 		wheels[i].update_visual(delta)
 
 	air_control.update(delta, wheels_in_contact)
