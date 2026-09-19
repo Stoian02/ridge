@@ -5,6 +5,7 @@ extends Node3D
 ## surface. Shoulders share a stretch's surface and are dirt elsewhere.
 
 const DIRT := preload("res://surfaces/dirt.tres")
+const GRAVEL := preload("res://levels/trail/gravel_bed.gdshader")
 
 ## Potholes and ruts are shaded darker by this much per metre of depth.
 const SHADE_PER_METRE := 4.0
@@ -29,22 +30,30 @@ func build(sampler: RoadSampler, profile: RoadProfile, def: TrailDef) -> void:
 	material.roughness = 0.9
 	var inputs: Array[Dictionary] = []
 	var results: Array[Dictionary] = []
-	var materials: Array[StandardMaterial3D] = []
-	var material_cache := {0.9: material}
+	var materials: Array[Material] = []
+	var material_cache := {Vector2(0.9, 0.0): material}
 
 	var chunk_start := 0
 	while chunk_start < distances.size() - 1:
 		var chunk_end := chunk_start
 		var roughness := profile.roughness_at((distances[chunk_start] + distances[chunk_start + 1]) * 0.5)
-		if not material_cache.has(roughness):
-			var variant: StandardMaterial3D = material.duplicate()
-			variant.roughness = roughness
-			material_cache[roughness] = variant
-		var chunk_material: StandardMaterial3D = material_cache[roughness]
+		var gravel := profile.gravel_at((distances[chunk_start] + distances[chunk_start + 1]) * 0.5)
+		var key := Vector2(roughness, 1.0 if gravel else 0.0)
+		if not material_cache.has(key):
+			if gravel:
+				var variant := ShaderMaterial.new()
+				variant.shader = GRAVEL
+				material_cache[key] = variant
+			else:
+				var variant: StandardMaterial3D = material.duplicate()
+				variant.roughness = roughness
+				material_cache[key] = variant
+		var chunk_material: Material = material_cache[key]
 		var limit := distances[chunk_start] + def.chunk_length
 		while chunk_end < distances.size() - 1 and distances[chunk_end + 1] <= limit + 0.001:
 			var next_roughness := profile.roughness_at((distances[chunk_end] + distances[chunk_end + 1]) * 0.5)
-			if not is_equal_approx(next_roughness, roughness):
+			var next_gravel := profile.gravel_at((distances[chunk_end] + distances[chunk_end + 1]) * 0.5)
+			if not is_equal_approx(next_roughness, roughness) or next_gravel != gravel:
 				break
 			chunk_end += 1
 		if chunk_end == chunk_start:
@@ -293,7 +302,7 @@ static func _faces(vertices: PackedVector3Array, stations: Array[Vector2], later
 
 
 func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stations: Array[Vector2],
-		distances: PackedFloat32Array, material: StandardMaterial3D) -> void:
+		distances: PackedFloat32Array, material: Material) -> void:
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var colors := PackedColorArray()

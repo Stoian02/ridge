@@ -10,6 +10,57 @@ const FORD_BANK := 4.0
 const FORD_TAPER := 8.0
 
 
+## Clear every heightmap corner under a gravel road cell. Smoothed terrain can
+## otherwise poke through a twisting bank, especially its widening shoulders.
+## Both possible heightmap diagonals must remain below the visible road.
+static func apply_gravel_clearance(field: TerrainField, sampler: RoadSampler, trail: TrailDef) -> void:
+	var has_gravel := false
+	for talus: TalusDef in trail.talus:
+		has_gravel = has_gravel or talus.gravel_bed
+	if not has_gravel:
+		return
+	var profile := RoadProfile.new(trail, sampler.length)
+	var rows := RoadBuilder.row_distances(sampler.length, profile, trail)
+	var stations := RoadBuilder.cross_section(trail)
+	var before := PackedVector3Array()
+	for row in rows.size() - 1:
+		if not profile.gravel_at((rows[row] + rows[row + 1]) * 0.5):
+			before.clear()
+			continue
+		if before.is_empty():
+			before = _road_row(sampler, profile, stations, rows[row])
+		var after := _road_row(sampler, profile, stations, rows[row + 1])
+		for column in stations.size() - 1:
+			if is_equal_approx(stations[column].x, stations[column + 1].x):
+				continue
+			var bounds := AABB(before[column], Vector3.ZERO)
+			for point: Vector3 in [before[column + 1], after[column], after[column + 1]]:
+				bounds = bounds.expand(point)
+			var from_x := floori((bounds.position.x - field.origin.x) / field.spacing)
+			var to_x := ceili((bounds.end.x - field.origin.x) / field.spacing)
+			var from_z := floori((bounds.position.z - field.origin.y) / field.spacing)
+			var to_z := ceili((bounds.end.z - field.origin.y) / field.spacing)
+			var ceiling := bounds.position.y - field.def.under_road_drop
+			for z in range(maxi(0, from_z), mini(field.rows - 1, to_z) + 1):
+				for x in range(maxi(0, from_x), mini(field.columns - 1, to_x) + 1):
+					var i := field.index(x, z)
+					field.heights[i] = minf(field.heights[i], ceiling)
+		before = after
+
+
+static func _road_row(sampler: RoadSampler, profile: RoadProfile,
+		stations: Array[Vector2], distance: float) -> PackedVector3Array:
+	var points := PackedVector3Array()
+	var centre := sampler.position(distance)
+	var right := sampler.right(distance)
+	var up := sampler.up(distance)
+	var scales := RoadBuilder.width_scales(profile.def, distance)
+	for station: Vector2 in stations:
+		var lateral := RoadBuilder.station_lateral(station, profile.def.road_width * 0.5, scales.x, scales.y)
+		points.append(centre + right * lateral + up * profile.height(distance, lateral))
+	return points
+
+
 ## Lower every grid corner supporting a damaged road cell. Sampling only at
 ## hole centres leaves coarse terrain triangles bridging the depression. Sum
 ## overlapping depths conservatively; the road mesh still supplies the floor.

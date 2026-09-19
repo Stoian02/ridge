@@ -114,6 +114,14 @@ func roughness_at(distance: float) -> float:
 	return stretch.roughness if stretch != null else def.road_roughness
 
 
+## Gravel is a material on the colliding road itself, never a second ribbon.
+func gravel_at(distance: float) -> bool:
+	for field: TalusDef in def.talus:
+		if field.gravel_bed and distance >= field.start and distance < field.end():
+			return true
+	return false
+
+
 func bridge_height(distance: float) -> float:
 	var total := 0.0
 	for bridge: BridgeDef in def.bridges:
@@ -224,6 +232,12 @@ func step_height(distance: float, lateral: float) -> float:
 ## edge in the road mesh rather than a slope.
 func exact_rows() -> PackedFloat32Array:
 	var rows := surface_boundaries()
+	for field: TalusDef in def.talus:
+		if not field.gravel_bed:
+			continue
+		for at: float in [field.start, field.end()]:
+			if at > 0.0 and at < road_length and not rows.has(at):
+				rows.append(at)
 	for step: RockStepDef in def.rock_steps:
 		for at: float in [step.distance, step.distance + FACE_ROW_GAP]:
 			if at > 0.0 and at < road_length and not rows.has(at):

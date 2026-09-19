@@ -26,7 +26,7 @@ extends Resource
 @export var avoid_overlap: bool = false
 ## Fill the road's changing width, leaving only each stone's edge clearance.
 @export var cover_road: bool = false
-## Fine, non-colliding gravel shading between the actual movable fragments.
+## Fine-gravel material on the colliding road, between the movable fragments.
 @export var gravel_bed: bool = false
 
 

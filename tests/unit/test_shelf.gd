@@ -92,6 +92,16 @@ func test_banked_road_and_close_left_cut_have_matching_real_collision() -> void:
 			assert_between(origin.distance_to(face.position), 2.3, 3.2)
 	assert_eq(level.shelf_builder.wall_chunks, 10)
 	assert_eq(level.shelf_builder.gravel_chunks, 10)
+	for distance: float in [1505.0, 1580.0, 1685.0, 1790.0, 1895.0]:
+		var ring := level.shelf_builder._ring(level.sampler, level.profile, level.field,
+			TRAIL.shelf_walls[0], distance)
+		assert_gt(ring.size(), 12, "broken strata and a stepped return into the mountain")
+		var outward := -level.sampler.right(distance)
+		outward.y = 0.0
+		outward = outward.normalized()
+		var edge := level.sampler.surface_point(distance, -level.sampler.half_width_at(distance), level.profile)
+		for point: Vector3 in ring:
+			assert_gte((point - edge).dot(outward), 0.18, "cliff relief stays outside road and widening shoulders")
 
 
 func test_dense_stones_keep_safe_diameters_and_banked_hulls_above_the_road() -> void:
@@ -113,3 +123,57 @@ func test_dense_stones_keep_safe_diameters_and_banked_hulls_above_the_road() -> 
 		assert_lt(diameter, 0.30, "safe span even when tipped upright")
 		assert_between(minimum_gap, -0.002, 0.012, "neither embedded nor floating")
 		assert_eq(builder.instance_transforms[i].origin, stone.position)
+
+
+func test_visible_gravel_has_support_right_up_to_its_edges() -> void:
+	var level := _level()
+	await wait_physics_frames(2)
+	var excluded: Array[RID] = []
+	for stone in level.talus_builder.stones:
+		excluded.append(stone.get_rid())
+	for child in level.boulder_builder.get_children():
+		if child is StaticBody3D:
+			excluded.append(child.get_rid())
+	var space := level.get_world_3d().direct_space_state
+	var largest_gap := 0.0
+	var worst := Vector3.ZERO
+	var terrain_hits := 0
+	var probes := 0
+	for child in level.shelf_builder.get_children():
+		assert_false(str(child.name).begins_with("GravelBed"), "no separate visual gravel sheet")
+	for child in level.road_builder.get_children():
+		if not child is MeshInstance3D or not child.material_override is ShaderMaterial:
+			continue
+		if child.material_override.shader != RoadBuilder.GRAVEL:
+			continue
+		var faces: PackedVector3Array = child.mesh.get_faces()
+		var stride := maxi(1, int(faces.size() / 600.0)) * 3
+		for i in range(0, faces.size(), stride):
+			# A collapsing shoulder can emit a zero-area, invisible triangle.
+			if (faces[i + 1] - faces[i]).cross(faces[i + 2] - faces[i]).length_squared() < 0.00000001:
+				continue
+			for weights: Vector3 in [Vector3.ONE / 3.0, Vector3(0.002, 0.499, 0.499)]:
+				var visible := faces[i] * weights.x + faces[i + 1] * weights.y + faces[i + 2] * weights.z
+				var query := PhysicsRayQueryParameters3D.create(visible + Vector3.UP * 0.25, visible - Vector3.UP * 3.0)
+				query.exclude = excluded
+				var hit := space.intersect_ray(query)
+				assert_false(hit.is_empty(), "visible road must have collision")
+				if hit.is_empty():
+					continue
+				probes += 1
+				var gap: float = absf(visible.y - hit.position.y)
+				if gap > 0.01:
+					gut.p("Mismatch at %.3f m, lateral %.3f, signed gap %.4f, area %.7f, collider %s: %s" % [
+						level.sampler.closest_distance(visible), level.sampler.lateral_offset(visible), visible.y - hit.position.y,
+						(faces[i + 1] - faces[i]).cross(faces[i + 2] - faces[i]).length() * 0.5,
+						hit.collider.get_path(), [faces[i], faces[i + 1], faces[i + 2]]])
+				if gap > largest_gap:
+					largest_gap = gap
+					worst = visible
+				if SurfaceLookup.surface_of(hit.collider).id == &"dirt":
+					terrain_hits += 1
+	gut.p("Visible shelf support: %d probes, worst gap %.4f m at %s, terrain hits %d" % [
+		probes, largest_gap, worst, terrain_hits])
+	assert_gt(probes, 100)
+	assert_lt(largest_gap, 0.01, "visible gravel and physical road agree within a centimetre")
+	assert_eq(terrain_hits, 0, "no visible drivable gravel supported only by the mountain below")
