@@ -22,6 +22,8 @@ extends Resource
 ## Mesh-only visibility distance; 0 keeps the original unlimited drawing.
 ## Collision is never culled. Match this to the level's terrain/fog horizon.
 @export var road_view_distance: float = 0.0
+## Opt-in earth join outside the shoulders; 0 keeps existing levels unchanged.
+@export var terrain_blend_width: float = 0.0
 ## Ground-supported road sections which need not be redrawn into shadow maps.
 ## (start, length); receiving shadows and all collision stay enabled.
 @export var shadowless_sections: Array[Vector2] = []
@@ -50,12 +52,17 @@ extends Resource
 ## Stretches of another surface (such as mud with ruts). They must not overlap.
 @export var surface_stretches: Array[SurfaceStretch] = []
 @export_range(0.0, 1.0) var road_roughness: float = 0.9
+## Opt-in two-sided colour transitions (m); does not alter physical surfaces/ruts.
+@export var surface_color_blend: float = 0.0
 
 @export_group("Undulation")
 ## Peak height of the gentle waves along the whole road.
 @export var undulation_amplitude: float = 0.05
 ## The two summed wave lengths.
 @export var undulation_wavelengths: Vector2 = Vector2(23.0, 37.0)
+## Local shallow rises/dips: (start, length, maximum amplitude, wavelength).
+## Smoothly fade inside both ends; no sharp faces or extra fine-mesh ranges.
+@export var undulation_sections: Array[Vector4] = []
 
 @export_group("Rough ground")
 ## Rough stretches as Vector3(start distance, length, potholes per 100 m).

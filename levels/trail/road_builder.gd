@@ -100,6 +100,7 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 	var rights := PackedVector3Array()
 	var ups := PackedVector3Array()
 	var heights := PackedFloat64Array()
+	var gravel_weights := PackedFloat64Array()
 	var ruts: Array[PackedFloat64Array] = []
 	var rut_centres: Array[PackedFloat64Array] = []
 	var road_colors: Array[Color] = []
@@ -113,6 +114,7 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 		rights.append(sampler.right(distance))
 		ups.append(sampler.up(distance))
 		heights.append(profile.longitudinal_height(distance))
+		gravel_weights.append(profile.gravel_weight(distance))
 		var stretch := profile.stretch_at(distance)
 		var rut := PackedFloat64Array([0.0, 1.0, 0.0, 0.0])
 		var centres_at := PackedFloat64Array()
@@ -123,8 +125,8 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 			rut = PackedFloat64Array([stretch.rut_depth * weight, stretch.rut_width * 0.5,
 					stretch.rut_spacing * 0.5, float(not stretch.extra_rut_paths.is_empty())])
 			centres_at = stretch.rut_centres(distance)
-			road_color = road_color.lerp(stretch.color, weight)
-			patch_color = patch_color.lerp(stretch.color, weight)
+		road_color = profile.surface_color(distance, road_color)
+		patch_color = profile.surface_color(distance, patch_color)
 		ruts.append(rut)
 		rut_centres.append(centres_at)
 		road_colors.append(road_color)
@@ -168,7 +170,7 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 		if span.y >= distances[0] and span.x <= distances[-1]:
 			cross_ruts.append(rut.snapshot())
 	return {"stations": stations, "distances": distances, "centres": centres, "rights": rights, "skip_rows": skip_rows,
-			"ups": ups, "heights": heights, "ruts": ruts, "rut_centres": rut_centres, "road_colors": road_colors,
+			"ups": ups, "heights": heights, "gravel_weights": gravel_weights, "ruts": ruts, "rut_centres": rut_centres, "road_colors": road_colors,
 			"patch_colors": patch_colors, "left_colors": left_colors, "right_colors": right_colors,
 			"line_color": def.line_color, "potholes": potholes, "patches": profile.patches,
 			"road_surfaces": road_surfaces, "shoulder_surfaces": shoulder_surfaces,
@@ -306,6 +308,7 @@ func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stati
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var colors := PackedColorArray()
+	var uvs := PackedVector2Array()
 	# The lateral each vertex actually sits at, so columns that a narrowed row
 	# collapsed onto one another can be skipped when the quads are built.
 	var laterals := PackedFloat32Array()
@@ -320,6 +323,7 @@ func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stati
 			laterals.append(lateral)
 			vertices.append(centre + across * lateral + surface_up * profile.height(distance, lateral))
 			normals.append(surface_up)
+			uvs.append(Vector2(distance, profile.gravel_weight(distance)))
 			colors.append(_color(profile, def, distance, lateral, int(station.y)))
 
 	var width := stations.size()
@@ -359,6 +363,7 @@ func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stati
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
 	arrays[Mesh.ARRAY_INDEX] = indices
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
@@ -379,19 +384,14 @@ func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stati
 func _color(profile: RoadProfile, def: TrailDef, distance: float, lateral: float, part: int) -> Color:
 	match part:
 		Part.SHOULDER:
-			var shoulder := def.shoulder_color
-			var stretch := profile.stretch_at(distance)
-			if stretch != null and stretch.affects_shoulders:
-				shoulder = shoulder.lerp(stretch.color, stretch.weight(distance))
+			var shoulder := profile.surface_color(distance, def.shoulder_color, true)
 			if def.shortcut != null and signf(lateral) == signf(def.shortcut.side):
 				shoulder = shoulder.lerp(def.asphalt_color, ShortcutBuilder.junction_weight(def.shortcut, distance))
 			return shoulder
 		Part.LINE:
 			return def.line_color
 	var base: Color = def.patch_color if profile.is_patch(distance, lateral) else def.asphalt_color
-	var stretch := profile.stretch_at(distance)
-	if stretch != null:
-		base = base.lerp(stretch.color, stretch.weight(distance))
+	base = profile.surface_color(distance, base)
 	var dip := profile.pothole_height(distance, lateral) + profile.cross_rut_height(distance, lateral) \
 			+ profile.rut_height(distance, lateral)
 	var shade := clampf(1.0 + dip * SHADE_PER_METRE, 0.5, 1.0)

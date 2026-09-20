@@ -22,6 +22,7 @@ var sampler: RoadSampler
 var profile: RoadProfile
 var field: TerrainField
 var road_builder: RoadBuilder
+var road_blend_builder: RoadBlendBuilder
 var rut_water_builder: RutWaterBuilder
 var tunnel_builder: TunnelBuilder
 var bridge_builder: BridgeBuilder
@@ -93,6 +94,12 @@ func build() -> void:
 	generated.add_child(terrain_builder)
 	terrain_builder.build(field)
 	_lap(&"terrain")
+
+	road_blend_builder = RoadBlendBuilder.new()
+	road_blend_builder.name = "RoadBlend"
+	generated.add_child(road_blend_builder)
+	road_blend_builder.build(sampler, profile, field, trail)
+	_lap(&"road_blend")
 
 	tunnel_builder = TunnelBuilder.new()
 	tunnel_builder.name = "Tunnels"

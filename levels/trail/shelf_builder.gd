@@ -123,11 +123,13 @@ func _roadbed(sampler: RoadSampler, profile: RoadProfile, field: TerrainField,
 		def: TalusDef, rows: PackedFloat32Array, laterals: Array[float]) -> void:
 	var sides := StructureMesh.new()
 	var supports: Dictionary = {}
+	var before := PackedVector3Array()
 	for row in range(rows.bsearch(def.start), mini(rows.bsearch(def.end()), rows.size() - 1)):
 		var from := rows[row]
 		var to := rows[row + 1]
-		var a := RoadBuilder.width_scales(profile.def, from).x
-		var b := RoadBuilder.width_scales(profile.def, to).x
+		if before.is_empty():
+			before = _support_row(sampler, profile, from, laterals)
+		var after := _support_row(sampler, profile, to, laterals)
 		var surface := profile.surface_at((from + to) * 0.5)
 		if not supports.has(surface):
 			var body := StaticBody3D.new()
@@ -137,10 +139,10 @@ func _roadbed(sampler: RoadSampler, profile: RoadProfile, field: TerrainField,
 		# The same rows, columns and diagonal as the actual RoadBuilder mesh.
 		# Extruding triangles avoids a convex quad bridging a twisting bank.
 		for column in laterals.size() - 1:
-			var left_a := sampler.surface_point(from, laterals[column] * a, profile)
-			var right_a := sampler.surface_point(from, laterals[column + 1] * a, profile)
-			var left_b := sampler.surface_point(to, laterals[column] * b, profile)
-			var right_b := sampler.surface_point(to, laterals[column + 1] * b, profile)
+			var left_a := before[column]
+			var right_a := before[column + 1]
+			var left_b := after[column]
+			var right_b := after[column + 1]
 			for triangle: Array in [[left_a, left_b, right_a], [right_a, left_b, right_b]]:
 				var hull := ConvexPolygonShape3D.new()
 				hull.margin = 0.002
@@ -158,12 +160,28 @@ func _roadbed(sampler: RoadSampler, profile: RoadProfile, field: TerrainField,
 			var near_base := Vector3(near.x, minf(near.y - 0.10, field.height_at(near.x, near.z) - 0.10), near.z)
 			var far_base := Vector3(far.x, minf(far.y - 0.10, field.height_at(far.x, far.z) - 0.10), far.z)
 			sides.quad(near, far, far_base, near_base, Color(0.52, 0.36, 0.25))
+		before = after
 	for body: StaticBody3D in supports.values():
 		add_child(body)
 	var instance := sides.add_to(self, "RoadbedSides%d" % gravel_chunks, ROCK, false)
 	if instance != null:
 		instance.visibility_range_end = VIEW_DISTANCE
 	gravel_chunks += 1
+
+
+## Sample a road frame once per row, instead of four times per triangle pair.
+## Identical vertex arithmetic preserves the visual/collision agreement.
+func _support_row(sampler: RoadSampler, profile: RoadProfile, distance: float,
+		laterals: Array[float]) -> PackedVector3Array:
+	var centre := sampler.position(distance)
+	var right := sampler.right(distance)
+	var up := sampler.up(distance)
+	var scale := RoadBuilder.width_scales(profile.def, distance).x
+	var points := PackedVector3Array()
+	for lateral: float in laterals:
+		var across := lateral * scale
+		points.append(centre + right * across + up * profile.height(distance, across))
+	return points
 
 
 ## Extrude the existing terrain triangles near the shelf. These buried solids

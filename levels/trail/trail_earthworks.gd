@@ -10,28 +10,38 @@ const FORD_BANK := 4.0
 const FORD_TAPER := 8.0
 
 
-## Clear every heightmap corner under a gravel road cell. Smoothed terrain can
-## otherwise poke through a twisting bank, especially its widening shoulders.
-## Both possible heightmap diagonals must remain below the visible road.
-static func apply_gravel_clearance(field: TerrainField, sampler: RoadSampler, trail: TrailDef) -> void:
+## Clear heightmap corners under gravel, plus opt-in grounded shoulder joins.
+## Smoothed terrain must not poke through either the twisting bank or shoulders.
+## Both possible heightmap diagonals remain below the visible road. Other road
+## interiors retain their existing pothole/ford earthworks unchanged.
+static func apply_road_clearance(field: TerrainField, sampler: RoadSampler, trail: TrailDef) -> void:
 	var has_gravel := false
 	for talus: TalusDef in trail.talus:
 		has_gravel = has_gravel or talus.gravel_bed
-	if not has_gravel:
+	if not has_gravel and trail.terrain_blend_width <= 0.0:
 		return
 	var profile := RoadProfile.new(trail, sampler.length)
 	var rows := RoadBuilder.row_distances(sampler.length, profile, trail)
 	var stations := RoadBuilder.cross_section(trail)
+	var shoulders: Array[Vector2] = [stations[0], stations[1], stations[-2], stations[-1]]
 	var before := PackedVector3Array()
 	for row in rows.size() - 1:
-		if not profile.gravel_at((rows[row] + rows[row + 1]) * 0.5):
+		var midpoint := (rows[row] + rows[row + 1]) * 0.5
+		var gravel := profile.gravel_at(midpoint)
+		if not gravel and RoadBlendBuilder.width_at(trail, midpoint) <= 0.0:
 			before.clear()
 			continue
+		# Shoulder-only clearance needs four vertices, not the full damaged road.
+		var selected: Array[Vector2] = stations if gravel else shoulders
+		if before.size() != selected.size():
+			before.clear()
 		if before.is_empty():
-			before = _road_row(sampler, profile, stations, rows[row])
-		var after := _road_row(sampler, profile, stations, rows[row + 1])
-		for column in stations.size() - 1:
-			if is_equal_approx(stations[column].x, stations[column + 1].x):
+			before = _road_row(sampler, profile, selected, rows[row])
+		var after := _road_row(sampler, profile, selected, rows[row + 1])
+		for column in selected.size() - 1:
+			if not gravel and column == 1:
+				continue
+			if is_equal_approx(selected[column].x, selected[column + 1].x):
 				continue
 			var bounds := AABB(before[column], Vector3.ZERO)
 			for point: Vector3 in [before[column + 1], after[column], after[column + 1]]:

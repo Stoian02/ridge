@@ -29,6 +29,7 @@ var detail_ranges: Array[Vector2] = []
 var _pothole_distances := PackedFloat32Array()
 var _max_pothole_radius := 0.0
 var _phases := Vector2.ZERO
+var _gravel_ranges: Array[Vector2] = []
 
 
 func _init(trail_def: TrailDef, length: float) -> void:
@@ -82,6 +83,11 @@ func _init(trail_def: TrailDef, length: float) -> void:
 		_pothole_distances.append(pothole.x)
 		_max_pothole_radius = maxf(_max_pothole_radius, pothole.z)
 	detail_ranges = _merged(ranges)
+	var gravel_ranges: Array[Vector2] = []
+	for field: TalusDef in def.talus:
+		if field.gravel_bed:
+			gravel_ranges.append(Vector2(field.start, field.end()))
+	_gravel_ranges = _merged(gravel_ranges)
 
 
 ## Total surface offset at a point of the road (m).
@@ -91,7 +97,7 @@ func height(distance: float, lateral: float) -> float:
 
 
 func longitudinal_height(distance: float) -> float:
-	return undulation(distance) + jump_height(distance) + bridge_height(distance) \
+	return undulation(distance) + local_undulation(distance) + jump_height(distance) + bridge_height(distance) \
 			+ roller_height(distance) + ford_height(distance)
 
 
@@ -116,10 +122,56 @@ func roughness_at(distance: float) -> float:
 
 ## Gravel is a material on the colliding road itself, never a second ribbon.
 func gravel_at(distance: float) -> bool:
-	for field: TalusDef in def.talus:
-		if field.gravel_bed and distance >= field.start and distance < field.end():
+	for span: Vector2 in _gravel_ranges:
+		if distance >= span.x and distance < span.y:
 			return true
 	return false
+
+
+## Fade fine chips only at the ends of a continuous gravel bed, not every field.
+func gravel_weight(distance: float) -> float:
+	if def.surface_color_blend <= 0.0:
+		return 1.0
+	for span: Vector2 in _gravel_ranges:
+		if distance >= span.x and distance <= span.y:
+			return minf(smoothstep(span.x, span.x + def.surface_color_blend, distance),
+				1.0 - smoothstep(span.y - def.surface_color_blend, span.y, distance))
+	return 0.0
+
+
+## Neighbouring surface colours mix directly, without a base-colour stripe
+## between adjacent stretches. The opt-out retains the original appearance.
+func surface_color(distance: float, base: Color, shoulder: bool = false) -> Color:
+	if def.surface_color_blend <= 0.0:
+		var stretch := stretch_at(distance)
+		return base.lerp(stretch.color, stretch.weight(distance)) \
+			if stretch != null and (not shoulder or stretch.affects_shoulders) else base
+	var sum := Color(0, 0, 0, 0)
+	var total := 0.0
+	for stretch: SurfaceStretch in def.surface_stretches:
+		if shoulder and not stretch.affects_shoulders:
+			continue
+		var blend := maxf(def.surface_color_blend, stretch.blend_length)
+		if distance < stretch.start - blend or distance > stretch.end() + blend:
+			continue
+		var entry := smoothstep(stretch.start - blend, stretch.start + blend, distance) if stretch.start > 0.0 else 1.0
+		var weight := minf(entry, 1.0 - smoothstep(stretch.end() - blend, stretch.end() + blend, distance))
+		sum += stretch.color * weight
+		total += weight
+	return (sum + base * maxf(0.0, 1.0 - total)) / maxf(1.0, total)
+
+
+func local_undulation(distance: float) -> float:
+	var total := 0.0
+	for section: Vector4 in def.undulation_sections:
+		var along := distance - section.x
+		if along <= 0.0 or along >= section.y:
+			continue
+		var fade := minf(12.0, section.y * 0.2)
+		var weight := smoothstep(0.0, fade, along) * (1.0 - smoothstep(section.y - fade, section.y, along))
+		var phase := TAU * along / maxf(section.w, 1.0)
+		total += section.z * weight * (sin(phase + _phases.x) + 0.55 * sin(phase / 1.73 + _phases.y)) / 1.55
+	return total
 
 
 func bridge_height(distance: float) -> float:

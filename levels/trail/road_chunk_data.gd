@@ -11,6 +11,7 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 	var rights: PackedVector3Array = input["rights"]
 	var ups: PackedVector3Array = input["ups"]
 	var heights: PackedFloat64Array = input["heights"]
+	var gravel_weights: PackedFloat64Array = input["gravel_weights"]
 	var ruts: Array[PackedFloat64Array] = input["ruts"]
 	var rut_centres: Array[PackedFloat64Array] = input["rut_centres"]
 	var road_colors: Array[Color] = input["road_colors"]
@@ -33,9 +34,11 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var colors := PackedColorArray()
+	var uvs := PackedVector2Array()
 	vertices.resize(distances.size() * width)
 	normals.resize(vertices.size())
 	colors.resize(vertices.size())
+	uvs.resize(vertices.size())
 	# The lateral each vertex actually sits at, so columns that a narrowed row
 	# collapsed onto one another can be skipped when the quads are built.
 	var laterals := PackedFloat32Array()
@@ -100,6 +103,7 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 			vertices[i] = centres[row] + rights[row] * lateral \
 					+ ups[row] * (heights[row] + rough + rut_height + step_height)
 			normals[i] = ups[row]
+			uvs[i] = Vector2(distance, gravel_weights[row])
 			if int(station.y) == RoadBuilder.Part.SHOULDER:
 				colors[i] = left_colors[row] if lateral < 0.0 else right_colors[row]
 			elif int(station.y) == RoadBuilder.Part.LINE:
@@ -130,6 +134,7 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
 	arrays[Mesh.ARRAY_INDEX] = indices
 	into["arrays"] = arrays
 	into["faces"] = faces

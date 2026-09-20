@@ -47,6 +47,6 @@ void fragment() {
 	vec3 stone = base * (0.85 + shade * 0.65) * facet;
 	vec3 detailed = mix(base * 0.65, stone, chip);
 	float detail = 1.0 - smoothstep(0.5, 1.5, max(length(dFdx(p)), length(dFdy(p))));
-	ALBEDO = mix(base, detailed, detail);
+	ALBEDO = mix(base, detailed, detail * UV.y);
 	ROUGHNESS = 0.95;
 }

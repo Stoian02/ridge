@@ -119,6 +119,8 @@ func test_parallel_chunks_match_the_original_serial_builder() -> void:
 	muddy.surface_stretches[0].transition_surfaces = [load("res://levels/muddy_valley/soft_mud.tres")]
 	muddy.surface_stretches[0].transition_length = 8.0
 	muddy.surface_stretches[0].extra_rut_paths = [Vector4(-1.0, 1.0, 60.0, 0.0), Vector4(1.0, 0.7, 80.0, 2.0)]
+	muddy.surface_color_blend = 8.0
+	muddy.undulation_sections = [Vector4(180, 45, 0.14, 17)]
 	for definition: TrailDef in [def, muddy]:
 		var road_profile := RoadProfile.new(definition, sampler.length)
 		builder.threaded = true
@@ -137,7 +139,7 @@ func test_parallel_chunks_match_the_original_serial_builder() -> void:
 				assert_eq(a.visibility_range_end, b.visibility_range_end)
 				var aa: Array = a.mesh.surface_get_arrays(0)
 				var bb: Array = b.mesh.surface_get_arrays(0)
-				for slot: int in [Mesh.ARRAY_VERTEX, Mesh.ARRAY_NORMAL, Mesh.ARRAY_COLOR, Mesh.ARRAY_INDEX]:
+				for slot: int in [Mesh.ARRAY_VERTEX, Mesh.ARRAY_NORMAL, Mesh.ARRAY_COLOR, Mesh.ARRAY_TEX_UV, Mesh.ARRAY_INDEX]:
 					assert_true(aa[slot] == bb[slot], "chunk %d array %d matches exactly" % [i, slot])
 			elif a is StaticBody3D and b is StaticBody3D:
 				assert_eq(SurfaceLookup.surface_of(a), SurfaceLookup.surface_of(b))

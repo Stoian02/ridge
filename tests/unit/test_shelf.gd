@@ -62,6 +62,19 @@ func test_dense_stones_cover_every_ten_metres_and_all_three_lateral_bands() -> v
 		stones.stones.size(), Array(bins).min(), level.build_seconds, level.phase_summary()])
 
 
+func test_cached_support_rows_match_the_exact_road_sampler() -> void:
+	var sampler := RoadSampler.new(CURVE, true, TRAIL)
+	var profile := RoadProfile.new(TRAIL, sampler.length)
+	var builder := ShelfBuilder.new()
+	add_child_autofree(builder)
+	var laterals: Array[float] = [-4.0, -1.5, 0.0, 1.5, 4.0]
+	for distance: float in [1500, 1505, 1512, 1580.25, 1631, 1685, 1888, 1899.75]:
+		var points := builder._support_row(sampler, profile, distance, laterals)
+		var scale := RoadBuilder.width_scales(TRAIL, distance).x
+		for i in laterals.size():
+			assert_eq(points[i], sampler.surface_point(distance, laterals[i] * scale, profile))
+
+
 func test_banked_road_and_close_left_cut_have_matching_real_collision() -> void:
 	var level := _level()
 	await wait_physics_frames(2)

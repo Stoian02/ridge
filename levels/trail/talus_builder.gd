@@ -181,6 +181,12 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 		var rotation := Basis(Vector3.UP, yaw)
 		if def.cover_road and sampler != null:
 			rotation = Basis.looking_at(sampler.forward(distance), sampler.up(distance)) * rotation
+			if not profile.def.undulation_sections.is_empty():
+				# Seat fragments on the local rise/dip, not the unmodified curve frame.
+				var along := (sampler.surface_point(distance + 0.1, lateral, profile)
+					- sampler.surface_point(distance - 0.1, lateral, profile)).normalized()
+				var normal := sampler.right(distance).cross(along).normalized()
+				rotation = Basis.looking_at(along, normal) * Basis(Vector3.UP, yaw)
 		var scale := Vector3(radius, radius * def.height_scale, radius)
 		var scaled := rotation * Basis.from_scale(scale)
 		if height_at.is_valid():
@@ -191,7 +197,7 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 				support = maxf(support, floor_height - vertex.y)
 			origin.y = support + REST_GAP
 		elif def.cover_road and sampler != null:
-			origin += sampler.up(distance) * (-mesh.get_aabb().position.y * scale.y + REST_GAP)
+			origin += rotation.y * (-mesh.get_aabb().position.y * scale.y + REST_GAP)
 		else:
 			origin.y += -mesh.get_aabb().position.y * scale.y + REST_GAP
 		var stone := RigidBody3D.new()
