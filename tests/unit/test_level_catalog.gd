@@ -76,8 +76,8 @@ func test_rock_canyon_is_fourth_and_unlocks_after_frozen_pass() -> void:
 	assert_eq(canyon.id, &"rock_canyon")
 	assert_eq(canyon.display_name, "Rock Canyon")
 	assert_true(ResourceLoader.exists(canyon.scene_path))
-	assert_eq(canyon.two_star_time, 285.0, "placeholder pending owner playtest")
-	assert_eq(canyon.three_star_time, 255.0)
+	assert_eq(canyon.two_star_time, 170.0, "owner-approved target: under 2:50")
+	assert_eq(canyon.three_star_time, 130.0, "owner-approved target: under 2:10")
 	assert_eq(canyon.recommended_car, &"offroad_4x4")
 	var progress := Progress.new()
 	for level in shipped.levels.slice(0, 2):

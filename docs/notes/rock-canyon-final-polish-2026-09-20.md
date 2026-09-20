@@ -76,6 +76,17 @@ Captures are in ignored `build/level_shots/`; log
 FPS or phone measurements. All test/capture Godot processes exited normally
 (the test runner returns failure for the documented assertions).
 
+## Owner-approved star targets (2026-09-20)
+
+Rock Canyon now awards three stars for a finish **under 2:10 (130 s)** and
+two stars **under 2:50 (170 s)**, replacing the original 255/285 s placeholders.
+The existing strict comparison is unchanged: exactly 2:10 earns two stars,
+exactly 2:50 earns one. Other tracks and driving physics are unchanged.
+Catalog/data assertions and a scoring-boundary regression cover these targets.
+Verification: `./run_tests.sh unit` passes **565/565** with no `SCRIPT ERROR`,
+using isolated temporary saves; log `/tmp/ridge-star-times-unit.log`. Driving
+scenarios were not rerun for this data-only change; the failures above remain.
+
 ## Resume
 
 Stop for the owner's next PC check of the gentle shelf unevenness and polished

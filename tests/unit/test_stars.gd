@@ -28,3 +28,11 @@ func test_a_time_exactly_on_a_target_does_not_beat_it() -> void:
 
 func test_no_finish_earns_nothing() -> void:
 	assert_eq(Stars.for_time(-1.0, level), 0)
+
+
+func test_rock_canyon_uses_owner_approved_time_boundaries() -> void:
+	var canyon: LevelDef = load("res://levels/rock_canyon/rock_canyon_level.tres")
+	assert_eq(Stars.for_time(129.99, canyon), 3, "under 2:10")
+	assert_eq(Stars.for_time(130.0, canyon), 2, "exactly 2:10 is not three stars")
+	assert_eq(Stars.for_time(169.99, canyon), 2, "under 2:50")
+	assert_eq(Stars.for_time(170.0, canyon), 1, "exactly 2:50 is not two stars")

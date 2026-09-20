@@ -9,5 +9,5 @@ display_name = "Rock Canyon"
 scene_path = "res://levels/rock_canyon/rock_canyon.tscn"
 surfaces = "Deep mud, rock, scree, water"
 recommended_car = &"offroad_4x4"
-two_star_time = 285.0
-three_star_time = 255.0
+two_star_time = 170.0
+three_star_time = 130.0
