@@ -75,7 +75,11 @@ first pass clears the line (583 contacts), so the second crosses it with 192.
 
 Full suite after the change: **644 passing, 1 pending, no `SCRIPT ERROR`.**
 
-## Still open: load time
+## Deferred: load time (owner's decision, 2026-09-21)
+
+The owner chose to leave this as it is for now and revisit later. Rock Canyon
+loads in about 5.7 s on the phone behind the loading screen. Everything below is
+the measurement and the plan, so it does not have to be re-derived.
 
 Rock Canyon builds in **5.66 s on the phone**, against a 3 s budget and 1.00 s
 (Rally Road), 1.71 s (Muddy Valley) and 1.55 s (Frozen Pass). Halving the stones
@@ -90,7 +94,25 @@ bought 0.7 s of it. The remaining phases, on the phone:
 | talus | 0.56 s | no |
 | terrain | 0.30 s | yes |
 
-The levers are the M3B ones: thread the serial phases, following the terrain
-lesson (copy shared data into locals and inline the maths — calling a shared
-object's methods from `WorkerThreadPool` tasks serializes them), and coarsen the
-canyon-wall painting, whose `WALL_STEP` is 1 m along and across.
+`TrailLevel.phase_summary()` now also splits `field` into its parts. On the
+desktop, where the whole phase is 0.73 s: `earthworks 0.33`, `walls 0.20`,
+`natural 0.10`, `carve 0.06`.
+
+**Threading these phases as they stand would not work, and this is the thing to
+remember.** Instrumenting `RoadBlendBuilder` showed **0.36 s of its 0.47 s (77%)
+is sampling** — `sampler.surface_point()`, `profile.height()` and
+`field.height_at()`, once per row. `ShelfBuilder` and the earthworks have the
+same shape. By the M3B finding, calling a shared GDScript object's methods from
+`WorkerThreadPool` tasks serializes them (1.18× on 4 threads, against 2.82× for
+inlined maths), so wrapping these loops in a group task buys almost nothing.
+
+The job is the one terrain had in M3B: snapshot the road frames into flat arrays
+and inline the sampling maths so workers touch only local values. There, that
+alone gave 4.6× before threading (0.79 s → 0.17 s serial, then 0.044 s
+threaded). Done once, it would speed up `road`, `road_blend`, `shelf`,
+`earthworks` and `scatter` together, on every level — which is why it deserves
+its own task and tests rather than a patch at the end of a session.
+
+A smaller, independent win if that is ever wanted on its own: the canyon-wall
+painting steps 1 m along and across a 2 m grid, so each cell is visited about
+four times. Tying `WALL_STEP` to `spacing` would roughly halve `walls`.
