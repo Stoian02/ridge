@@ -66,7 +66,7 @@ func build() -> void:
 	var road: Path3D = $Road
 	sampler = RoadSampler.new(road.curve, trail.use_curve_banking, trail)
 	profile = RoadProfile.new(trail, sampler.length)
-	field = TerrainField.generate(sampler, trail, terrain)
+	field = TerrainField.generate(sampler, trail, terrain, true, profile)
 	_lap(&"field")
 
 	road_builder = RoadBuilder.new()
@@ -185,7 +185,11 @@ func phase_summary() -> String:
 	var split := PackedStringArray()
 	for part: String in terrain_builder.last_timings if terrain_builder != null else {}:
 		split.append("%s %.2f" % [part, terrain_builder.last_timings[part]])
-	return ", ".join(parts) + ("; terrain: " + ", ".join(split) if not split.is_empty() else "")
+	var field_split := PackedStringArray()
+	for part: StringName in field.last_timings if field != null else {}:
+		field_split.append("%s %.2f" % [part, field.last_timings[part]])
+	return ", ".join(parts) + ("; terrain: " + ", ".join(split) if not split.is_empty() else "") \
+			+ ("; field: " + ", ".join(field_split) if not field_split.is_empty() else "")
 
 
 ## Records the time since the previous lap as `phase`.

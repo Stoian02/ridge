@@ -54,9 +54,14 @@ var wall_strata := PackedFloat32Array()
 ## Grid samples removed around tunnel approaches; the structure closes the sides.
 var portal_holes := PackedByteArray()
 var lowest_height := 0.0
+## Seconds each part of the last generate() took, for the build's phase summary.
+var last_timings := {}
 
 
-static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef, threaded: bool = true) -> TerrainField:
+## `profile` lets a caller that already has one hand it over; the earthworks
+## need it and building it three more times is pure repeated work.
+static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef, threaded: bool = true,
+		profile: RoadProfile = null) -> TerrainField:
 	var field := TerrainField.new()
 	field.def = terrain
 	field.spacing = terrain.sample_spacing
@@ -85,19 +90,25 @@ static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 		half_widths.append(trail.half_total_width_at(distance))
 		distance += 1.0
 
+	var lap := Time.get_ticks_usec()
 	field._size_grid(stamps, terrain.margin)
 	field._fill_natural(stamps, terrain)
+	lap = field._lap(&"natural", lap)
 	if threaded:
 		field._carve_parallel(stamps, rights, bank_slopes, half_widths, trail, terrain)
 	else:
 		field._carve(stamps, rights, bank_slopes, half_widths, trail, terrain)
+	lap = field._lap(&"carve", lap)
 	field._raise_walls(sampler, trail, terrain, stamps, half_widths)
+	lap = field._lap(&"walls", lap)
 	field._cut_creek(sampler, trail)
+	var road_profile := profile if profile != null else RoadProfile.new(trail, sampler.length)
 	TrailEarthworks.apply_tunnels(field, sampler, trail)
 	TrailEarthworks.apply_bridges(field, sampler, trail)
-	TrailEarthworks.apply_fords(field, sampler, trail)
-	TrailEarthworks.apply_road_damage(field, sampler, trail)
-	TrailEarthworks.apply_road_clearance(field, sampler, trail)
+	TrailEarthworks.apply_fords(field, sampler, trail, road_profile)
+	TrailEarthworks.apply_road_damage(field, sampler, trail, road_profile)
+	TrailEarthworks.apply_road_clearance(field, sampler, trail, road_profile)
+	lap = field._lap(&"earthworks", lap)
 	if not trail.tunnels.is_empty() or not trail.bridges.is_empty() or not trail.fords.is_empty() \
 			or not trail.damage_sections.is_empty() or not trail.cross_ruts.is_empty() or not trail.talus.is_empty() \
 			or trail.terrain_blend_width > 0.0:
@@ -105,6 +116,13 @@ static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 		for height: float in field.heights:
 			field.lowest_height = minf(field.lowest_height, height)
 	return field
+
+
+## Records how long one part took and returns the clock for the next one.
+func _lap(part: StringName, since: int) -> int:
+	var now := Time.get_ticks_usec()
+	last_timings[part] = (now - since) / 1000000.0
+	return now
 
 
 ## World X/Z of the creek's centre line beside the road at `distance`.

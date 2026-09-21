@@ -93,7 +93,7 @@ func test_low_ground_gets_a_supported_river_floor_and_containing_banks() -> void
 	# Reapply the earthworks to a valley below the crossing. Lower-only carving
 	# would leave a floating ribbon here instead of a shallow supported river.
 	field.heights.fill(-5.0)
-	TrailEarthworks.apply_fords(field, sampler, trail)
+	TrailEarthworks.apply_fords(field, sampler, trail, RoadProfile.new(trail, sampler.length))
 	assert_almost_eq(_height_at(200.0, 30.0), -ford.depth, 0.06)
 	assert_gt(_height_at(212.0, 30.0), -ford.depth + ford.water_depth, "bank contains the water")
 	assert_lt(_height_at(200.0, 0.0), -ford.depth, "never fill through the road")

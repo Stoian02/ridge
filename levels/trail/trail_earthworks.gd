@@ -14,13 +14,13 @@ const FORD_TAPER := 8.0
 ## Smoothed terrain must not poke through either the twisting bank or shoulders.
 ## Both possible heightmap diagonals remain below the visible road. Other road
 ## interiors retain their existing pothole/ford earthworks unchanged.
-static func apply_road_clearance(field: TerrainField, sampler: RoadSampler, trail: TrailDef) -> void:
+static func apply_road_clearance(field: TerrainField, sampler: RoadSampler, trail: TrailDef,
+		profile: RoadProfile) -> void:
 	var has_gravel := false
 	for talus: TalusDef in trail.talus:
 		has_gravel = has_gravel or talus.gravel_bed
 	if not has_gravel and trail.terrain_blend_width <= 0.0:
 		return
-	var profile := RoadProfile.new(trail, sampler.length)
 	var rows := RoadBuilder.row_distances(sampler.length, profile, trail)
 	var stations := RoadBuilder.cross_section(trail)
 	var shoulders: Array[Vector2] = [stations[0], stations[1], stations[-2], stations[-1]]
@@ -74,10 +74,10 @@ static func _road_row(sampler: RoadSampler, profile: RoadProfile,
 ## Lower every grid corner supporting a damaged road cell. Sampling only at
 ## hole centres leaves coarse terrain triangles bridging the depression. Sum
 ## overlapping depths conservatively; the road mesh still supplies the floor.
-static func apply_road_damage(field: TerrainField, sampler: RoadSampler, trail: TrailDef) -> void:
+static func apply_road_damage(field: TerrainField, sampler: RoadSampler, trail: TrailDef,
+		profile: RoadProfile) -> void:
 	if trail.damage_sections.is_empty() and trail.cross_ruts.is_empty():
 		return
-	var profile := RoadProfile.new(trail, sampler.length)
 	var cuts := {}
 	var diagonal := field.spacing * sqrt(2.0)
 	for hole: Vector4 in profile.damage_potholes:
@@ -193,10 +193,10 @@ static func nearest_samples(field: TerrainField, sampler: RoadSampler, start: fl
 ## Cuts the river through high ground and supports it across low ground. Under
 ## the road only lowering is permitted, preserving every road-mesh depression.
 ## The falls get an upstream ledge; FordBuilder closes its exposed rock face.
-static func apply_fords(field: TerrainField, sampler: RoadSampler, trail: TrailDef) -> void:
+static func apply_fords(field: TerrainField, sampler: RoadSampler, trail: TrailDef,
+		profile: RoadProfile) -> void:
 	if trail.fords.is_empty():
 		return
-	var profile := RoadProfile.new(trail, sampler.length)
 	for ford: FordDef in trail.fords:
 		var centre := sampler.position(ford.distance)
 		var floor := ford.floor_height(sampler, profile)
