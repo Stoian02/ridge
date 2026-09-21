@@ -91,6 +91,15 @@ Levels are data plus generators. `TrailLevel` (`levels/trail/trail_level.gd`) re
 
 `TunnelDef`/`TunnelBuilder` and `BridgeDef`/`BridgeBuilder` (Milestone 4) are the pattern every new Rock Canyon structure should copy: a small resource on `TrailDef`, a builder node that owns its meshes and collision, and its own unit tests.
 
+## 6a. One flaky test-runner exit (2026-09-21)
+
+`./run_tests.sh all` on master once exited 1 while reporting 644 passing, 1
+pending, no failures and no `SCRIPT ERROR`. It did not reproduce: the same tree
+gave exit 0 before and after, and `unit` and `scenarios` each exit 0 on their
+own. Nothing was logged around shutdown. If it returns, look at engine teardown
+of the combined run rather than at the tests — Rock Canyon leaves ~2,400 rigid
+bodies and several MultiMeshes to tear down, which is new.
+
 ## 7. Open items, unrelated to Milestone 5
 
 - Frozen Pass star times stay at 135/120 s. The owner's best is 1:59.8 with traction control, corner cuts and a wall-ride; they chose to keep it as the one hard level.
