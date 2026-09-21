@@ -85,8 +85,8 @@ func test_catalog_entry() -> void:
 	assert_eq(LEVEL.display_name, "Rock Canyon")
 	assert_eq(LEVEL.surfaces, "Deep mud, rock, scree, water")
 	assert_eq(LEVEL.recommended_car, &"offroad_4x4")
-	assert_eq(LEVEL.two_star_time, 170.0, "owner-approved target: under 2:50")
-	assert_eq(LEVEL.three_star_time, 130.0, "owner-approved target: under 2:10")
+	assert_eq(LEVEL.two_star_time, 180.0, "owner-approved target: under 3:00")
+	assert_eq(LEVEL.three_star_time, 145.0, "owner-approved target: under 2:25, the owner's best")
 	assert_true(ResourceLoader.exists(LEVEL.scene_path))
 
 
