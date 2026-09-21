@@ -14,6 +14,12 @@ const BOUNCE := 0.0
 const VIEW_DISTANCE := 160.0
 ## Nothing is placed closer than this to a checkpoint gate's centre (m).
 const GATE_CLEARANCE := 1.5
+## Physics frames between activation-window passes. The window moves with the
+## camera at driving speed, so a few frames of lag costs nothing.
+const WINDOW_FRAMES := 6
+## Swept collision costs a cast per step per body, so only stones actually
+## moving fast enough to skip through the floor get it (m/s).
+const CCD_SPEED := 5.0
 
 var stones: Array[RigidBody3D] = []
 ## Per stone, mirroring exactly what was last written into its MultiMesh
@@ -30,6 +36,15 @@ var _footprints := PackedFloat32Array()
 var _rest_transforms: Array[Transform3D] = []
 ## Only awake stones need transform polling; thousands of sleeping stones do not.
 var _active: Dictionary = {}
+## Where each stone was built, for the activation window's distance test.
+var _origins: PackedVector3Array = PackedVector3Array()
+## Per stone, its field's active_distance squared; 0 = always simulated.
+var _window_squared := PackedFloat32Array()
+## 1 where this builder turns swept collision on and off with speed; 0 where the
+## field asked for it outright and it stays on.
+var _dynamic_ccd := PackedByteArray()
+var _frames_until_window := 0
+var _windowed := false
 ## One-metre XZ bins of (x, z, radius), used only while placing non-overlapping fields.
 var _occupied: Dictionary = {}
 
@@ -85,12 +100,19 @@ func _clear() -> void:
 	_rest_transforms.clear()
 	_active.clear()
 	_occupied.clear()
+	_origins.clear()
+	_window_squared.clear()
+	_dynamic_ccd.clear()
+	_windowed = false
+	_frames_until_window = 1
 
 
+## Stones the physics engine is currently solving. A frozen stone is static, so
+## it is not awake however its sleeping flag reads.
 func awake_count() -> int:
 	var awake := 0
 	for stone in stones:
-		if not stone.sleeping:
+		if not stone.sleeping and not stone.freeze:
 			awake += 1
 	return awake
 
@@ -98,8 +120,43 @@ func awake_count() -> int:
 func _physics_process(_delta: float) -> void:
 	for i: int in _active.keys():
 		_sync_instance(i)
-		if stones[i].sleeping:
+		var stone := stones[i]
+		# Swept collision costs a cast per step, so stones that did not ask for
+		# it outright get it only while they are quick enough to skip the floor.
+		if _dynamic_ccd[i] == 1:
+			var fast := stone.linear_velocity.length_squared() > CCD_SPEED * CCD_SPEED
+			if stone.continuous_cd != fast:
+				stone.continuous_cd = fast
+		if stone.sleeping:
 			_active.erase(i)
+	if not _windowed:
+		return
+	_frames_until_window -= 1
+	if _frames_until_window > 0:
+		return
+	_frames_until_window = WINDOW_FRAMES
+	_update_window()
+
+
+## Freezes stones far from the camera and thaws the ones near it. A frozen body
+## is static to Jolt: no island, no solver, no swept collision. Without a camera
+## (some headless tests) every stone stays simulated, as it was before.
+func _update_window() -> void:
+	var camera := get_viewport().get_camera_3d() if is_inside_tree() else null
+	if camera == null:
+		return
+	var focus := camera.global_position
+	for i in stones.size():
+		var window := _window_squared[i]
+		if window <= 0.0:
+			continue
+		var near := _origins[i].distance_squared_to(focus) <= window
+		var stone := stones[i]
+		if stone.freeze == near:
+			stone.freeze = not near
+			if not near:
+				_sync_instance(i)
+				_active.erase(i)
 
 
 func _sleep_changed(i: int) -> void:
@@ -204,6 +261,8 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 		stone.name = "Stone%d_%d" % [index, n]
 		stone.mass = mass
 		stone.continuous_cd = def.continuous_collision
+		stone.linear_damp = def.linear_damp
+		stone.angular_damp = def.angular_damp
 		stone.physics_material_override = physics
 		stone.can_sleep = true
 		stone.sleeping = true
@@ -230,6 +289,10 @@ func _build_field(sampler: RoadSampler, profile: RoadProfile, field: TerrainFiel
 		_slots.append(placed.size())
 		_scales.append(scale)
 		_footprints.append(footprint)
+		_origins.append(stone.global_position if is_inside_tree() else origin)
+		_window_squared.append(def.active_distance * def.active_distance)
+		_dynamic_ccd.append(0 if def.continuous_collision else 1)
+		_windowed = _windowed or def.active_distance > 0.0
 		_occupy(origin, footprint)
 		_rest_transforms.append(stone.transform)
 		placed.append(Transform3D(scaled, origin))

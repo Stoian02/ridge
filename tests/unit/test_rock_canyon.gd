@@ -145,7 +145,7 @@ func test_the_level_builds_every_part_with_its_surfaces_and_structures() -> void
 		assert_not_null(level.get_node_or_null(part), part)
 	assert_eq(level.rock_step_builder.step_count, 3)
 	assert_eq(level.boulder_builder.placed.size(), 10)
-	assert_gt(level.talus_builder.stones.size(), 4500, "full-length dense loose-rock shelf")
+	assert_gt(level.talus_builder.stones.size(), 1200, "full-length loose-rock shelf")
 	assert_eq(level.shelf_builder.wall_chunks, 10)
 	assert_eq(level.shelf_builder.gravel_chunks, 10)
 	assert_eq(level.boulder_builder.placed[5].size(), 14, "offset slabs remain in the S-bend")

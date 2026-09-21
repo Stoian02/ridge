@@ -86,6 +86,38 @@ func test_a_pushed_stone_wakes_and_its_instance_follows_it() -> void:
 	assert_almost_eq(after.distance_to(stone.global_position), 0.0, 0.01)
 
 
+## The activation window is what keeps the cost of a long loose field flat: on
+## the phone, 485 stones awake at once cost 58 ms a frame, and 132 cost 2.5 ms.
+func test_the_activation_window_freezes_stones_away_from_the_camera() -> void:
+	def.active_distance = 30.0
+	builder.build(sampler, profile, field, trail)
+	var camera := Camera3D.new()
+	add_child_autofree(camera)
+	camera.global_position = Vector3(0.0, 2.0, -105.0)
+	camera.make_current()
+	await wait_physics_frames(TalusBuilder.WINDOW_FRAMES + 2)
+	var frozen := 0
+	for stone in builder.stones:
+		var near := stone.global_position.distance_to(camera.global_position) <= def.active_distance
+		assert_eq(stone.freeze, not near, "%s at %.1f m" % [stone.name,
+				stone.global_position.distance_to(camera.global_position)])
+		frozen += 1 if stone.freeze else 0
+	assert_gt(frozen, 0, "the far end of the field is frozen")
+
+	camera.global_position = Vector3(0.0, 2.0, -155.0)
+	await wait_physics_frames(TalusBuilder.WINDOW_FRAMES + 2)
+	for stone in builder.stones:
+		var near := stone.global_position.distance_to(camera.global_position) <= def.active_distance
+		assert_eq(stone.freeze, not near, "%s thaws as the camera returns" % stone.name)
+
+
+## A frozen stone is static to the physics engine, whatever its sleeping flag says.
+func test_frozen_stones_do_not_count_as_awake() -> void:
+	builder.stones[0].freeze = true
+	builder.stones[0].sleeping = false
+	assert_eq(builder.awake_count(), 0)
+
+
 func test_pausing_and_resuming_does_not_wake_untouched_stones() -> void:
 	await wait_physics_frames(3)
 	get_tree().paused = true

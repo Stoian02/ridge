@@ -16,6 +16,15 @@ extends Resource
 @export var continuous_collision: bool = false
 ## Stone masses (kg): light enough that the 2150 kg 4x4 pushes through.
 @export var mass_range: Vector2 = Vector2(30.0, 120.0)
+## Damping on a shoved stone, so it settles instead of skittering on into its
+## neighbours. Without it one push spreads through the field and the awake set
+## grows until Jolt solves the whole shelf as one contact island.
+@export var linear_damp: float = 0.0
+@export var angular_damp: float = 0.0
+## Stones further than this from the camera are frozen: static to the physics
+## world, with no solver work, no contact island and no swept collision. They
+## thaw as the car comes back. 0 simulates every stone, as before.
+@export var active_distance: float = 0.0
 ## How far from the centre line stones may sit (m); alternate stones go left and right.
 @export var lateral_range: Vector2 = Vector2(0.0, 4.0)
 @export var color: Color = Color(0.66, 0.5, 0.4)

@@ -12,9 +12,17 @@ extends Control
 const BENCHMARK_ARG := "--benchmark"
 const BENCHMARK_FILE := "user://benchmark"
 const BENCHMARK_SCENE := "res://debug/load_benchmark.tscn"
+## The same trick for the loose-stone cost probe: touch "shelf_stress" instead.
+const STRESS_FILE := "user://shelf_stress"
+const STRESS_SCENE := "res://debug/shelf_stress.tscn"
 
 
 func _ready() -> void:
+	var stressed := OS.is_debug_build() and FileAccess.file_exists(STRESS_FILE)
+	if stressed:
+		DirAccess.remove_absolute(STRESS_FILE)
+		get_tree().change_scene_to_file.call_deferred(STRESS_SCENE)
+		return
 	var flagged := OS.is_debug_build() and FileAccess.file_exists(BENCHMARK_FILE)
 	if flagged:
 		DirAccess.remove_absolute(BENCHMARK_FILE)

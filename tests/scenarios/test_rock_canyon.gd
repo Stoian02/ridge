@@ -9,6 +9,10 @@ const RALLY_CARS: Array[CarDef] = [preload("res://car/cars/rally.tres"), preload
 const DIRT := preload("res://surfaces/dirt.tres")
 const STALL_SECONDS := 8.0
 const RALLY_DISTANCE_CAP := 1250.0
+## The scripted driver crawls the technical sections far slower than a player:
+## it averages about 15 km/h over the 2,175 m, against the owner's ~2:20 runs.
+## This is its budget, not a target time.
+const RUN_LIMIT := 600.0
 
 
 func before_each() -> void:
@@ -67,10 +71,10 @@ func test_the_4x4_finishes_without_automatic_resets() -> void:
 	var lowest_up := 1.0
 	var furthest := level.trail.sampler.closest_distance(car.global_position)
 	var stalled_ticks := 0
-	var stop_reason := "420 s time limit"
+	var stop_reason := "%d s time limit" % int(RUN_LIMIT)
 	var next_shelf_trace := 1450.0
 	var shelf_trace: Array[String] = []
-	for tick in ScenarioHelper.ticks(420.0):
+	for tick in ScenarioHelper.ticks(RUN_LIMIT):
 		if level.tracker.is_finished():
 			stop_reason = "finished"
 			break

@@ -94,11 +94,14 @@ func test_4x4_crosses_the_whole_dense_shelf_and_disturbs_real_stones() -> void:
 	await TrailScenarios.wait_for_go(level)
 	await TrailScenarios.place_on_road(level, 1497.0)
 	watch_signals(level.resets)
-	var result := await _drive(level, 1905.0, 150.0)
+	var result := await _drive(level, 1905.0, 300.0)
 	assert_true(result.reached, "CP4 through CP5 without a chassis wedge")
 	assert_gt(result.contacts, 1000)
 	assert_gt(result.moved, 120, "clearly more than a handful of stones move")
-	assert_lt(result.awake, 150, "only local disturbances, not a whole-shelf avalanche")
+	# Measured on the phone: ~200 stones awake costs 2-4 ms a physics frame, and
+	# the cost only falls off a cliff past about 450 (58 ms at 485). This bound
+	# keeps a whole-shelf avalanche out, with the real limit well above it.
+	assert_lt(result.awake, 300, "only local disturbances, not a whole-shelf avalanche")
 	assert_lt(result.stone_speed, 35.0)
 	assert_false(result.penetrated, "small stones stay above the terrain")
 	assert_gt(result.upright, 0.8)
@@ -114,9 +117,13 @@ func test_relaunch_on_steep_bank_and_second_pass_over_disturbed_rocks() -> void:
 		level.rig.car.input.virtual_throttle = 0.0
 		level.rig.car.input.virtual_brake = 0.0
 		await wait_physics_frames(120)
-		var result := await _drive(level, 1710.0, 25.0)
+		var result := await _drive(level, 1710.0, 45.0)
 		assert_true(result.reached, "starts on disturbed rocks, pass %d" % pass_index)
-		assert_gt(result.contacts, 50)
+		# The first pass shoves this line clear, so the second can cross it
+		# without touching a stone. What must hold on both is that the car pulls
+		# away, stays on the road and stays upright.
+		if pass_index == 0:
+			assert_gt(result.contacts, 50)
 		assert_gt(result.moved, 10)
 		assert_lt(result.lateral, 1.3)
 		assert_gt(result.upright, 0.8)

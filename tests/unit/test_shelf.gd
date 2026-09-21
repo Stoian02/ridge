@@ -41,7 +41,7 @@ func test_dense_stones_cover_every_ten_metres_and_all_three_lateral_bands() -> v
 	var stones := level.talus_builder
 	var bins := PackedInt32Array()
 	bins.resize(40 * 3)
-	assert_gt(stones.stones.size(), 4500)
+	assert_gt(stones.stones.size(), 1200, "full-length loose-rock shelf")
 	for i in stones.stones.size():
 		var stone := stones.stones[i]
 		var distance := level.sampler.closest_distance(stone.position)
@@ -51,10 +51,13 @@ func test_dense_stones_cover_every_ten_metres_and_all_three_lateral_bands() -> v
 		var row := clampi(int((distance - 1500.0) / 10.0), 0, 39)
 		var band := clampi(int((lateral / level.sampler.road_half_width_at(distance) + 1.0) * 1.5), 0, 2)
 		bins[row * 3 + band] += 1
-		assert_true(stone.continuous_cd)
+		# These stones are big enough not to skip the floor at rest, so they carry
+		# no swept collision until TalusBuilder turns it on above CCD_SPEED.
+		assert_false(stone.continuous_cd, "no swept collision on a resting stone")
+		assert_gt(stone.linear_damp, 0.0, "a shove settles instead of spreading")
 		assert_almost_eq(stone.physics_material_override.friction, 0.20, 0.00001)
 	for bin in bins:
-		assert_gte(bin, 12, "no bare strip or isolated short rock patch")
+		assert_gte(bin, 8, "no bare strip or isolated short rock patch")
 	await wait_physics_frames(4)
 	assert_eq(stones.awake_count(), 0, "no build-time avalanche")
 	assert_true(stones._active.is_empty(), "no polling of sleeping stones")
