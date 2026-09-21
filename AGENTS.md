@@ -1,27 +1,25 @@
 # Ridge — notes for coding agents
 
-**Current handoff:** read `docs/notes/rock-canyon-final-polish-2026-09-20.md` first,
-then `docs/notes/shelf-surface-fix-2026-09-19.md`,
-then `docs/notes/loose-rock-shelf-2026-09-19.md` for the underlying implementation.
-The owner approved dense loose stones and the close left hillside on CP4–CP5.
-They explicitly rejected easing the difficult bank: keep peaks of 12°, 14°, 13°.
-Their careful PC pass is now **accepted**; do not soften the shelf. The latest
-follow-up aligns the visible gravel with road collision, clears underlying
-terrain, closes roadbed sides, and replaces the stretched cliff with rock strata.
-Focused scripted driving still fails on the steep shelf; do not claim a green
-full suite or soften the level to make that driver pass. Preserve the easier
-finish after CP5 and the accepted earlier sections. Owner playtest acceptance
-does not mean automated release acceptance. The owner accepted the visual fix;
-the latest pass adds shallow shelf unevenness and grounded, blended surface joins.
-Stop for feedback on that polish, without changing the accepted bank/difficulty.
-This supersedes the older notes' disabled-talus fallback and prototype-only gate.
+**State:** Milestones 1–5 are merged into `master` (Rally Road, Muddy Valley,
+cars and car select, surface feedback and sound, Frozen Pass, Rock Canyon).
+The full suite is green. Nothing is in flight.
 
-Earlier accepted work: `docs/notes/rock-canyon-dense-rocks-2026-09-19.md` (700 mixed-size fixed rocks before the widening, deeper S-bend holes and more rubble; accepted tree unchanged), and the underlying checkpoint-to-waterfall pass: `docs/notes/rock-canyon-waterfall-approach-2026-09-18.md`. Their old stop-at-waterfall gate has been passed. The preceding opening is documented in `docs/notes/rock-canyon-opening-2026-09-18.md`. Read `docs/notes/m5-rock-canyon-notes.md` for the original Milestone 5 completion state on `m5-rock-canyon` (not merged), and `docs/notes/handover-2026-09-17-rock-canyon.md` for the repo rules. The completion notes supersede the older Task 6 WIP handover; later passes replace their fixed-talus layout, and the current shelf handoff supersedes their disabled-dynamic-talus state. They cover:
-- the current branch and state
-- the open request
-- how to run tests
-- repo conventions
-- what comes next
+**Start with** `docs/notes/handover-2026-09-17-rock-canyon.md` for the repo
+rules, tooling and the hard-won lessons, then:
+
+- `docs/notes/performance-m5.md` — the loose-stone performance cliff and the
+  activation window that fixes it, plus **the deferred load-time work**: Rock
+  Canyon builds in ~5.7 s on the phone against a 3 s budget, and 77% of the
+  cost is sampling through shared objects, so wrapping the build phases in
+  `WorkerThreadPool` will not help. It needs the M3B-style inlining.
+- `docs/notes/m5-rock-canyon-notes.md` and the dated `rock-canyon-*` notes for
+  how the level was built and what the owner accepted along the way. The
+  CP4–CP5 shelf is deliberately unforgiving: **do not soften the bank
+  (peaks of 12°, 14°, 13°), the gradient or the line.** Its stones are loose on
+  purpose; keep `TalusDef.active_distance` set, or the phone drops to 8–10 fps.
+- `docs/superpowers/specs/2026-09-17-m5-rock-canyon-design.md` for the design
+  the level was built from, including what stayed out of scope (water physics,
+  a rock-crawler car, car locking).
 
 Key rules (details in the handover):
 - **Tests:** `./run_tests.sh unit|scenarios|all` must pass, with no `SCRIPT ERROR`.
@@ -30,6 +28,6 @@ Key rules (details in the handover):
   - Work on a branch and merge only when the owner says so.
   - Stage files by name, never `git add -A` or `git add .`.
   - Never touch the untracked `tmux-session.sh`.
-- **Car physics:** ask the owner before changing anything under `car/` or the values in `surfaces/*.tres`. Milestone 5 adds new surface files and grip-table entries, which is approved; it changes no existing value.
+- **Car physics:** ask the owner before changing anything under `car/` or the values in `surfaces/*.tres`. Milestone 5 added new surface files and grip-table entries, and one approved change in `car/wheel.gd`: wheels apply equal and opposite forces to movable supports, so loose stones react. It changed no existing car or surface value.
 - **Tests vs playing:** never start a test run, benchmark or capture while the owner is playing the game — the second Godot instance freezes.
 - **Big changes:** show the owner the plan before starting.
