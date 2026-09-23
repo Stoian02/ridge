@@ -1,5 +1,10 @@
 # Ridge — notes for coding agents
 
+**Current handoff:** `docs/notes/handover-codex-2026-09-23-coastal.md` — Codex
+designs *and* builds Coastal Highway, the sixth level, on branch
+`m6-coastal-highway`: brainstorm with the owner, spec, plan, implement. Not
+merged, not pushed; Claude reviews at the end.
+
 **State:** Milestones 1–5 are merged into `master`, plus the 2026-09-23 AWD
 balance tuning and the build-speed refactor. Five levels (Rally Road, Muddy
 Valley, Frozen Pass, Rock Canyon, and the Test Ground as Free Drive), three
