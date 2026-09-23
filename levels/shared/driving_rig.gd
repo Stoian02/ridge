@@ -22,6 +22,7 @@ var car_def: CarDef
 ## The car's wheel sprays and sound (M3B spec §5.5, §6), made in _ready.
 var effects: CarEffects
 var audio: CarAudio
+var water_status: WaterStatus
 
 
 ## Runs before the car's own _ready applies its stats: gives the car the chosen
@@ -51,6 +52,10 @@ func _ready() -> void:
 	audio.process_priority = 1
 	add_child(audio)
 	audio.setup(car, effects)
+	water_status = WaterStatus.new()
+	water_status.name = "WaterStatus"
+	add_child(water_status)
+	water_status.setup(car, telemetry)
 
 
 func _apply_traction_control_strength(value: float) -> void:
@@ -66,3 +71,5 @@ func place_car(target: Transform3D) -> void:
 		effects.notify_reset()
 	if audio != null:
 		audio.notify_reset()
+	if water_status != null:
+		water_status.notify_reset()

@@ -56,6 +56,19 @@ static func format(telemetry: Dictionary, perf: Dictionary) -> String:
 		var wheel: Dictionary = telemetry.wheels[i]
 		lines.append("%s %-7s load %5.0f  comp %.2f  slip %+.2f  angle %+5.1f" % [WHEEL_NAMES[i],
 				wheel.surface, wheel.load, wheel.compression, wheel.slip_ratio, wheel.slip_angle_deg])
+	if telemetry.has("water"):
+		var water: Dictionary = telemetry["water"]
+		lines.append("water %.2f   flood %.2f   lift/weight %.2f   intake %s" % [
+			water.immersion, water.flooding, water.buoyancy_ratio,
+			"dry" if is_inf(water.intake_clearance) else "%+.2f m" % water.intake_clearance])
+		lines.append("wet FL %.2f FR %.2f RL %.2f RR %.2f" % [water.fl_wetness,
+			water.fr_wetness, water.rl_wetness, water.rr_wetness])
+		lines.append("current (%+.2f, %+.2f, %+.2f)  relative %.2f m/s" % [
+			water.current_x, water.current_y, water.current_z, water.relative_speed])
+		lines.append("intake %.2fs  clear %.2fs  deep %.2fs  dry %.2fs" % [
+			water.intake_seconds, water.restart_seconds, water.deep_seconds, water.dry_seconds])
+		lines.append("stall %d  restart %d  torque %.2f  water %.3f ms" % [
+			water.stalled, water.restarting, water.torque_scale, water.physics_usec / 1000.0])
 	return "\n".join(lines)
 
 

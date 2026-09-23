@@ -17,7 +17,7 @@ const FADE_SECONDS := 0.1
 ## buffer and crashed the audio thread when the 4 s wind loop first wrapped.
 const LOOP_PAD := 32
 const NAMES: Array[StringName] = [&"engine_low", &"engine_high", &"road", &"gravel", &"mud", &"skid", &"wind",
-		&"bird", &"thump", &"snow", &"rock", &"waterfall"]
+		&"bird", &"thump", &"snow", &"rock", &"waterfall", &"water_wash", &"water_entry"]
 
 static var _cache := {}
 
@@ -52,6 +52,10 @@ static func _build(sound_name: StringName) -> AudioStreamWAV:
 			return _wav(_normalized(_seamless(_rock(1.3)), LOOP_PEAK), true)
 		&"waterfall":
 			return _wav(_normalized(_seamless(_waterfall(3.0)), LOOP_PEAK), true)
+		&"water_wash":
+			return _wav(_normalized(_seamless(_water_wash(1.0)), LOOP_PEAK), true)
+		&"water_entry":
+			return _wav(_normalized(_water_entry(), ONE_SHOT_PEAK), false)
 		&"skid":
 			return _wav(_normalized(_seamless(_skid(0.8)), LOOP_PEAK), true)
 		&"wind":
@@ -62,6 +66,34 @@ static func _build(sound_name: StringName) -> AudioStreamWAV:
 			return _wav(_normalized(_thump(), ONE_SHOT_PEAK), false)
 	push_error("SoundSynth: no sound called %s" % sound_name)
 	return null
+
+
+## Soft turbulent wash, with slow low-frequency movement below its hiss.
+static func _water_wash(seconds: float) -> PackedFloat32Array:
+	var rng := _rng(30)
+	var samples := _padded(seconds)
+	var low := 0.0
+	var smooth := 0.0
+	for i in samples.size():
+		var noise := rng.randf_range(-1.0, 1.0)
+		low += 0.02 * (noise - low)
+		smooth += 0.30 * (noise - smooth)
+		var t := float(i) / RATE
+		samples[i] = (low * 2.0 + smooth * 0.35) * (0.8 + 0.2 * sin(TAU * 3.0 * t))
+	return samples
+
+
+static func _water_entry() -> PackedFloat32Array:
+	var rng := _rng(31)
+	var samples := PackedFloat32Array()
+	samples.resize(roundi(RATE * 0.5))
+	var low := 0.0
+	for i in samples.size():
+		var t := float(i) / RATE
+		low += 0.20 * (rng.randf_range(-1.0, 1.0) - low)
+		var envelope := smoothstep(0.0, 0.015, t) * exp(-t * 9.0) * (1.0 - smoothstep(0.4, 0.5, t))
+		samples[i] = low * envelope
+	return samples
 
 
 ## A four-cylinder engine tone: firing frequency with harmonics, a half-order rumble,

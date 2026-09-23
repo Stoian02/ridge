@@ -4,7 +4,7 @@ extends Node
 ## loops, and a thump for hard hits. Each frame it reads the car and sets every
 ## player's pitch and volume. Its players pause with the game.
 
-const LOOPS: Array[StringName] = [&"engine_low", &"engine_high", &"road", &"gravel", &"mud", &"skid", &"snow", &"rock"]
+const LOOPS: Array[StringName] = [&"engine_low", &"engine_high", &"road", &"gravel", &"mud", &"skid", &"snow", &"rock", &"water_wash"]
 ## Volumes move toward their targets this fast (linear units per second), so nothing clicks.
 const EASE_PER_SECOND := 4.0
 const SILENT := 0.01
@@ -28,6 +28,8 @@ var thumps_played := 0
 ## StringName loop -> current linear volume.
 var _volumes := {}
 var _impact_wait := 0.0
+var _water_entries := 0
+var _water_reset_serial := -1
 
 
 func setup(driven: Car, car_effects: CarEffects) -> void:
@@ -39,6 +41,8 @@ func setup(driven: Car, car_effects: CarEffects) -> void:
 		player.play()
 		_volumes[sound_name] = 0.0
 	_add_player(&"thump")
+	_add_player(&"water_entry")
+	_water_reset_serial = car.water.reset_serial
 
 
 ## The loop's current linear volume (0-1).
@@ -49,6 +53,13 @@ func volume(sound_name: StringName) -> float:
 ## A car reset: no thump for a moment, since the car was just put down.
 func notify_reset() -> void:
 	_impact_wait = RESET_MUTE
+	_water_reset_serial = car.water.reset_serial
+	_water_entries = effects.water_effects.entries
+	_volumes[&"water_wash"] = 0.0
+	for sound_name: StringName in [&"water_wash", &"water_entry"]:
+		var player: AudioStreamPlayer = players[sound_name]
+		player.stop()
+		player.volume_db = SILENT_DB
 
 
 ## True while a thump would be held back (just after a thump or a reset).
@@ -65,8 +76,13 @@ func _exit_tree() -> void:
 func _process(delta: float) -> void:
 	if car == null or car.drivetrain == null:
 		return
+	if _water_reset_serial != car.water.reset_serial:
+		notify_reset()
 	_impact_wait = maxf(0.0, _impact_wait - delta)
 	var engine := EngineSoundLogic.layers(car.drivetrain.rpm, car.input.throttle, car.drivetrain.is_shifting())
+	if car.water.state.stalled:
+		engine["low_volume"] = 0.0
+		engine["high_volume"] = 0.0
 	_set_loop(&"engine_low", engine["low_volume"], engine["low_pitch"], delta)
 	_set_loop(&"engine_high", engine["high_volume"], engine["high_pitch"], delta)
 
@@ -83,6 +99,13 @@ func _process(delta: float) -> void:
 	_set_loop(&"snow", tyres["snow"], roll_pitch, delta)
 	_set_loop(&"rock", tyres["rock"], roll_pitch, delta)
 	_set_loop(&"skid", tyres["skid"], 1.0, delta)
+	_set_loop(&"water_wash", effects.water_effects.wash_volume, 1.0, delta)
+	if effects.water_effects.entries != _water_entries:
+		_water_entries = effects.water_effects.entries
+		if _impact_wait <= 0.0:
+			var entry: AudioStreamPlayer = players[&"water_entry"]
+			entry.volume_db = linear_to_db(WaterFeedback.ENTRY_MAX * effects.water_effects.entry_strength)
+			entry.play()
 
 	if hardest > 0.0 and _impact_wait <= 0.0:
 		var thump: AudioStreamPlayer = players[&"thump"]
@@ -98,6 +121,8 @@ func _set_loop(sound_name: StringName, target: float, pitch: float, delta: float
 	var player: AudioStreamPlayer = players[sound_name]
 	player.volume_db = linear_to_db(level) if level > SILENT else SILENT_DB
 	player.pitch_scale = maxf(pitch, 0.01)
+	if level > SILENT and not player.playing:
+		player.play()
 
 
 func _add_player(sound_name: StringName) -> AudioStreamPlayer:

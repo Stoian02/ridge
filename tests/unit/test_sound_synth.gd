@@ -3,8 +3,8 @@ extends GutTest
 ## not clipped, loops that join without a click, cached, and quick to build.
 
 const LOOP_SECONDS := {&"engine_low": 0.4, &"engine_high": 0.4, &"road": 1.0, &"gravel": 1.0, &"mud": 1.5,
-		&"skid": 0.8, &"wind": 4.0, &"snow": 1.2, &"rock": 1.3, &"waterfall": 3.0}
-const ONE_SHOT_SECONDS := {&"bird": 0.35, &"thump": 0.3}
+		&"skid": 0.8, &"wind": 4.0, &"snow": 1.2, &"rock": 1.3, &"waterfall": 3.0, &"water_wash": 1.0}
+const ONE_SHOT_SECONDS := {&"bird": 0.35, &"thump": 0.3, &"water_entry": 0.5}
 
 
 func _samples(wav: AudioStreamWAV) -> PackedFloat32Array:

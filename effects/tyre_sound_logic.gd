@@ -28,20 +28,22 @@ static func mix(wheels: Array[Dictionary]) -> Dictionary:
 			continue
 		var ground_speed: float = wheel["ground_speed"]
 		var slip_speed: float = wheel["slip_speed"]
-		var rolling := clampf(ground_speed / ROLL_SPEED, 0.0, 1.0) * WHEEL_SHARE
+		var wet: float = clampf(wheel.get("water_wetness", 0.0), 0.0, 1.0)
+		var bed_volume := lerpf(1.0, 0.25, wet)
+		var rolling := clampf(ground_speed / ROLL_SPEED, 0.0, 1.0) * WHEEL_SHARE * bed_volume
 		match feel.rolling:
 			SurfaceFeel.RollingSound.ROAD:
-				result["road"] += clampf(ground_speed / ROAD_SPEED, 0.0, 1.0) * WHEEL_SHARE * ROAD_MAX
+				result["road"] += clampf(ground_speed / ROAD_SPEED, 0.0, 1.0) * WHEEL_SHARE * ROAD_MAX * bed_volume
 			SurfaceFeel.RollingSound.GRAVEL:
 				result["gravel"] += rolling
 			SurfaceFeel.RollingSound.SNOW:
 				result["snow"] += rolling
 			SurfaceFeel.RollingSound.MUD:
-				result["mud"] += rolling + clampf(slip_speed / MUD_SLIP, 0.0, 1.0) * WHEEL_SHARE
+				result["mud"] += rolling + clampf(slip_speed / MUD_SLIP, 0.0, 1.0) * WHEEL_SHARE * bed_volume
 			SurfaceFeel.RollingSound.ROCK:
 				result["rock"] += rolling * ROCK_MAX
 		if feel.skids and wheel["sliding"]:
-			result["skid"] += clampf(SKID_BASE + slip_speed / SKID_SLIP, 0.0, 1.0) * WHEEL_SHARE * feel.skid_volume
+			result["skid"] += clampf(SKID_BASE + slip_speed / SKID_SLIP, 0.0, 1.0) * WHEEL_SHARE * feel.skid_volume * (1.0 - wet)
 	for key: String in result:
 		result[key] = minf(result[key], 1.0)
 	return result

@@ -63,10 +63,15 @@ var _spawn: Transform3D
 ## Marker posts as Vector4(base x, base y, base z, height), merged into one mesh.
 var _posts: Array[Vector4] = []
 var loose_rocks: LooseRockCourse
+var water_course: WaterCourse
 
 
 func _ready() -> void:
 	_build_layout()
+	water_course = WaterCourse.new()
+	water_course.name = "WaterCourse"
+	add_child(water_course)
+	rig.car.water.set_world(water_course.water_world)
 	_spawn = rig.car.global_transform
 	rig.car.input.reset_requested.connect(_on_reset_requested)
 	pause_menu = PauseMenu.new()

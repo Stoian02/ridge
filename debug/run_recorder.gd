@@ -86,6 +86,8 @@ static func csv_header() -> String:
 	for wheel_name in WHEEL_NAMES:
 		for field in WHEEL_FIELDS:
 			columns.append("%s_%s" % [wheel_name, field])
+	for field: String in WaterTelemetry.FIELDS:
+		columns.append("water_%s" % field)
 	return ",".join(columns)
 
 
@@ -107,4 +109,7 @@ static func csv_row(telemetry: Dictionary, time: float) -> String:
 		values.append("%.4f" % wheel.slip_ratio)
 		values.append("%.3f" % wheel.slip_angle_deg)
 		values.append("%.3f" % wheel.spin)
+	var water: Dictionary = telemetry.get("water", {})
+	for field: String in WaterTelemetry.FIELDS:
+		values.append("%.5f" % float(water.get(field, WaterTelemetry.default_value(field))))
 	return ",".join(values)

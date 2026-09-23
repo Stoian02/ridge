@@ -13,11 +13,15 @@ const MAX_ALPHA := 0.9
 const MIN_SPEED_SHARE := 0.5
 
 static var _quad: QuadMesh
+static var _growth_curves: Dictionary = {}
+static var _fade: Gradient
 
 var kind: SurfaceFeel.SprayKind = SurfaceFeel.SprayKind.NONE
 var _idle_seconds := 0.0
 ## The current kind's full throw speed, as Vector2(min, max) (m/s).
 var _base_velocity := Vector2.ZERO
+var _water_feel: SurfaceFeel
+var _mixed := false
 
 
 func _init() -> void:
@@ -29,10 +33,15 @@ func _init() -> void:
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mesh = _shared_quad()
 	randomness = 0.4
+	_water_feel = SurfaceFeel.new()
+	_water_feel.spray = SurfaceFeel.SprayKind.SPLASH
 
 
 ## Sprays `feel`'s kind at `strength` (0-1), or stops below the threshold.
 func update(feel: SurfaceFeel, strength: float, delta: float) -> void:
+	if _mixed:
+		_configure(kind)
+		_mixed = false
 	var wanted := SurfaceFeel.SprayKind.NONE
 	if feel != null and strength > SprayLogic.THRESHOLD:
 		wanted = feel.spray
@@ -57,9 +66,45 @@ func update(feel: SurfaceFeel, strength: float, delta: float) -> void:
 
 ## Stops at once and hides, leaving no trail (a car reset).
 func stop_now() -> void:
+	restart()
 	emitting = false
 	visible = false
 	_idle_seconds = 0.0
+
+
+## One emitter, never two stacked full-strength effects. Interpolate throw,
+## lifetime, colour and size while suppressing the dry component by immersion.
+func update_water(dry: SurfaceFeel, dry_strength: float, tint: Color,
+		splash_strength: float, wetness: float, delta: float) -> void:
+	_mixed = false
+	var dry_part := dry_strength * (1.0 - wetness)
+	var strength := clampf(dry_part + splash_strength, 0.0, 1.0)
+	var blend := splash_strength / maxf(dry_part + splash_strength, 0.0001)
+	_water_feel.spray_color = dry.spray_color.lerp(tint, blend) if dry != null else tint
+	# Deep water has no splash, and must not keep sending dry dust from below it.
+	if strength <= SprayLogic.THRESHOLD:
+		update(null, 0.0, delta)
+		return
+	var dry_kind := dry.spray if dry != null else SurfaceFeel.SprayKind.SPLASH
+	if dry_kind == SurfaceFeel.SprayKind.NONE:
+		dry_kind = SurfaceFeel.SprayKind.SPLASH
+	_configure(dry_kind)
+	var dry_velocity := _base_velocity
+	var dry_gravity := gravity
+	var dry_lifetime := lifetime
+	var dry_direction := direction
+	var dry_spread := spread
+	var dry_scale := Vector2(scale_amount_min, scale_amount_max)
+	_configure(SurfaceFeel.SprayKind.SPLASH)
+	_base_velocity = dry_velocity.lerp(_base_velocity, blend)
+	gravity = dry_gravity.lerp(gravity, blend)
+	lifetime = lerpf(dry_lifetime, lifetime, blend)
+	direction = dry_direction.lerp(direction, blend)
+	spread = lerpf(dry_spread, spread, blend)
+	scale_amount_min = lerpf(dry_scale.x, scale_amount_min, blend)
+	scale_amount_max = lerpf(dry_scale.y, scale_amount_max, blend)
+	update(_water_feel, strength, delta)
+	_mixed = true
 
 
 func _configure(new_kind: SurfaceFeel.SprayKind) -> void:
@@ -134,15 +179,21 @@ static func _shared_quad() -> QuadMesh:
 
 
 static func _growing_curve(to: float) -> Curve:
+	if _growth_curves.has(to):
+		return _growth_curves[to]
 	var curve := Curve.new()
 	curve.max_value = to
 	curve.add_point(Vector2(0.0, 1.0))
 	curve.add_point(Vector2(1.0, to))
+	_growth_curves[to] = curve
 	return curve
 
 
 static func _fading_ramp() -> Gradient:
+	if _fade != null:
+		return _fade
 	var ramp := Gradient.new()
 	ramp.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
 	ramp.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	_fade = ramp
 	return ramp
