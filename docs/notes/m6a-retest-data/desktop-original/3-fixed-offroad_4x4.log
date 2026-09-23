@@ -1,0 +1,10 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+water benchmark offroad_4x4 course build 0.080346 s, geometry 9211 primitives
+water benchmark offroad_4x4 shallow_05: n=570 p95=0.090 ms max=0.278 ms queries=7787 triangles=43506 draw=0 primitives=0 flood=0.000 stalled=false
+water benchmark offroad_4x4 shallow_30: n=570 p95=0.104 ms max=0.132 ms queries=7800 triangles=55228 draw=0 primitives=0 flood=0.000 stalled=false
+water benchmark offroad_4x4 calm_deep: n=570 p95=0.081 ms max=0.110 ms queries=7800 triangles=31200 draw=0 primitives=0 flood=0.250 stalled=false
+water benchmark offroad_4x4 current_deep: n=570 p95=0.080 ms max=0.091 ms queries=7800 triangles=31200 draw=0 primitives=0 flood=0.250 stalled=false
+water benchmark cleanup: nodes 8 orphans 0 resources 140
+WARNING: 20 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)

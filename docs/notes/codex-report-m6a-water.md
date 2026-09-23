@@ -1,5 +1,14 @@
 # Milestone 6A — water physics
 
+**Performance review reopened (2026-09-23).** The original desktop p95 figures
+below came from accelerated uncapped test mode and must not be used to infer
+phone headroom. Claude reported higher, repeatable timings. See
+`m6a-performance-retest-2026-09-23.md` for the repeated desktop/direct-phone
+audit and corrected acceptance status: **34/36 course cases exceed 0.50 ms p95;
+ford p95 is 4.26–4.28 ms; two creek views exceed 300k primitives; setup limits
+are also missed. Performance acceptance fails.** Historical measurements remain
+below for traceability; they are not a passed phone gate.
+
 Implemented and ready for PC playtesting / Claude review on `m6a-water-physics`,
 based on `master` `a3dbee4`. Phone acceptance is still pending.
 The owner approved the written spec on 2026-09-23. No merge or push; Coastal
@@ -190,12 +199,16 @@ intake marker follows the actual configured intake point.
 
 Never run these while the owner is playing; check for their Godot process first.
 
-## Pending acceptance / limitations
+## Original pending acceptance / limitations (superseded by the retest)
 
 The phone was not connected during initial development. Phone transparency,
 audio-loop/repeat-load stability, 60 fps, <150 draws, <300k primitives, water
 physics <=0.50 ms p95, timed-level setup <=0.10 s and course setup <=0.25 s must
 be measured on the Xiaomi 13. Desktop timings do not pass this gate.
+
+The later connected-phone retest is linked at the top of this report. It now
+provides those measurements and records the failures; subjective owner approval
+and any performance corrections remain outstanding.
 
 Rock Canyon already missed the overall 3-second phone load target at about
 3.9 seconds before water. M6A does not fix or waive that pre-existing miss.

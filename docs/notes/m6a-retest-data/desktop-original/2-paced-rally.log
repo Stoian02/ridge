@@ -1,0 +1,8 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+water benchmark rally course build 0.130345 s, geometry 9211 primitives
+water benchmark rally shallow_05: n=570 p95=0.274 ms max=0.472 ms queries=7787 triangles=43830 draw=0 primitives=0 flood=0.000 stalled=false
+water benchmark rally shallow_30: n=570 p95=0.356 ms max=0.976 ms queries=7800 triangles=55080 draw=0 primitives=0 flood=0.000 stalled=false
+water benchmark rally calm_deep: n=570 p95=0.259 ms max=0.405 ms queries=7800 triangles=31200 draw=0 primitives=0 flood=0.250 stalled=true
+water benchmark rally current_deep: n=570 p95=0.259 ms max=0.389 ms queries=7800 triangles=31200 draw=0 primitives=0 flood=0.250 stalled=true
+water benchmark cleanup: nodes 8 orphans 0 resources 140

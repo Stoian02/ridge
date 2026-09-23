@@ -1,0 +1,22 @@
+--------- beginning of main
+09-23 23:03:30.940 I/godot   (19180): Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+09-23 23:03:31.708 E/godot   (19180): ERROR: Couldn't create Android Surface (VkResult error -1000000001).
+09-23 23:03:31.708 E/godot   (19180):    at: surface_create (platform/android/rendering_context_driver_vulkan_android.cpp:52)
+09-23 23:03:31.708 E/godot   (19180): ERROR: Failed to create vulkan window.
+09-23 23:03:31.708 E/godot   (19180):    at: DisplayServerAndroid (platform/android/display_server_android.cpp:811)
+09-23 23:03:31.709 E/godot   (19180): ERROR: Unable to create DisplayServer, all display drivers failed.
+09-23 23:03:31.709 E/godot   (19180): Use "--headless" command line argument to run the engine in headless mode if this is desired (e.g. for continuous integration).
+09-23 23:03:31.709 E/godot   (19180):    at: setup2 (main/main.cpp:3390)
+09-23 23:03:31.714 E/godot   (19180): ERROR: Unable to complete engine setup!
+09-23 23:03:31.717 E/godot   (19180):    at: Java_org_godotengine_godot_GodotLib_step (platform/android/java_godot_lib_jni.cpp:302)
+09-23 23:03:31.717 E/godot   (19180): ERROR: Condition "!_start_success" is true.
+09-23 23:03:31.717 E/godot   (19180):    at: cleanup (main/main.cpp:5222)
+09-23 23:03:32.796 I/godot   (19585): Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+09-23 23:03:32.960 I/godot   (19585): Vulkan 1.3.128 - Forward Mobile - Using Device #0: Qualcomm - Adreno (TM) 740
+09-23 23:03:33.497 I/godot   (19585):
+09-23 23:03:35.732 I/godot   (19585): water benchmark offroad_4x4 course build 0.291611 s, geometry 9211 primitives
+09-23 23:03:41.464 I/godot   (19585): water benchmark offroad_4x4 shallow_05: n=570 p95=0.348 ms max=1.645 ms queries=7787 triangles=43506 draw=46 primitives=27759 flood=0.000 stalled=false
+09-23 23:03:46.463 I/godot   (19585): water benchmark offroad_4x4 shallow_30: n=570 p95=0.412 ms max=0.589 ms queries=7800 triangles=55228 draw=44 primitives=27659 flood=0.000 stalled=false
+09-23 23:03:51.463 I/godot   (19585): water benchmark offroad_4x4 calm_deep: n=570 p95=0.323 ms max=0.530 ms queries=7800 triangles=31200 draw=37 primitives=18279 flood=0.250 stalled=false
+09-23 23:03:56.463 I/godot   (19585): water benchmark offroad_4x4 current_deep: n=570 p95=0.968 ms max=1.138 ms queries=7800 triangles=31200 draw=37 primitives=17882 flood=0.250 stalled=false
+09-23 23:03:56.986 I/godot   (19585): water benchmark cleanup: nodes 8 orphans 0 resources 141

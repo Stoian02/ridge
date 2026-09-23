@@ -1,0 +1,37 @@
+1_offroad_4x4_shallow05: n=600 p95=0.296 ms max=0.910 ms
+1_offroad_4x4_shallow30: n=600 p95=0.355 ms max=0.477 ms
+1_offroad_4x4_calm: n=1920 p95=1.072 ms max=1.230 ms OVER LIMIT
+1_offroad_4x4_current: n=1920 p95=1.116 ms max=1.690 ms OVER LIMIT
+1_rally_shallow05: n=600 p95=1.120 ms max=1.401 ms OVER LIMIT
+1_rally_shallow30: n=600 p95=1.292 ms max=1.595 ms OVER LIMIT
+1_rally_calm: n=1920 p95=1.120 ms max=1.488 ms OVER LIMIT
+1_rally_current: n=1920 p95=1.128 ms max=1.625 ms OVER LIMIT
+1_rally_tuned_shallow05: n=600 p95=1.142 ms max=1.439 ms OVER LIMIT
+1_rally_tuned_shallow30: n=600 p95=1.352 ms max=1.598 ms OVER LIMIT
+1_rally_tuned_calm: n=1920 p95=1.121 ms max=1.934 ms OVER LIMIT
+1_rally_tuned_current: n=1920 p95=1.119 ms max=1.532 ms OVER LIMIT
+2_offroad_4x4_shallow05: n=600 p95=1.132 ms max=1.348 ms OVER LIMIT
+2_offroad_4x4_shallow30: n=600 p95=1.324 ms max=1.570 ms OVER LIMIT
+2_offroad_4x4_calm: n=1920 p95=1.140 ms max=1.507 ms OVER LIMIT
+2_offroad_4x4_current: n=1920 p95=1.131 ms max=1.447 ms OVER LIMIT
+2_rally_shallow05: n=600 p95=1.182 ms max=1.324 ms OVER LIMIT
+2_rally_shallow30: n=600 p95=1.366 ms max=1.602 ms OVER LIMIT
+2_rally_calm: n=1920 p95=1.062 ms max=6.779 ms OVER LIMIT
+2_rally_current: n=1920 p95=0.965 ms max=10.798 ms OVER LIMIT
+2_rally_tuned_shallow05: n=600 p95=1.142 ms max=1.448 ms OVER LIMIT
+2_rally_tuned_shallow30: n=600 p95=1.418 ms max=1.842 ms OVER LIMIT
+2_rally_tuned_calm: n=1920 p95=1.138 ms max=1.612 ms OVER LIMIT
+2_rally_tuned_current: n=1920 p95=1.079 ms max=2.580 ms OVER LIMIT
+3_offroad_4x4_shallow05: n=600 p95=1.142 ms max=1.421 ms OVER LIMIT
+3_offroad_4x4_shallow30: n=600 p95=0.997 ms max=1.321 ms OVER LIMIT
+3_offroad_4x4_calm: n=1920 p95=1.113 ms max=1.805 ms OVER LIMIT
+3_offroad_4x4_current: n=1920 p95=1.149 ms max=2.507 ms OVER LIMIT
+3_rally_shallow05: n=600 p95=0.953 ms max=1.579 ms OVER LIMIT
+3_rally_shallow30: n=600 p95=1.032 ms max=2.170 ms OVER LIMIT
+3_rally_calm: n=1920 p95=1.135 ms max=1.828 ms OVER LIMIT
+3_rally_current: n=1920 p95=1.137 ms max=1.542 ms OVER LIMIT
+3_rally_tuned_shallow05: n=600 p95=1.160 ms max=1.408 ms OVER LIMIT
+3_rally_tuned_shallow30: n=600 p95=1.029 ms max=1.515 ms OVER LIMIT
+3_rally_tuned_calm: n=1920 p95=1.147 ms max=1.631 ms OVER LIMIT
+3_rally_tuned_current: n=1920 p95=1.155 ms max=1.581 ms OVER LIMIT
+Verified 36 cases / 45360 ticks; 34 over the requested limit.

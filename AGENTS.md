@@ -13,20 +13,30 @@ was **approved by the owner on 2026-09-23 and is implemented** on
 acceptance is still pending.** Read `docs/notes/codex-report-m6a-water.md` for
 results, limitations and the playtest guide, and
 `docs/superpowers/plans/2026-09-23-m6a-water-physics.md` for completed work.
+**Performance review reopened:** see
+`docs/notes/m6a-performance-retest-2026-09-23.md`. The earlier accelerated
+desktop timings are not representative of normal gameplay; direct phone
+retests have exceeded the water-cost gate. Do not mark A accepted on the basis
+of the old performance table. This audit changes measurement tools, not physics.
 The conversation approved progressive drag, temporary flotation and
 sinking, recoverable intake-based stalls, steady currents, translucent water,
 feedback and three Test Ground water areas. Scope also includes Muddy Valley's
 creek and Rock Canyon's rut puddles. The written spec's numeric starting values
 and water-only car integration are now approved; existing dry tuning stays
 protected. Aquaplaning, deep-water skimming and visible snorkel art are deferred.
+The owner wants waves/vehicle-displaced water in a **separate future part**;
+recorded in `docs/notes/water-waves-followup.md` for later brainstorming.
+Its order relative to Coastal Highway is not yet approved; implement neither
+as part of this performance retest.
 
 **State:** Milestones 1–5 are merged into `master`, plus the 2026-09-23 AWD
 balance tuning and the build-speed refactor. Five levels (Rally Road, Muddy
 Valley, Frozen Pass, Rock Canyon, and the Test Ground as Free Drive), three
-cars. M6A's full desktop suite is **728 passing, 1 pre-existing pending, no
+cars. M6A's retested full desktop suite is **730 passing, 1 pre-existing pending, no
 SCRIPT ERROR**, with protected geometry and balance fixtures unchanged. Phone
-performance is not yet verified and Rock Canyon's inherited >3 s phone load
-miss remains open. Part B must not begin before A's review, phone acceptance
+retests have failed the water/setup budgets, and two creek views exceed the
+primitive limit. Rock Canyon's inherited >3 s phone load miss remains open.
+Part B must not begin before A's review, phone acceptance
 and owner-authorized merge.
 
 Background, in the order it is usually needed:

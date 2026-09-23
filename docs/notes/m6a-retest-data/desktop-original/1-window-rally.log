@@ -1,0 +1,17 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+WARNING: Failed to create wd.xic as the input method or its xim server may not have started yet.
+     at: _create_xic (platform/linuxbsd/x11/display_server_x11.cpp:6347)
+Vulkan 1.4.318 - Forward Mobile - Using Device #0: AMD - AMD Radeon 880M (RADV GFX1150)
+ERROR: PulseAudio: sink info error: No such entity
+   at: pa_sink_info_cb (drivers/pulseaudio/audio_driver_pulseaudio.cpp:83)
+ERROR: PulseAudio: init_output_device failed to detect number of output channels
+   at: init_output_device (drivers/pulseaudio/audio_driver_pulseaudio.cpp:200)
+
+water benchmark rally course build 0.115243 s, geometry 9211 primitives
+water benchmark rally shallow_05: n=570 p95=0.194 ms max=0.325 ms queries=7787 triangles=43830 draw=40 primitives=27035 flood=0.000 stalled=false
+water benchmark rally shallow_30: n=570 p95=0.293 ms max=0.401 ms queries=7800 triangles=55080 draw=39 primitives=17863 flood=0.000 stalled=false
+water benchmark rally calm_deep: n=570 p95=0.258 ms max=0.360 ms queries=7800 triangles=31200 draw=35 primitives=17536 flood=0.250 stalled=true
+water benchmark rally current_deep: n=570 p95=0.260 ms max=0.369 ms queries=7800 triangles=31200 draw=35 primitives=17242 flood=0.250 stalled=true
+water benchmark cleanup: nodes 8 orphans 0 resources 140
+WARNING: 25 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)

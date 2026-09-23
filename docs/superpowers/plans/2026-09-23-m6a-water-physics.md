@@ -124,9 +124,12 @@ mutable car state. Unbound worlds use the original dry path.
 
 ### 8. Phone, commits and handoff
 
-- [ ] Build/install preserving saves when phone is available and idle. Measure
+- [x] Build/install preserving saves when phone is available and idle. Measure
   all five levels in matched three-round load order, water p95/max physics time,
   drawing/FPS, repeated reset/load cleanup and audio behaviour.
+- [ ] Phone performance acceptance: the 2026-09-23 retest **failed** water,
+  setup and creek primitive budgets. Corrections and owner handling/audio
+  approval remain outstanding; completed measurements are not acceptance.
 - [x] Report all misses honestly, including inherited Rock Canyon >3 s. Do not
   add an unapproved build-speed project or alter physics/geometry to force budgets.
 - [x] Commit by feature, update AGENTS and write
@@ -148,3 +151,11 @@ mutable car state. Unbound worlds use the original dry path.
 - Implementation commits: `3021d5b` water volumes/adapters; `9e33cf7` vehicle
   integration; `ddda98e` test courses and feedback. Measurement tools and this
   handoff are a separate final commit. No merge/push or Part B work.
+- 2026-09-23 review follow-up: repeated original desktop benchmark in three
+  pacing modes, 36 phone course cases, 15 real-level phone views, 60 matched
+  baseline/current phone loads. Raw data and independent CSV checker retained.
+  Full suite rerun: 730 passing / one inherited pending / no script errors.
+  See `docs/notes/m6a-performance-retest-2026-09-23.md`: performance acceptance
+  fails. No runtime physics/tuning/geometry changes. Latest water APK restored,
+  save checksum unchanged. Waves/displacement recorded as a separate future
+  part for later brainstorming, not implemented or added to Coastal Highway.

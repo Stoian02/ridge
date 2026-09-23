@@ -1,0 +1,16 @@
+1_muddy_valley_780: n=1200 p95=0.454 ms max=0.531 ms
+1_muddy_valley_820: n=1200 p95=1.279 ms max=1.827 ms
+1_muddy_valley_860: n=1200 p95=0.989 ms max=1.274 ms
+1_rock_canyon_340: n=1200 p95=1.830 ms max=2.335 ms
+1_rock_canyon_1290: n=1200 p95=4.263 ms max=6.447 ms
+2_muddy_valley_780: n=1200 p95=1.292 ms max=1.760 ms
+2_muddy_valley_820: n=1200 p95=1.320 ms max=1.665 ms
+2_muddy_valley_860: n=1200 p95=1.007 ms max=1.418 ms
+2_rock_canyon_340: n=1200 p95=1.819 ms max=2.144 ms
+2_rock_canyon_1290: n=1200 p95=4.277 ms max=6.405 ms
+3_muddy_valley_780: n=1200 p95=1.280 ms max=1.907 ms
+3_muddy_valley_820: n=1200 p95=1.319 ms max=2.047 ms
+3_muddy_valley_860: n=1200 p95=0.998 ms max=1.615 ms
+3_rock_canyon_340: n=1200 p95=1.827 ms max=2.132 ms
+3_rock_canyon_1290: n=1200 p95=4.270 ms max=5.233 ms
+Verified 15 cases / 18000 ticks; no gate requested.
