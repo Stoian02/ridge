@@ -52,6 +52,10 @@ func _drive(level: RunLevel, finish: float, limit: float) -> Dictionary:
 			touched[i] = true
 			var stone := stones.stones[i]
 			if stone.position.y < level.trail.field.height_at(stone.position.x, stone.position.z) - 1.0:
+				if not penetrated:
+					gut.p("First below-terrain stone at %.3f s: %s, position %s, rest %s, terrain %.3f, velocity %s" % [
+						elapsed, stone.name, stone.position, stones._rest_transforms[i].origin,
+						level.trail.field.height_at(stone.position.x, stone.position.z), stone.linear_velocity])
 				penetrated = true
 			if stone.linear_velocity.length() > peak_speed:
 				peak_speed = stone.linear_velocity.length()

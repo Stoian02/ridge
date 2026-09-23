@@ -6,7 +6,8 @@ extends Node
 ##   adb logcat -s godot
 
 const LEVELS: Array[String] = ["res://levels/rally_road/rally_road.tscn", "res://levels/muddy_valley/muddy_valley.tscn",
-		"res://levels/frozen_pass/frozen_pass.tscn", "res://levels/rock_canyon/rock_canyon.tscn"]
+		"res://levels/frozen_pass/frozen_pass.tscn", "res://levels/rock_canyon/rock_canyon.tscn",
+		"res://levels/test_ground/test_ground.tscn"]
 const ROUNDS := 3
 ## Frames to wait after freeing a level, so it is gone before the next load.
 const SETTLE_FRAMES := 30
@@ -29,5 +30,9 @@ func _ready() -> void:
 			level.queue_free()
 			for i in SETTLE_FRAMES:
 				await get_tree().process_frame
+			print("benchmark cleanup: nodes %d, orphan nodes %d, resources %d" % [
+				Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
+				Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT),
+				Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)])
 	print("benchmark done")
 	get_tree().quit()

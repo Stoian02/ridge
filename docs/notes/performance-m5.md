@@ -116,3 +116,46 @@ its own task and tests rather than a patch at the end of a session.
 A smaller, independent win if that is ever wanted on its own: the canyon-wall
 painting steps 1 m along and across a 2 m grid, so each cell is visited about
 four times. Tying `WALL_STEP` to `spacing` would roughly halve `walls`.
+
+## Build-speed branch — 2026-09-23 follow-up
+
+The owner approved a geometry-preserving refactor. **The suggested coarser wall
+step was not used**: it could change which stamp wins for a cell. All original
+1 m samples remain, evaluated in their original per-cell order by row-band
+workers. Exact build-time sample reuse, flat height/colour inputs, independent
+earth-join workers, local-array earthworks and private-noise terrain bands are
+implemented on `build-speed`, not merged. See
+`codex-report-build-speed.md` for the tests, limits and review handoff.
+
+Fresh Xiaomi 13 measurements use the same five-level order (the four timed
+tracks, then Test Ground), three rounds, unchanged settle intervals. Rock Canyon
+build seconds are **5.96 / 9.05 / 11.19 before**, **3.81 / 3.79 / 6.29 after**.
+The first-round phase comparison is:
+
+| Phase | Before | After |
+| --- | ---: | ---: |
+| field | 1.55 s | 0.83 s |
+| road | 0.86 s | 0.68 s |
+| road_blend | 1.05 s | 0.30 s |
+| shelf | 1.05 s | 0.77 s |
+| talus | 0.60 s | 0.51 s |
+| terrain | 0.29 s | 0.29 s |
+| scatter | 0.23 s | 0.22 s |
+
+Field subphases: natural **0.19 → 0.10 s**, carve **0.09 → 0.08 s**, walls
+**0.39 → 0.19 s**, earthworks **0.80 → 0.38 s**. The whole field phase also
+includes stamp preparation. Shelf roadbed sampling is now **0.014 s**; its hull
+loop costs **0.267 s**, within **0.588 s** for the whole roadbed. Road node/shape
+creation costs **0.252 s**, separate from snapshot **0.254 s** and worker data
+**0.166 s**. Remaining engine construction is not assumed to be safe to thread.
+
+Other levels' total load/ready times were lower in each corresponding round;
+the report contains all five tracks' numbers. Final cleanup returns to 8 nodes,
+0 orphans every time, with stable per-level resource counts in rounds 2–3.
+Repeated-load slowdown remains; these counts do not rule out engine/allocator
+or thermal effects. Logs: `/tmp/ridge-buildspeed-baseline-phone.log` and
+`/tmp/ridge-buildspeed-final-phone.log`.
+
+**The under-3-second phone target is not met.** Do not treat the faster builds
+or exact geometry checks as completion of that acceptance gate. No stone-window,
+banking, car balance, grip, collision-detail or physics-threading change was made.

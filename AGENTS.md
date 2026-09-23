@@ -1,9 +1,15 @@
 # Ridge — notes for coding agents
 
-**Current handoff:** read `docs/notes/handover-codex-2026-09-23.md` first — the
-open task is the build-speed refactor (Rock Canyon builds in ~5.7 s on the phone
-against a 3 s budget), on branch `build-speed`, not merged and not pushed.
-It also summarises what shipped recently and the rules.
+**Current handoff:** read `docs/notes/codex-report-build-speed.md` first, then
+`docs/notes/handover-codex-2026-09-23.md` for the original task and rules. The
+geometry-preserving refactor is on `build-speed`, not merged or pushed, for
+Claude/owner review. Phone builds improved from 5.96/9.05/11.19 s to
+3.81/3.79/6.29 s across three rounds, but **the under-3-second gate is still
+unmet**. Do not mark the performance task complete. Final full suite: 654 passed,
+1 existing pending, exit 0, no script errors; the report also records an earlier
+intermittent shelf stone-penetration failure. Exact geometry fixtures, car values,
+stone settings and the 1 m canyon-wall sampling interval remain unchanged.
+Stop for review before expanding into resource caching/baking or engine changes.
 
 **State:** Milestones 1–5 are merged into `master` (Rally Road, Muddy Valley,
 cars and car select, surface feedback and sound, Frozen Pass, Rock Canyon, plus
