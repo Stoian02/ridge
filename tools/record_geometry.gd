@@ -6,7 +6,7 @@ extends SceneTree
 ## Paste the printed lines into the test's EXPECTED table only after a change
 ## that is meant to alter a level, never to make a regression pass.
 
-const LEVELS: Array[String] = ["rally_road", "muddy_valley", "frozen_pass"]
+const LEVELS: Array[String] = ["rally_road", "muddy_valley", "frozen_pass", "rock_canyon"]
 
 
 ## Runs on the first frame rather than in _init, because only then is the root
