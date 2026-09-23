@@ -14,6 +14,7 @@ const STRATA_COLORS: Array[Color] = [Color(0.58, 0.35, 0.24), Color(0.65, 0.43, 
 var wall_chunks := 0
 var gravel_chunks := 0
 var _rock_noise := FastNoiseLite.new()
+var last_timings: Dictionary = {}
 
 
 func build(sampler: RoadSampler, profile: RoadProfile, field: TerrainField, trail: TrailDef) -> void:
@@ -22,22 +23,32 @@ func build(sampler: RoadSampler, profile: RoadProfile, field: TerrainField, trai
 		child.queue_free()
 	wall_chunks = 0
 	gravel_chunks = 0
+	last_timings.clear()
+	var wall_usec := 0
+	var subsoil_usec := 0
 	_rock_noise.seed = trail.seed + 1301
 	_rock_noise.frequency = 0.13
 	_rock_noise.fractal_octaves = 3
 	for section: Vector4 in trail.shelf_walls:
+		var started := Time.get_ticks_usec()
 		var from := section.x
 		var end := minf(section.x + section.y, sampler.length - 1.0)
 		while from < end:
 			var to := minf(from + CHUNK_LENGTH, end)
 			_wall(sampler, profile, field, section, from, to)
 			from = to
+		wall_usec += Time.get_ticks_usec() - started
+		started = Time.get_ticks_usec()
 		_subsoil(sampler, field, section)
+		subsoil_usec += Time.get_ticks_usec() - started
+	last_timings["wall"] = wall_usec / 1000000.0
+	last_timings["subsoil"] = subsoil_usec / 1000000.0
 	var has_gravel := false
 	for def: TalusDef in trail.talus:
 		has_gravel = has_gravel or def.gravel_bed
 	if not has_gravel:
 		return
+	var started := Time.get_ticks_usec()
 	var rows := RoadBuilder.row_distances(sampler.length, profile, trail)
 	var laterals: Array[float] = []
 	for station: Vector2 in RoadBuilder.cross_section(trail):
@@ -46,6 +57,7 @@ func build(sampler: RoadSampler, profile: RoadProfile, field: TerrainField, trai
 	for def: TalusDef in trail.talus:
 		if def.gravel_bed:
 			_roadbed(sampler, profile, field, def, rows, laterals)
+	last_timings["roadbed"] = (Time.get_ticks_usec() - started) / 1000000.0
 
 
 func _wall(sampler: RoadSampler, profile: RoadProfile, field: TerrainField,
@@ -124,12 +136,17 @@ func _roadbed(sampler: RoadSampler, profile: RoadProfile, field: TerrainField,
 	var sides := StructureMesh.new()
 	var supports: Dictionary = {}
 	var before := PackedVector3Array()
+	var sampling_usec := 0
+	var hull_usec := 0
 	for row in range(rows.bsearch(def.start), mini(rows.bsearch(def.end()), rows.size() - 1)):
+		var sampled := Time.get_ticks_usec()
 		var from := rows[row]
 		var to := rows[row + 1]
 		if before.is_empty():
 			before = _support_row(sampler, profile, from, laterals)
 		var after := _support_row(sampler, profile, to, laterals)
+		sampling_usec += Time.get_ticks_usec() - sampled
+		var hulled := Time.get_ticks_usec()
 		var surface := profile.surface_at((from + to) * 0.5)
 		if not supports.has(surface):
 			var body := StaticBody3D.new()
@@ -154,6 +171,7 @@ func _roadbed(sampler: RoadSampler, profile: RoadProfile, field: TerrainField,
 				var shape := CollisionShape3D.new()
 				shape.shape = hull
 				(supports[surface] as StaticBody3D).add_child(shape)
+		hull_usec += Time.get_ticks_usec() - hulled
 		for side: float in [-1.0, 1.0]:
 			var near := sampler.surface_point(from, side * sampler.half_width_at(from), profile)
 			var far := sampler.surface_point(to, side * sampler.half_width_at(to), profile)
@@ -167,6 +185,8 @@ func _roadbed(sampler: RoadSampler, profile: RoadProfile, field: TerrainField,
 	if instance != null:
 		instance.visibility_range_end = VIEW_DISTANCE
 	gravel_chunks += 1
+	last_timings["sampling"] = float(last_timings.get("sampling", 0.0)) + sampling_usec / 1000000.0
+	last_timings["hulls"] = float(last_timings.get("hulls", 0.0)) + hull_usec / 1000000.0
 
 
 ## Sample a road frame once per row, instead of four times per triangle pair.

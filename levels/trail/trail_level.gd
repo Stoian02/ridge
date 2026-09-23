@@ -66,6 +66,8 @@ func build() -> void:
 	var road: Path3D = $Road
 	sampler = RoadSampler.new(road.curve, trail.use_curve_banking, trail)
 	profile = RoadProfile.new(trail, sampler.length)
+	sampler.cache_build_samples(true)
+	profile.cache_build_samples(true)
 	field = TerrainField.generate(sampler, trail, terrain, true, profile)
 	_lap(&"field")
 
@@ -135,6 +137,9 @@ func build() -> void:
 	shelf_builder.name = "Shelf"
 	generated.add_child(shelf_builder)
 	shelf_builder.build(sampler, profile, field, trail)
+	# Dense authored rows are done. Random stone/scatter samples are mostly
+	# one-off queries, so don't allocate per-row profile snapshots for them.
+	profile.cache_build_samples(false)
 	_lap(&"shelf")
 
 	talus_builder = TalusBuilder.new()
@@ -173,6 +178,8 @@ func build() -> void:
 	checkpoints.build(sampler, profile, trail)
 	_lap(&"checkpoints")
 
+	sampler.cache_build_samples(false)
+	profile.cache_build_samples(false)
 	build_seconds = (Time.get_ticks_usec() - started) / 1000000.0
 	built.emit()
 
@@ -188,8 +195,19 @@ func phase_summary() -> String:
 	var field_split := PackedStringArray()
 	for part: StringName in field.last_timings if field != null else {}:
 		field_split.append("%s %.2f" % [part, field.last_timings[part]])
+	var extras := PackedStringArray()
+	for builder: Node3D in [road_builder, road_blend_builder, shelf_builder]:
+		if builder == null:
+			continue
+		var timings: Dictionary = builder.get("last_timings")
+		var details := PackedStringArray()
+		for part: String in timings:
+			details.append("%s %.3f" % [part, timings[part]])
+		if not details.is_empty():
+			extras.append("%s: %s" % [builder.name, ", ".join(details)])
 	return ", ".join(parts) + ("; terrain: " + ", ".join(split) if not split.is_empty() else "") \
-			+ ("; field: " + ", ".join(field_split) if not field_split.is_empty() else "")
+			+ ("; field: " + ", ".join(field_split) if not field_split.is_empty() else "") \
+			+ ("; " + "; ".join(extras) if not extras.is_empty() else "")
 
 
 ## Records the time since the previous lap as `phase`.

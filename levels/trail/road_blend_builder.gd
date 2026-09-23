@@ -6,6 +6,9 @@ extends Node3D
 const COLUMNS := 5
 var _appearance_field: TerrainField
 var _ground_cache: Dictionary = {}
+## The original serial path remains an independent reference for parity tests.
+@export var threaded := true
+var last_timings: Dictionary = {}
 
 
 func build(sampler: RoadSampler, profile: RoadProfile, field: TerrainField, trail: TrailDef) -> void:
@@ -13,17 +16,82 @@ func build(sampler: RoadSampler, profile: RoadProfile, field: TerrainField, trai
 		remove_child(child)
 		child.queue_free()
 	_ground_cache.clear()
+	last_timings.clear()
 	_appearance_field = field
 	if trail.terrain_blend_width <= 0.0:
 		return
 	var rows := RoadBuilder.row_distances(sampler.length, profile, trail)
+	var inputs: Array[Dictionary] = []
+	var results: Array[Dictionary] = []
 	var first := 0
+	var started := Time.get_ticks_usec()
 	while first < rows.size() - 1:
 		var last := first + 1
 		while last < rows.size() - 1 and rows[last + 1] <= rows[first] + trail.chunk_length:
 			last += 1
-		_chunk(sampler, profile, field, trail, rows.slice(first, last + 1))
+		var chunk_rows := rows.slice(first, last + 1)
+		if threaded:
+			inputs.append(_snapshot(sampler, profile, field, trail, chunk_rows))
+			results.append({})
+		else:
+			_chunk(sampler, profile, field, trail, chunk_rows)
 		first = last
+	if threaded and not inputs.is_empty():
+		last_timings["snapshot"] = (Time.get_ticks_usec() - started) / 1000000.0
+		started = Time.get_ticks_usec()
+		var work := func(i: int) -> void:
+			RoadBlendData.compute(inputs[i], results[i])
+		var task := WorkerThreadPool.add_group_task(work, inputs.size(), -1, true, "Earth joins")
+		WorkerThreadPool.wait_for_group_task_completion(task)
+		last_timings["data"] = (Time.get_ticks_usec() - started) / 1000000.0
+		started = Time.get_ticks_usec()
+		for i in results.size():
+			var collision: Dictionary = {}
+			var surfaces: Array[SurfaceDef] = inputs[i]["surfaces"]
+			var faces: Array[PackedVector3Array] = results[i]["faces"]
+			for surface in surfaces.size():
+				if not faces[surface].is_empty():
+					collision[surfaces[surface]] = faces[surface]
+			_add_data(results[i]["arrays"], collision, inputs[i]["rows"], trail)
+		last_timings["nodes"] = (Time.get_ticks_usec() - started) / 1000000.0
+
+
+func _snapshot(sampler: RoadSampler, profile: RoadProfile, field: TerrainField,
+		trail: TrailDef, rows: PackedFloat32Array) -> Dictionary:
+	var edges := PackedVector3Array()
+	var outwards := PackedVector3Array()
+	var ups := PackedVector3Array()
+	var colors := PackedColorArray()
+	var reaches := PackedFloat64Array()
+	for side: float in [-1.0, 1.0]:
+		for distance: float in rows:
+			edges.append(sampler.surface_point(distance, side * sampler.half_width_at(distance), profile))
+			var right := sampler.right(distance)
+			outwards.append(Vector3(right.x, 0.0, right.z).normalized() * side)
+			if side < 0.0:
+				ups.append(sampler.up(distance))
+				colors.append(profile.surface_color(distance, trail.shoulder_color, true))
+				reaches.append(width_at(trail, distance))
+	var surfaces: Array[SurfaceDef] = []
+	var surface_ids := PackedInt32Array()
+	for row in rows.size() - 1:
+		if reaches[row] < 0.001 and reaches[row + 1] < 0.001:
+			surface_ids.append(-1)
+			continue  # preserve first emitted surface order, not invisible-row order
+		var midpoint := (rows[row] + rows[row + 1]) * 0.5
+		var surface := trail.shoulder_surface
+		var stretch := profile.stretch_at(midpoint)
+		if stretch != null and stretch.affects_shoulders:
+			surface = stretch.surface_at(midpoint)
+		if not surfaces.has(surface):
+			surfaces.append(surface)
+		surface_ids.append(surfaces.find(surface))
+	return {"edges": edges, "outwards": outwards, "ups": ups, "colors": colors,
+		"reaches": reaches, "surfaces": surfaces, "surface_ids": surface_ids, "surface_count": surfaces.size(),
+		"rows": rows, "heights": field.heights, "strata": field.wall_strata, "wear": field.wear,
+		"origin": field.origin, "spacing": field.spacing, "columns": field.columns, "field_rows": field.rows,
+		"dirt_color": field.def.dirt_color, "rock_color": field.def.rock_color,
+		"wear_color": field.wear_color, "rock_slope": field.def.rock_slope_deg}
 
 
 ## Keep the technical shelf's width and the ford's open water/rock banks.
@@ -82,6 +150,12 @@ func _chunk(sampler: RoadSampler, profile: RoadProfile, field: TerrainField,
 	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_COLOR] = colors
 	arrays[Mesh.ARRAY_INDEX] = indices
+	_add_data(arrays, collision, rows, trail)
+
+
+func _add_data(arrays: Array, collision: Dictionary, rows: PackedFloat32Array, trail: TrailDef) -> void:
+	if arrays[Mesh.ARRAY_INDEX].is_empty():
+		return
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	var material := StandardMaterial3D.new()

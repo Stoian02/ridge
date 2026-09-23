@@ -16,9 +16,12 @@ const MIN_STATION_GAP := 0.05
 
 ## Tests retain the original serial builder as an independent reference.
 @export var threaded: bool = true
+var last_timings: Dictionary = {}
 
 
 func build(sampler: RoadSampler, profile: RoadProfile, def: TrailDef) -> void:
+	last_timings.clear()
+	var started := Time.get_ticks_usec()
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
@@ -67,10 +70,14 @@ func build(sampler: RoadSampler, profile: RoadProfile, def: TrailDef) -> void:
 			_add_chunk(sampler, profile, def, stations, rows, chunk_material)
 		chunk_start = chunk_end
 	if threaded:
+		last_timings["snapshot"] = (Time.get_ticks_usec() - started) / 1000000.0
+		started = Time.get_ticks_usec()
 		var work := func(i: int) -> void:
 			RoadChunkData.compute(inputs[i], results[i])
 		var task := WorkerThreadPool.add_group_task(work, inputs.size(), -1, true, "Road chunks")
 		WorkerThreadPool.wait_for_group_task_completion(task)
+		last_timings["data"] = (Time.get_ticks_usec() - started) / 1000000.0
+		started = Time.get_ticks_usec()
 		for i in results.size():
 			var mesh := ArrayMesh.new()
 			var arrays: Array = results[i]["arrays"]
@@ -90,6 +97,7 @@ func build(sampler: RoadSampler, profile: RoadProfile, def: TrailDef) -> void:
 			for surface in surfaces.size():
 				if not faces[surface].is_empty():
 					add_child(_collision_body(faces[surface], surfaces[surface]))
+		last_timings["nodes"] = (Time.get_ticks_usec() - started) / 1000000.0
 
 
 ## Resolve resources and sample the curve once per row on the main thread;

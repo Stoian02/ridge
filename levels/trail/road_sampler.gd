@@ -11,6 +11,22 @@ var use_curve_banking: bool
 ## The trail whose width profile half_width_at follows; a default TrailDef when none is given.
 var trail: TrailDef
 
+## Main-thread, build-lifetime memoization only. Exact distance keys, no snapping
+## or interpolation. Cleared before gameplay so edits/continuous queries stay live.
+var _building := false
+var _positions: Dictionary[float, Vector3] = {}
+var _forwards: Dictionary[float, Vector3] = {}
+var _ups: Dictionary[float, Vector3] = {}
+var _rights: Dictionary[float, Vector3] = {}
+
+
+func cache_build_samples(enabled: bool) -> void:
+	_building = enabled
+	_positions.clear()
+	_forwards.clear()
+	_ups.clear()
+	_rights.clear()
+
 
 func _init(road_curve: Curve3D, banking: bool = true, trail_def: TrailDef = null) -> void:
 	curve = road_curve
@@ -30,14 +46,33 @@ func road_half_width_at(distance: float) -> float:
 
 
 func position(distance: float) -> Vector3:
-	return curve.sample_baked(clampf(distance, 0.0, length), true)
+	if _building and _positions.has(distance):
+		return _positions[distance]
+	var value := curve.sample_baked(clampf(distance, 0.0, length), true)
+	if _building:
+		_positions[distance] = value
+	return value
 
 
 func forward(distance: float) -> Vector3:
-	return (position(distance + 0.5) - position(distance - 0.5)).normalized()
+	if _building and _forwards.has(distance):
+		return _forwards[distance]
+	var value := (position(distance + 0.5) - position(distance - 0.5)).normalized()
+	if _building:
+		_forwards[distance] = value
+	return value
 
 
 func up(distance: float) -> Vector3:
+	if _building and _ups.has(distance):
+		return _ups[distance]
+	var value := _surface_up(distance)
+	if _building:
+		_ups[distance] = value
+	return value
+
+
+func _surface_up(distance: float) -> Vector3:
 	var tilted_up: Vector3 = curve.sample_baked_up_vector(clampf(distance, 0.0, length), true) if use_curve_banking else Vector3.UP
 	var along := forward(distance)
 	var orthogonal := (tilted_up - along * tilted_up.dot(along)).normalized()
@@ -57,7 +92,12 @@ func up(distance: float) -> Vector3:
 
 
 func right(distance: float) -> Vector3:
-	return forward(distance).cross(up(distance)).normalized()
+	if _building and _rights.has(distance):
+		return _rights[distance]
+	var value := forward(distance).cross(up(distance)).normalized()
+	if _building:
+		_rights[distance] = value
+	return value
 
 
 ## Distance along the road of the centre-line point nearest to `point`.

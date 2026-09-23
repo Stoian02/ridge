@@ -30,6 +30,22 @@ var _pothole_distances := PackedFloat32Array()
 var _max_pothole_radius := 0.0
 var _phases := Vector2.ZERO
 var _gravel_ranges: Array[Vector2] = []
+var _building := false
+var _longitudinal: Dictionary[float, float] = {}
+var _height_samples: Dictionary = {}
+var _height_profiles: Dictionary = {}
+var _road_color_weights: Dictionary = {}
+var _shoulder_color_weights: Dictionary = {}
+
+
+## Only enabled while immutable trail data is being built on the main thread.
+func cache_build_samples(enabled: bool) -> void:
+	_building = enabled
+	_longitudinal.clear()
+	_height_samples.clear()
+	_height_profiles.clear()
+	_road_color_weights.clear()
+	_shoulder_color_weights.clear()
 
 
 func _init(trail_def: TrailDef, length: float) -> void:
@@ -92,13 +108,27 @@ func _init(trail_def: TrailDef, length: float) -> void:
 
 ## Total surface offset at a point of the road (m).
 func height(distance: float, lateral: float) -> float:
+	if _building:
+		if not _height_profiles.has(distance):
+			_height_profiles[distance] = RoadHeightData.snapshot(self, distance)
+			_height_samples[distance] = {}
+		if _height_samples[distance].has(lateral):
+			return _height_samples[distance][lateral]
+		var value := RoadHeightData.height(_height_profiles[distance], lateral)
+		_height_samples[distance][lateral] = value
+		return value
 	return longitudinal_height(distance) + rough_height(distance, lateral) \
 			+ rut_height(distance, lateral) + step_height(distance, lateral)
 
 
 func longitudinal_height(distance: float) -> float:
-	return undulation(distance) + local_undulation(distance) + jump_height(distance) + bridge_height(distance) \
+	if _building and _longitudinal.has(distance):
+		return _longitudinal[distance]
+	var value := undulation(distance) + local_undulation(distance) + jump_height(distance) + bridge_height(distance) \
 			+ roller_height(distance) + ford_height(distance)
+	if _building:
+		_longitudinal[distance] = value
+	return value
 
 
 func ford_height(distance: float) -> float:
@@ -146,6 +176,12 @@ func surface_color(distance: float, base: Color, shoulder: bool = false) -> Colo
 		var stretch := stretch_at(distance)
 		return base.lerp(stretch.color, stretch.weight(distance)) \
 			if stretch != null and (not shoulder or stretch.affects_shoulders) else base
+	var cache := _shoulder_color_weights if shoulder else _road_color_weights
+	if _building and cache.has(distance):
+		var cached: Dictionary = cache[distance]
+		var sum: Color = cached["sum"]
+		var total: float = cached["total"]
+		return (sum + base * maxf(0.0, 1.0 - total)) / maxf(1.0, total)
 	var sum := Color(0, 0, 0, 0)
 	var total := 0.0
 	for stretch: SurfaceStretch in def.surface_stretches:
@@ -158,6 +194,8 @@ func surface_color(distance: float, base: Color, shoulder: bool = false) -> Colo
 		var weight := minf(entry, 1.0 - smoothstep(stretch.end() - blend, stretch.end() + blend, distance))
 		sum += stretch.color * weight
 		total += weight
+	if _building:
+		cache[distance] = {"sum": sum, "total": total}
 	return (sum + base * maxf(0.0, 1.0 - total)) / maxf(1.0, total)
 
 
