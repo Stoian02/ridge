@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-23
 
-**Status:** Draft for the owner's written review; not an implementation approval.
+**Status:** Approved by the owner on 2026-09-23: "I approve of the plan. So go ahead".
 
 **Builds on:** `master` at `a3dbee4`, after the reviewed build-speed refactor and AWD tuning.
 
@@ -12,12 +12,13 @@
 
 **Parent:** `docs/superpowers/specs/2026-09-11-ridge-design.md`; supersedes the visual-only-water restriction in Milestone 5, not its accepted level geometry.
 
-The behaviour decisions in §2 were approved in conversation. **The exact numbers,
-data layout and integration details below are proposed starting values for this
-review.** They are not measured results or real-world wading ratings. Approval of
-this written spec authorizes planning these water-specific changes; existing car
-tuning and surface values remain protected. Later tuning changes need the owner's
-approval and must be recorded, not hidden by weakening tests.
+The behaviour decisions in §2 and this written spec, including its starting
+numbers and water-specific car integration, are approved for implementation.
+These are initial tuning values, not measured results or real-world wading
+ratings. Existing dry-car tuning and surface values remain protected. Later
+tuning changes need the owner's approval and must be recorded, not hidden by
+weakening tests. "Proposed" below denotes those approved initial design values,
+not a promise that the physics or device performance has already been verified.
 
 **Owner review guide:** §2 records the agreed choices; §3 describes play; §6
 contains the proposed car limits/timers; §9 shows the test area; §10 covers its

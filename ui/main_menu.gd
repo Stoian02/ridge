@@ -15,9 +15,16 @@ const BENCHMARK_SCENE := "res://debug/load_benchmark.tscn"
 ## The same trick for the loose-stone cost probe: touch "shelf_stress" instead.
 const STRESS_FILE := "user://shelf_stress"
 const STRESS_SCENE := "res://debug/shelf_stress.tscn"
+## Android drops scene arguments; use this one-shot flag for water profiling.
+const WATER_FILE := "user://water_benchmark"
+const WATER_SCENE := "res://debug/water_benchmark.tscn"
 
 
 func _ready() -> void:
+	if OS.is_debug_build() and FileAccess.file_exists(WATER_FILE):
+		DirAccess.remove_absolute(WATER_FILE)
+		get_tree().change_scene_to_file.call_deferred(WATER_SCENE)
+		return
 	var stressed := OS.is_debug_build() and FileAccess.file_exists(STRESS_FILE)
 	if stressed:
 		DirAccess.remove_absolute(STRESS_FILE)
