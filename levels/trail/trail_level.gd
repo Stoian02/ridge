@@ -38,6 +38,8 @@ var hedge_builder: HedgeBuilder
 var creek_builder: CreekBuilder
 var scatter_builder: ScatterBuilder
 var checkpoints: CheckpointPlacer
+## One world survives rebuilds so the rig never retains an abandoned registry.
+var water_world := WaterWorld.new()
 ## How long the last build took (s).
 var build_seconds := 0.0
 ## Seconds each part of the last build took, in build order (phase name -> seconds).
@@ -53,6 +55,7 @@ func _ready() -> void:
 
 func build() -> void:
 	var started := Time.get_ticks_usec()
+	water_world.clear()
 	build_phases.clear()
 	_lap_usec = started
 	var old := get_node_or_null("Generated")
@@ -177,11 +180,34 @@ func build() -> void:
 	generated.add_child(checkpoints)
 	checkpoints.build(sampler, profile, trail)
 	_lap(&"checkpoints")
+	refresh_water()
+	_lap(&"water")
 
 	sampler.cache_build_samples(false)
 	profile.cache_build_samples(false)
 	build_seconds = (Time.get_ticks_usec() - started) / 1000000.0
 	built.emit()
+
+
+## Re-register after rebuilding a water builder or moving/rotating a level.
+## Only fixed solid builders are bed sources; loose stones get no water forces.
+func refresh_water() -> void:
+	water_world.clear()
+	var roots: Array[Node3D] = [road_builder, road_blend_builder, shortcut_builder,
+			rock_step_builder, boulder_builder, fallen_tree_builder, shelf_builder]
+	var transform := WaterBed.node_transform(self)
+	var source: WaterBed = null
+	if not rut_water_builder.puddle_ranges.is_empty() or not ford_builder.water_levels.is_empty() \
+			or not creek_builder.water_points.is_empty():
+		source = WaterBed.new()
+		source.configure(field, roots, transform)
+	rut_water_builder.register_water(water_world, field, roots, transform, source)
+	ford_builder.register_water(water_world, field, roots, transform, source)
+	creek_builder.register_water(water_world, field, roots, transform, source)
+
+
+func _exit_tree() -> void:
+	water_world.clear()
 
 
 ## The last build's phases as "field 0.29 s, road 0.21 s, ...".
@@ -205,6 +231,9 @@ func phase_summary() -> String:
 			details.append("%s %.3f" % [part, timings[part]])
 		if not details.is_empty():
 			extras.append("%s: %s" % [builder.name, ", ".join(details)])
+	if not water_world.bodies.is_empty():
+		extras.append("Water ruts: %s; ford: %s; creek: %s" % [rut_water_builder.water_summary(),
+				ford_builder.water_summary(), creek_builder.water_summary()])
 	return ", ".join(parts) + ("; terrain: " + ", ".join(split) if not split.is_empty() else "") \
 			+ ("; field: " + ", ".join(field_split) if not field_split.is_empty() else "") \
 			+ ("; " + "; ".join(extras) if not extras.is_empty() else "")

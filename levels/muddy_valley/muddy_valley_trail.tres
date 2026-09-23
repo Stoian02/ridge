@@ -76,6 +76,7 @@ checkpoint_distances = PackedFloat32Array(270, 650, 950, 1230)
 creek_start = 745.0
 creek_length = 150.0
 creek_offset = 17.0
+creek_current_speed = 0.35
 hedges = Array[Vector3]([Vector3(755, 100, -1), Vector3(755, 100, 1), Vector3(975, 80, -1), Vector3(975, 80, 1), Vector3(1295, 210, -1), Vector3(1295, 210, 1)])
 hedge_gaps = Array[Vector3]([Vector3(1463, 24, -1)])
 hedge_returns = Array[Vector3]([Vector3(755, 24, -1), Vector3(855, 24, -1), Vector3(755, 4, 1), Vector3(855, 4, 1), Vector3(975, 24, -1), Vector3(1055, 24, -1), Vector3(975, 24, 1), Vector3(1055, 24, 1), Vector3(1505, 24, -1), Vector3(1295, 24, 1), Vector3(1505, 24, 1)])

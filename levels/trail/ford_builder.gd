@@ -9,7 +9,7 @@ const LEDGE_RUN := FordDef.LEDGE_RUN
 const SCROLL_PER_SECOND := 0.8
 const MIST_AMOUNT := 32
 const SOUND_DISTANCE := 80.0
-const WATER_ALPHA := 0.75
+const WATER_ALPHA := 0.50
 const FOAM_ALPHA := 0.8
 const ROCK_INSET := 0.15
 
@@ -20,9 +20,12 @@ var waterfall_tops := PackedVector3Array()
 
 var _waterfall_materials: Array[StandardMaterial3D] = []
 var _players: Array[AudioStreamPlayer3D] = []
+var _water_defs: Array[WaterBodyDef] = []
+var _registrations := WaterRegistration.new()
 
 
 func build(sampler: RoadSampler, profile: RoadProfile, field: TerrainField, trail: TrailDef) -> void:
+	_registrations.clear()
 	_stop_players()
 	for child in get_children():
 		remove_child(child)
@@ -32,6 +35,7 @@ func build(sampler: RoadSampler, profile: RoadProfile, field: TerrainField, trai
 	waterfall_tops.clear()
 	_waterfall_materials.clear()
 	_players.clear()
+	_water_defs.clear()
 	set_process(not trail.fords.is_empty())
 	for i in trail.fords.size():
 		_build_ford(sampler, profile, field, trail.fords[i], i)
@@ -44,11 +48,29 @@ func _stop_players() -> void:
 
 func _exit_tree() -> void:
 	_stop_players()
+	_registrations.clear()
 
 
 func _process(delta: float) -> void:
 	for material in _waterfall_materials:
 		material.uv1_offset.y = fposmod(material.uv1_offset.y - delta * SCROLL_PER_SECOND, 1.0)
+	for index in _water_defs.size():
+		var water: MeshInstance3D = get_node("Water%d" % index)
+		WaterAppearance.advance(water.material_override as StandardMaterial3D, _water_defs[index].current_velocity, delta)
+
+
+## Only the horizontal river is water. The falling sheet/mist remain effects.
+func register_water(world: WaterWorld, field: TerrainField, static_roots: Array[Node3D],
+		space_transform: Transform3D = Transform3D.IDENTITY, bed_source: WaterBed = null) -> void:
+	_registrations.clear()
+	for index in _water_defs.size():
+		var water: MeshInstance3D = get_node("Water%d" % index)
+		_registrations.add_mesh(world, _water_defs[index], water, field, static_roots, space_transform,
+				PackedVector3Array(), bed_source)
+
+
+func water_summary() -> String:
+	return _registrations.summary()
 
 
 func _build_ford(sampler: RoadSampler, profile: RoadProfile, field: TerrainField, ford: FordDef, index: int) -> void:
@@ -96,13 +118,13 @@ func _add_water(ford: FordDef, index: int, centre: Vector3, across: Vector3, alo
 	arrays[Mesh.ARRAY_INDEX] = indices
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	var material := StandardMaterial3D.new()
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.albedo_color = Color(ford.water_color, WATER_ALPHA)
-	material.roughness = 0.15
-	material.metallic_specular = 0.8
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var material := WaterAppearance.make_material(Color(ford.water_color, WATER_ALPHA), false, true)
 	_add_mesh("Water%d" % index, mesh, material)
+	var def := WaterBodyDef.new()
+	def.id = StringName("ford/%d" % index)
+	def.color = Color(ford.water_color, WATER_ALPHA)
+	def.current_velocity = across * signf(ford.river_reach - ford.waterfall_offset) * ford.current_speed
+	_water_defs.append(def)
 
 
 ## A vertical rock face and closed side/top returns, with the back edge on the

@@ -1,8 +1,7 @@
 class_name FordDef
 extends Resource
-## A shallow visual river crossing: a dipped road, channel and waterfall.
-## No buoyancy or water collision. Depth is measured from the actual road,
-## including permanent rock steps, so later water physics can reuse this data.
+## A shallow river crossing: a dipped road, channel and waterfall. Water has
+## no collision; the query layer uses the drawn ribbon and actual solid bed.
 
 ## Where the river crosses the road (m along the trail).
 @export var distance: float = 0.0
@@ -10,6 +9,8 @@ extends Resource
 ## The road's drop at the centre of the crossing (m).
 @export var depth: float = 0.35
 @export var water_depth: float = 0.3
+## Steady flow from the waterfall toward river_reach (m/s).
+@export var current_speed: float = 0.0
 ## Length of each eased road approach (m).
 @export var bank_run: float = 10.0
 @export var waterfall_height: float = 14.0

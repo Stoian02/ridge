@@ -2,7 +2,8 @@ class_name RutWaterBuilder
 extends Node3D
 ## Opt-in shallow standing water in wheel ruts. Seeded pools follow the road's
 ## bends, but each has a level water surface bounded by both lips and the lowest
-## configured fill height. Only drawing changes; road collision is untouched.
+## configured fill height. The query layer uses those actual pieces and gaps;
+## road collision is untouched.
 
 const POOL_LENGTH := Vector2(6.0, 12.0)
 const DRY_GAP := Vector2(3.0, 6.0)
@@ -18,9 +19,15 @@ const ALPHA := 0.8
 var water_rows: Array[Vector4] = []
 ## Authored pools with visible water: (start, end, rut centre lateral).
 var puddle_ranges: Array[Vector3] = []
+var _water_defs: Dictionary = {}
+var _materials: Dictionary = {}
+var _registrations := WaterRegistration.new()
 
 
 func build(sampler: RoadSampler, profile: RoadProfile, trail: TrailDef) -> void:
+	_registrations.clear()
+	_water_defs.clear()
+	_materials.clear()
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
@@ -31,6 +38,28 @@ func build(sampler: RoadSampler, profile: RoadProfile, trail: TrailDef) -> void:
 		if stretch.water_rut_depth <= 0.0 or stretch.rut_depth <= LIP_CLEARANCE or stretch.rut_width <= 0.0:
 			continue
 		_build_stretch(sampler, profile, trail, stretch, i)
+	set_process(not _water_defs.is_empty())
+
+
+func register_water(world: WaterWorld, field: TerrainField, static_roots: Array[Node3D],
+		space_transform: Transform3D = Transform3D.IDENTITY, bed_source: WaterBed = null) -> void:
+	_registrations.clear()
+	for node_name: StringName in _water_defs:
+		_registrations.add_mesh(world, _water_defs[node_name], get_node(NodePath(node_name)),
+				field, static_roots, space_transform, PackedVector3Array(), bed_source)
+
+
+func _process(delta: float) -> void:
+	for material: StandardMaterial3D in _materials:
+		WaterAppearance.advance(material, _materials[material], delta)
+
+
+func _exit_tree() -> void:
+	_registrations.clear()
+
+
+func water_summary() -> String:
+	return _registrations.summary()
 
 
 func _build_stretch(sampler: RoadSampler, profile: RoadProfile, trail: TrailDef,
@@ -49,13 +78,9 @@ func _build_stretch(sampler: RoadSampler, profile: RoadProfile, trail: TrailDef,
 			var chunk := floori((at - start) / CHUNK_LENGTH)
 			_add_pool(sampler, profile, stretch, at, at + length, centre, chunks, chunk)
 			at += length + rng.randf_range(DRY_GAP.x, DRY_GAP.y)
-	var material := StandardMaterial3D.new()
-	material.albedo_color = stretch.color.lerp(Color(0.5, 0.42, 0.3), 0.2)
-	material.vertex_color_use_as_albedo = true
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.roughness = 0.12
-	material.metallic_specular = 0.8
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var color := Color(stretch.color.lerp(Color(0.5, 0.42, 0.3), 0.2), 0.80)
+	var material := WaterAppearance.make_material(color, true, true)
+	_materials[material] = stretch.water_current_velocity
 	for key: int in chunks:
 		var tool: SurfaceTool = chunks[key]
 		var instance := MeshInstance3D.new()
@@ -65,6 +90,11 @@ func _build_stretch(sampler: RoadSampler, profile: RoadProfile, trail: TrailDef,
 		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		instance.visibility_range_end = VIEW_DISTANCE
 		add_child(instance)
+		var def := WaterBodyDef.new()
+		def.id = StringName("rut/%d/%d" % [index, key])
+		def.color = color
+		def.current_velocity = stretch.water_current_velocity
+		_water_defs[instance.name] = def
 
 
 func _add_pool(sampler: RoadSampler, profile: RoadProfile, stretch: SurfaceStretch,

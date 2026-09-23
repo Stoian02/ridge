@@ -102,6 +102,8 @@ extends Resource
 @export var creek_width: float = 4.0
 @export var creek_depth: float = 0.7
 @export var creek_color: Color = Color(0.3, 0.4, 0.42)
+## Steady flow along the drawn ribbon toward its lower end (m/s).
+@export var creek_current_speed: float = 0.0
 
 @export_group("Hedges")
 ## Dense hedge runs as Vector3(start distance, length, side), with -1 on the

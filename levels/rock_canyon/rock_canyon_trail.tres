@@ -58,6 +58,7 @@ transition_length = 12.0
 color = Color(0.22, 0.16, 0.11, 1)
 rut_depth = 0.18
 water_rut_depth = 0.09
+water_current_velocity = Vector3(0, 0, 0)
 rut_spacing = 1.6
 rut_width = 0.9
 extra_rut_paths = Array[Vector4]([Vector4(-1.1, 1.15, 92, 0.5), Vector4(1.2, 1, 125, 3)])
@@ -374,6 +375,7 @@ seed = 489
 [sub_resource type="Resource" id="Ford"]
 script = ExtResource("14")
 distance = 1290.0
+current_speed = 0.5
 water_color = Color(0.36, 0.5, 0.55, 1)
 seed = 83
 
