@@ -1,30 +1,25 @@
 # Ridge — notes for coding agents
 
-**Current handoff:** read `docs/notes/codex-report-build-speed.md` first, then
-`docs/notes/handover-codex-2026-09-23.md` for the original task and rules. The
-geometry-preserving refactor is on `build-speed`, not merged or pushed, for
-Claude/owner review. Phone builds improved from 5.96/9.05/11.19 s to
-3.81/3.79/6.29 s across three rounds, but **the under-3-second gate is still
-unmet**. Do not mark the performance task complete. Final full suite: 654 passed,
-1 existing pending, exit 0, no script errors; the report also records an earlier
-intermittent shelf stone-penetration failure. Exact geometry fixtures, car values,
-stone settings and the 1 m canyon-wall sampling interval remain unchanged.
-Stop for review before expanding into resource caching/baking or engine changes.
-
-**State:** Milestones 1–5 are merged into `master` (Rally Road, Muddy Valley,
-cars and car select, surface feedback and sound, Frozen Pass, Rock Canyon, plus
-the 2026-09-23 AWD balance tuning). The full suite is green.
+**State:** Milestones 1–5 are merged into `master`, plus the 2026-09-23 AWD
+balance tuning and the build-speed refactor. Five levels (Rally Road, Muddy
+Valley, Frozen Pass, Rock Canyon, and the Test Ground as Free Drive), three
+cars. The full suite is green at 654 passing, 1 pending. Nothing is in flight.
 
 Background, in the order it is usually needed:
 
 - `docs/notes/handover-2026-09-17-rock-canyon.md` — repo rules, tooling and the
   hard-won lessons. Still current.
-- `docs/notes/performance-m5.md` — the loose-stone performance cliff and the
-  activation window that fixes it, plus the measurements behind the build-speed
-  task: 77% of the cost is sampling through shared objects, so wrapping the
-  build phases in `WorkerThreadPool` will not help.
+- `docs/notes/performance-m5.md` and `docs/notes/codex-report-build-speed.md` —
+  the loose-stone performance cliff and its activation window, and the
+  build-speed refactor. Rock Canyon now builds in **3.9 s** on the phone (was
+  6.5–8.0 and climbing across repeats), against a 3 s budget. What remains is
+  engine-side node and collision-shape creation, which cannot be threaded
+  without separate-thread physics: the sampling path is already inlined.
+  **The untried lever is deferral** — the shelf, its stones and its boulders
+  (about 1.45 s) sit at 1500 m and are built before the countdown, though the
+  player needs about 90 s to reach them.
 - `docs/notes/feel-log.md` — how the cars got to where they are, Session 9 most
-  recently.
+  recently (the rally cars are AWD and must behave like it).
 - `docs/notes/m5-rock-canyon-notes.md` and the dated `rock-canyon-*` notes for
   how that level was built and what the owner accepted. The CP4–CP5 shelf is
   deliberately unforgiving: **do not soften the bank (peaks of 12°, 14°, 13°),
