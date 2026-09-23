@@ -92,14 +92,14 @@ static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 
 	var lap := Time.get_ticks_usec()
 	field._size_grid(stamps, terrain.margin)
-	field._fill_natural(stamps, terrain)
+	field._fill_natural(stamps, terrain, threaded)
 	lap = field._lap(&"natural", lap)
 	if threaded:
 		field._carve_parallel(stamps, rights, bank_slopes, half_widths, trail, terrain)
 	else:
 		field._carve(stamps, rights, bank_slopes, half_widths, trail, terrain)
 	lap = field._lap(&"carve", lap)
-	field._raise_walls(sampler, trail, terrain, stamps, half_widths)
+	field._raise_walls(sampler, trail, terrain, stamps, half_widths, threaded)
 	lap = field._lap(&"walls", lap)
 	field._cut_creek(sampler, trail)
 	var road_profile := profile if profile != null else RoadProfile.new(trail, sampler.length)
@@ -210,7 +210,7 @@ func _size_grid(stamps: Array[Vector3], margin: float) -> void:
 
 
 ## Natural ground: a plane fitted to the road's elevations, plus fractal noise.
-func _fill_natural(stamps: Array[Vector3], terrain: TerrainDef) -> void:
+func _fill_natural(stamps: Array[Vector3], terrain: TerrainDef, threaded: bool = true) -> void:
 	var centre := Vector3.ZERO
 	for stamp in stamps:
 		centre += stamp
@@ -238,6 +238,23 @@ func _fill_natural(stamps: Array[Vector3], terrain: TerrainDef) -> void:
 	var slope := Vector2.ZERO
 	if absf(determinant) > 0.0001:
 		slope = Vector2((sxe * szz - sze * sxz) / determinant, (sze * sxx - sxe * sxz) / determinant)
+	if threaded:
+		var inputs: Array[Dictionary] = []
+		var results: Array[Dictionary] = []
+		for first in range(0, rows, 32):
+			inputs.append({"first": first, "count": mini(32, rows - first), "columns": columns,
+				"origin": origin, "spacing": spacing, "centre": centre, "slope": slope,
+				"seed": terrain.seed, "frequency": 1.0 / terrain.noise_wavelength,
+				"octaves": terrain.noise_octaves, "amplitude": terrain.noise_amplitude})
+			results.append({})
+		var work := func(i: int) -> void:
+			_natural_band(inputs[i], results[i])
+		var task := WorkerThreadPool.add_group_task(work, inputs.size(), -1, true, "Natural terrain")
+		WorkerThreadPool.wait_for_group_task_completion(task)
+		heights.clear()
+		for result: Dictionary in results:
+			heights.append_array(result["heights"])
+		return
 
 	var noise := FastNoiseLite.new()
 	noise.seed = terrain.seed
@@ -249,6 +266,31 @@ func _fill_natural(stamps: Array[Vector3], terrain: TerrainDef) -> void:
 			var x := origin.x + column * spacing
 			var plane := centre.y + slope.x * (x - centre.x) + slope.y * (z - centre.z)
 			heights[row * columns + column] = plane + noise.get_noise_2d(x, z) * terrain.noise_amplitude
+
+
+## One private noise generator per worker; no shared Resource access in the loop.
+static func _natural_band(input: Dictionary, into: Dictionary) -> void:
+	var first: int = input["first"]
+	var count: int = input["count"]
+	var columns: int = input["columns"]
+	var origin: Vector2 = input["origin"]
+	var spacing: float = input["spacing"]
+	var centre: Vector3 = input["centre"]
+	var slope: Vector2 = input["slope"]
+	var amplitude: float = input["amplitude"]
+	var noise := FastNoiseLite.new()
+	noise.seed = input["seed"]
+	noise.frequency = input["frequency"]
+	noise.fractal_octaves = input["octaves"]
+	var heights := PackedFloat32Array()
+	heights.resize(count * columns)
+	for row in range(first, first + count):
+		var z := origin.y + row * spacing
+		for column in columns:
+			var x := origin.x + column * spacing
+			var plane := centre.y + slope.x * (x - centre.x) + slope.y * (z - centre.z)
+			heights[(row - first) * columns + column] = plane + noise.get_noise_2d(x, z) * amplitude
+	into["heights"] = heights
 
 
 ## Near the road, blend the natural ground toward a smoothed road elevation.
@@ -416,6 +458,64 @@ static func walled_height(natural: float, road_height: float, delta: float, edge
 ## interpolate it. Runs after the corridor is carved and before the creek and
 ## structures, so a river channel can cut a wall.
 func _raise_walls(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
+		stamps: Array[Vector3], half_widths: PackedFloat32Array, threaded: bool = true) -> void:
+	if not terrain.has_walls():
+		return
+	if not threaded:
+		_raise_walls_serial(sampler, trail, terrain, stamps, half_widths)
+		return
+	var shaped := not terrain.terraced_wall_sections.is_empty()
+	var reach := trail.half_total_width() + terrain.corridor_blend + WALL_RISE + WALL_PLATEAU + WALL_FALLOFF
+	if shaped:
+		reach += 8.0
+	var points := PackedVector3Array()
+	var flats := PackedVector2Array()
+	var distances := PackedFloat64Array()
+	var halves := PackedFloat64Array()
+	var banks := PackedFloat64Array()
+	var lefts := PackedFloat64Array()
+	var rights := PackedFloat64Array()
+	var terraces := PackedFloat64Array()
+	for section: Vector4 in terrain.wall_sections:
+		var distance := maxf(section.x, 0.0)
+		var end := minf(section.x + section.y, sampler.length)
+		while distance <= end:
+			var across := sampler.right(distance)
+			points.append(sampler.position(distance))
+			flats.append(Vector2(across.x, across.z).normalized())
+			distances.append(distance)
+			halves.append(trail.half_total_width_at(distance))
+			banks.append(across.y / maxf(Vector2(across.x, across.z).length(), 0.0001))
+			lefts.append(terrain.wall_delta(distance, -1.0))
+			rights.append(terrain.wall_delta(distance, 1.0))
+			terraces.append(terrain.terrace_weight(distance) if shaped else 0.0)
+			distance += WALL_STEP
+	var inputs: Array[Dictionary] = []
+	var results: Array[Dictionary] = []
+	for first in range(0, rows, 32):
+		var count := mini(32, rows - first)
+		inputs.append({"first": first, "count": count, "columns": columns, "spacing": spacing,
+			"origin": origin, "reach": reach, "blend": terrain.corridor_blend, "shaped": shaped,
+			"points": points, "flats": flats, "distances": distances, "halves": halves, "banks": banks,
+			"lefts": lefts, "rights": rights, "terraces": terraces, "stamps": stamps, "half_widths": half_widths,
+			"heights": heights.slice(first * columns, (first + count) * columns)})
+		results.append({})
+	var work := func(i: int) -> void:
+		CanyonWallData.compute(inputs[i], results[i])
+	var task := WorkerThreadPool.add_group_task(work, inputs.size(), -1, true, "Canyon wall bands")
+	WorkerThreadPool.wait_for_group_task_completion(task)
+	heights.clear()
+	wall_strata.clear()
+	for result: Dictionary in results:
+		var band: PackedFloat32Array = result["heights"]
+		heights.append_array(band)
+		wall_strata.append_array(result["strata"])
+		for height: float in band:
+			lowest_height = minf(lowest_height, height)
+
+
+## Independent original implementation for serial/threaded regression checks.
+func _raise_walls_serial(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 		stamps: Array[Vector3], half_widths: PackedFloat32Array) -> void:
 	if not terrain.has_walls():
 		return

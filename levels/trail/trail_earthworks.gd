@@ -21,6 +21,12 @@ static func apply_road_clearance(field: TerrainField, sampler: RoadSampler, trai
 		has_gravel = has_gravel or talus.gravel_bed
 	if not has_gravel and trail.terrain_blend_width <= 0.0:
 		return
+	var heights := field.heights
+	var origin := field.origin
+	var spacing := field.spacing
+	var grid_rows := field.rows
+	var grid_columns := field.columns
+	var drop := field.def.under_road_drop
 	var rows := RoadBuilder.row_distances(sampler.length, profile, trail)
 	var stations := RoadBuilder.cross_section(trail)
 	var shoulders: Array[Vector2] = [stations[0], stations[1], stations[-2], stations[-1]]
@@ -46,16 +52,17 @@ static func apply_road_clearance(field: TerrainField, sampler: RoadSampler, trai
 			var bounds := AABB(before[column], Vector3.ZERO)
 			for point: Vector3 in [before[column + 1], after[column], after[column + 1]]:
 				bounds = bounds.expand(point)
-			var from_x := floori((bounds.position.x - field.origin.x) / field.spacing)
-			var to_x := ceili((bounds.end.x - field.origin.x) / field.spacing)
-			var from_z := floori((bounds.position.z - field.origin.y) / field.spacing)
-			var to_z := ceili((bounds.end.z - field.origin.y) / field.spacing)
-			var ceiling := bounds.position.y - field.def.under_road_drop
-			for z in range(maxi(0, from_z), mini(field.rows - 1, to_z) + 1):
-				for x in range(maxi(0, from_x), mini(field.columns - 1, to_x) + 1):
-					var i := field.index(x, z)
-					field.heights[i] = minf(field.heights[i], ceiling)
+			var from_x := floori((bounds.position.x - origin.x) / spacing)
+			var to_x := ceili((bounds.end.x - origin.x) / spacing)
+			var from_z := floori((bounds.position.z - origin.y) / spacing)
+			var to_z := ceili((bounds.end.z - origin.y) / spacing)
+			var ceiling := bounds.position.y - drop
+			for z in range(maxi(0, from_z), mini(grid_rows - 1, to_z) + 1):
+				for x in range(maxi(0, from_x), mini(grid_columns - 1, to_x) + 1):
+					var i := z * grid_columns + x
+					heights[i] = minf(heights[i], ceiling)
 		before = after
+	field.heights = heights
 
 
 static func _road_row(sampler: RoadSampler, profile: RoadProfile,
@@ -161,7 +168,11 @@ static func apply_bridges(field: TerrainField, sampler: RoadSampler, trail: Trai
 static func nearest_samples(field: TerrainField, sampler: RoadSampler, start: float,
 		end: float, radius: float) -> Dictionary:
 	var result := {}
-	var reach := ceili(radius / field.spacing)
+	var spacing := field.spacing
+	var origin := field.origin
+	var rows := field.rows
+	var columns := field.columns
+	var reach := ceili(radius / spacing)
 	var squared_radius := radius * radius
 	var distance := start
 	while distance <= end + 0.001:
@@ -169,16 +180,16 @@ static func nearest_samples(field: TerrainField, sampler: RoadSampler, start: fl
 		var right := sampler.right(distance)
 		var forward := sampler.forward(distance)
 		var flat_length := Vector2(forward.x, forward.z).length()
-		var cx := roundi((point.x - field.origin.x) / field.spacing)
-		var cz := roundi((point.z - field.origin.y) / field.spacing)
-		for row in range(maxi(0, cz - reach), mini(field.rows, cz + reach + 1)):
-			var dz := field.origin.y + row * field.spacing - point.z
-			for column in range(maxi(0, cx - reach), mini(field.columns, cx + reach + 1)):
-				var dx := field.origin.x + column * field.spacing - point.x
+		var cx := roundi((point.x - origin.x) / spacing)
+		var cz := roundi((point.z - origin.y) / spacing)
+		for row in range(maxi(0, cz - reach), mini(rows, cz + reach + 1)):
+			var dz := origin.y + row * spacing - point.z
+			for column in range(maxi(0, cx - reach), mini(columns, cx + reach + 1)):
+				var dx := origin.x + column * spacing - point.x
 				var squared := dx * dx + dz * dz
 				if squared > squared_radius:
 					continue
-				var i := row * field.columns + column
+				var i := row * columns + column
 				var previous: Vector4 = result.get(i, Vector4(INF, 0, 0, 0))
 				if squared < previous.x:
 					# Project past the nearest stamp, especially at the search ends:

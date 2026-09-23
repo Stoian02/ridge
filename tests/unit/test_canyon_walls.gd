@@ -82,6 +82,23 @@ func test_generation_is_deterministic_with_walls_noise_and_a_bend() -> void:
 	assert_eq(parallel.lowest_height, serial.lowest_height)
 
 
+func test_terraced_wall_bands_keep_exact_stamps_on_different_grids() -> void:
+	var curve := CurveGenerator.build_curve([
+		["straight", 95.0, 0.08], ["arc", 32.0, 125.0, 0.05], ["straight", 95.0, 0.0],
+	])
+	var bent := RoadSampler.new(curve, false, trail)
+	terrain.noise_amplitude = 7.0
+	terrain.wall_sections = [Vector4(12.25, 100.5, 22.0, -15.0), Vector4(90.5, 170.0, 30.0, -18.0)]
+	terrain.terraced_wall_sections = [Vector2(25.0, 200.0)]
+	for spacing: float in [1.0, 2.0, 3.0]:
+		terrain.sample_spacing = spacing
+		var serial := TerrainField.generate(bent, trail, terrain, false)
+		var parallel := TerrainField.generate(bent, trail, terrain, true)
+		assert_eq(parallel.heights, serial.heights, "heights at grid spacing %.1f" % spacing)
+		assert_eq(parallel.wall_strata, serial.wall_strata, "strata including overlap tie order")
+		assert_eq(parallel.lowest_height, serial.lowest_height)
+
+
 func test_hairpin_walls_preserve_both_road_corridors_and_their_sample_footprints() -> void:
 	# The two legs are 60 m apart, within the canyon wall's 80 m reach. The
 	# return road is higher and faces the other way, just like Rock Canyon.
