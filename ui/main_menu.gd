@@ -18,9 +18,15 @@ const STRESS_SCENE := "res://debug/shelf_stress.tscn"
 ## Android drops scene arguments; use this one-shot flag for water profiling.
 const WATER_FILE := "user://water_benchmark"
 const WATER_SCENE := "res://debug/water_benchmark.tscn"
+const WATER_ACCEPTANCE_FILE := "user://water_acceptance"
+const WATER_ACCEPTANCE_SCENE := "res://debug/water_acceptance.tscn"
 
 
 func _ready() -> void:
+	if OS.is_debug_build() and FileAccess.file_exists(WATER_ACCEPTANCE_FILE):
+		# The acceptance scene reads and consumes the optional JSON configuration.
+		get_tree().change_scene_to_file.call_deferred(WATER_ACCEPTANCE_SCENE)
+		return
 	if OS.is_debug_build() and FileAccess.file_exists(WATER_FILE):
 		DirAccess.remove_absolute(WATER_FILE)
 		get_tree().change_scene_to_file.call_deferred(WATER_SCENE)
