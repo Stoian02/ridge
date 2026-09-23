@@ -1,9 +1,11 @@
 # Ridge — notes for coding agents
 
-**Current handoff:** `docs/notes/handover-codex-2026-09-23-coastal.md` — Codex
-designs *and* builds Coastal Highway, the sixth level, on branch
-`m6-coastal-highway`: brainstorm with the owner, spec, plan, implement. Not
-merged, not pushed; Claude reviews at the end.
+**Current handoff:** `docs/notes/handover-codex-2026-09-23-m6.md` — Milestone 6
+in two parts, Codex designing as well as building, stopping for review between
+them. **Part A: water physics** (branch `m6a-water-physics`), validated on the
+Test Ground and Rock Canyon's ford, which the owner has decided gets real water.
+**Part B: Coastal Highway**, the sixth level, designed around what water does.
+Neither is merged or pushed; Claude reviews each branch.
 
 **State:** Milestones 1–5 are merged into `master`, plus the 2026-09-23 AWD
 balance tuning and the build-speed refactor. Five levels (Rally Road, Muddy
