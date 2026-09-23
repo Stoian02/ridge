@@ -15,6 +15,7 @@ extends RigidBody3D
 var steering: Steering
 var drivetrain: Drivetrain
 var air_control: AirControl
+var water: VehicleWaterController
 
 
 func _ready() -> void:
@@ -26,17 +27,22 @@ func _ready() -> void:
 	steering = Steering.new(stats)
 	drivetrain = Drivetrain.new(stats)
 	air_control = AirControl.new(stats)
+	water = VehicleWaterController.new(self)
 
 
 func _physics_process(delta: float) -> void:
 	input.refresh()
+	water.sample_body(delta)
 	var speed := forward_speed()
 
 	var angle := steering.update(delta, input.steer, speed)
 	wheels[0].steer_angle = angle
 	wheels[1].steer_angle = angle
 
-	drivetrain.update(delta, input.throttle, input.brake, _driven_wheel_speed(), speed, _driven_slip())
+	if water.state.stalled:
+		drivetrain.update_stalled(input.throttle, input.brake, speed)
+	else:
+		drivetrain.update(delta, input.throttle, input.brake, _driven_wheel_speed(), speed, _driven_slip(), water.state.torque_scale)
 	var drive := Drivetrain.split_torque(drivetrain.drive_torque, stats.drive_type, stats.front_torque_split)
 	drive = _apply_diff_locks(drive, delta)
 	var brakes := Drivetrain.split_brake(drivetrain.brake_input * stats.brake_torque, stats.brake_front_bias)
@@ -57,7 +63,11 @@ func _physics_process(delta: float) -> void:
 		wheels[i].apply_contact_force(force, self)
 		wheels[i].update_visual(delta)
 
-	air_control.update(delta, wheels_in_contact)
+	water.sample_wheels_and_apply(delta)
+	if water.wet_body:
+		air_control.reset()
+	else:
+		air_control.update(delta, wheels_in_contact)
 	var air_torque := air_control.local_torque(input.throttle, input.brake, input.steer)
 	apply_torque(global_basis * air_torque)
 
@@ -80,6 +90,7 @@ func reset_to(target: Transform3D) -> void:
 	steering.angle = 0.0
 	drivetrain.reset()
 	air_control.reset()
+	water.reset()
 
 
 ## Snapshot for the telemetry overlay and the run recorder.
@@ -106,6 +117,7 @@ func get_telemetry() -> Dictionary:
 		"position": global_position,
 		"rotation_deg": global_rotation_degrees,
 		"wheels": wheel_data,
+		"water": WaterTelemetry.snapshot(water, mass * gravity_scale * float(ProjectSettings.get_setting("physics/3d/default_gravity"))),
 	}
 
 

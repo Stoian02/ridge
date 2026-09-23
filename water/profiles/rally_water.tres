@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="VehicleWaterProfile" format=3]
+
+[ext_resource type="Script" path="res://water/vehicle_water_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+intake_local_position = Vector3(0.45, 0.15, -1.5)
+body_linear_drag = Vector3(50, 80, 40)
+body_quadratic_drag = Vector3(350, 500, 220)
+wheel_quadratic_drag = 8.0

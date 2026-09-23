@@ -76,7 +76,7 @@ func overall_ratio() -> float:
 ## forward_speed: car speed along its heading (m/s, + = forward).
 ## driven_slip: largest slip ratio (absolute) among the driven wheels.
 func update(delta: float, throttle: float, brake: float, driven_wheel_speed: float,
-		forward_speed: float, driven_slip: float) -> void:
+		forward_speed: float, driven_slip: float, engine_torque_scale: float = 1.0) -> void:
 	_choose_direction(throttle, brake, forward_speed)
 	# In reverse the pedals swap roles: brake drives backwards, gas brakes.
 	var gas := throttle if gear > 0 else brake
@@ -105,11 +105,23 @@ func update(delta: float, throttle: float, brake: float, driven_wheel_speed: flo
 		if wheel_rpm < stats.redline_rpm:  # rev limiter
 			engine_torque = gas * torque_at(rpm, stats.torque_curve_rpm, stats.torque_curve_nm) \
 					* traction_factor(driven_slip, stats.traction_slip_target, stats.traction_control, traction_control_strength)
+			if engine_torque_scale < 1.0:
+				engine_torque *= clampf(engine_torque_scale, 0.0, 1.0)
 	else:
 		# Engine braking resists the direction the wheels are turning.
 		engine_torque = -stats.engine_braking_nm * (rpm / stats.redline_rpm) \
 				* signf(driven_wheel_speed) * signf(ratio)
 	drive_torque = engine_torque * ratio * stats.drivetrain_efficiency
+
+
+## A drowned engine supplies neither drive nor engine braking. Do not change
+## gear or advance the shift timer; the service brake works even in reverse.
+func update_stalled(throttle: float, brake: float, forward_speed: float) -> void:
+	drive_torque = 0.0
+	rpm = 0.0
+	brake_input = maxf(brake, throttle) if gear < 0 else brake
+	if throttle == 0.0 and brake == 0.0 and absf(forward_speed) < stats.auto_hold_speed:
+		brake_input = 1.0
 
 
 ## Splits total drive torque over the wheels, ordered [FL, FR, RL, RR].

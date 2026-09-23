@@ -1,11 +1,13 @@
 [gd_resource type="Resource" script_class="CarStats" format=3]
 
 [ext_resource type="Script" path="res://car/car_stats.gd" id="1_stats"]
+[ext_resource type="Resource" path="res://water/profiles/offroad_water.tres" id="2_water"]
 
 [resource]
 script = ExtResource("1_stats")
 display_name = "Off-road 4x4"
 archetype = &"offroad"
+water_profile = ExtResource("2_water")
 mass = 2150.0
 center_of_mass = Vector3(0, -0.05, 0)
 inertia = Vector3(3800, 4300, 1000)

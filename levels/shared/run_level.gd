@@ -23,6 +23,7 @@ var results: ResultsScreen
 
 
 func _ready() -> void:
+	rig.car.water.set_world(trail.water_world)
 	level = GameState.level_for_scene(scene_file_path)
 	if is_missing_from_catalog(scene_file_path, level):
 		push_warning("%s is not in the level catalog, so it runs without stars or saving" % scene_file_path)

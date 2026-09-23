@@ -142,6 +142,8 @@ func test_telemetry_has_the_documented_shape() -> void:
 	await _run(0.5)
 	var telemetry := car.get_telemetry()
 	var expected := TelemetrySample.make()
+	expected["water"] = {}
 	assert_eq_deep(telemetry.keys(), expected.keys())
+	assert_eq_deep(telemetry.water.keys(), WaterTelemetry.FIELDS)
 	assert_eq(telemetry.wheels.size(), 4)
 	assert_eq_deep(telemetry.wheels[0].keys(), expected.wheels[0].keys())

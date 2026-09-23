@@ -11,6 +11,10 @@ enum DriveType { FWD, RWD, AWD }
 ## Key into the GripTable ("rally", "truck", ...).
 @export var archetype: StringName = &"rally"
 
+@export_group("Water")
+## Optional water-only configuration; all existing dry tuning is independent.
+@export var water_profile: VehicleWaterProfile
+
 @export_group("Body")
 @export var mass: float = 1300.0
 ## Centre of mass relative to the body origin. Lower = harder to roll over.
