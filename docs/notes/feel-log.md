@@ -106,3 +106,89 @@ Open, for the next session:
 3. The road ends 10 m past the finish gate, so a finishing car drives off the end.
 
 Not done on purpose: narrowing the scenario-test ranges in `tests/scenarios/feel_baseline.gd` around this tune (plan Task 22 Step 5) — the feel is still expected to change, so the ranges stay wide until a tune is locked.
+
+---
+
+## Session 9 — AWD balance, 2026-09-23 (desktop)
+
+The owner, after playing Rock Canyon: "the 2 cars ... feel a bit too loose on
+the backend when we get up to speed, like they feel more rear-wheel drive than
+all-wheel drive." This is the open item recorded twice before (Session 6 item 1,
+Session 8 item 1, and the "is it AWD?" question in Session 5). It is now fixed.
+
+### What the measurement found
+
+A new probe drove a steady corner on flat ground at 85 km/h and changed the
+throttle mid-corner, reporting front and rear tyre slip angles. **Steady-state,
+both rally cars understeer** — so the complaint was never about balance in a
+constant corner. The looseness is a transient, on a throttle change:
+
+| worst rear-minus-front slip (deg) | before | after |
+| --- | ---: | ---: |
+| asphalt, power-on, Rally Car | **+9.7** | −1.4 |
+| asphalt, lift-off, Rally Car | +8.0 | +4.7 |
+| asphalt, lift-off, Tuned | +5.6 | +5.0 |
+| dirt, lift-off, Tuned | +5.7 | −1.9 |
+| Off-road 4x4, any of the above | +1.3 at worst | unchanged |
+
+Four separate design values all pushed the same way on the rally cars: 65%/59%
+of drive torque to the rear, **an open centre differential** (so the rear axle
+spun up on its own — the car really was driving like a RWD), a rear anti-roll
+bar 1.6x stiffer than the front, and rear tyres at 96% of front grip.
+
+### The tuning
+
+The owner approved a "moderate" package of three levers. **One of the three was
+then measured and rejected**, so what shipped is smaller than what was approved:
+
+| | Rally Car | Rally Car Tuned |
+| --- | --- | --- |
+| `front_torque_split` | 0.35 → **0.45** | 0.41 → **0.48** |
+| `anti_roll_rear` | 8920 → **7580** | 10700 → **9100** |
+| `centre_diff_lock` | proposed 0.35, **kept at 0** | proposed 0.35, **kept at 0** |
+
+`rear_grip_bias` stays at 0.96 and every differential stays open, so the cars
+still rotate on a lift — that part is deliberate, and lifting to place the car
+is still how you drive them. The Off-road 4x4 is untouched.
+
+**Why the centre lock was dropped.** It worked, but it made the cars faster on
+mud, and the stock car then arrived at Muddy Valley's final bend at 48-51 km/h
+instead of 46 and ran 12-14 m wide off the road while braking — outside the 7.5 m
+half width. Lowering the lock to 0.2 did not help; only removing it did. The
+torque split alone turned out to fix the looseness completely:
+
+| worst rear-minus-front slip (deg) | before | split + lock | **split only (shipped)** |
+| --- | ---: | ---: | ---: |
+| asphalt, power-on, Rally Car | +9.7 | −1.4 | **−0.7** |
+| asphalt, power-on, Tuned | −1.0 | +2.9 | **+1.0** |
+| asphalt, lift-off, Rally Car | +8.0 | +4.7 | **+4.9** |
+| dirt, lift-off, Tuned | +5.7 | −1.9 | **+4.7** |
+
+So the shipped tune fixes power-on oversteer outright, improves lift-off against
+the old behaviour, and avoids the mud understeer the lock introduced.
+
+### The side effect, and its fix
+
+Even without the lock, the extra front torque made the rally car climb Muddy
+Valley's final mud **faster than the 4x4** (10.8 s against 11.3 s, where it used
+to take 13.1 s), which breaks the promise that the 4x4 owns mud. With the owner's
+approval, `rally/mud` in the grip table drops 1.1 → 0.95 — the rally cars were
+being given a 10% grip *bonus* in mud, which never made much sense. The 4x4 leads
+again: **11.3 s against 12.9 s.**
+
+### Everything else barely moved
+
+Rally Road 1:30.3 → 1:29.7, tuned 1:26.3 → 1:26.2, 4x4 unchanged at 1:40.5.
+0–100 km/h 7.49 → 7.28 s, 100–0 braking 33.2 → 32.9 m. The cars are slightly
+quicker and clearly more planted, with no lap time given away.
+
+### Kept as a regression test
+
+`tests/scenarios/test_car_balance.gd` now measures this on every run: power-on
+must stay under 3.0 deg of rear-minus-front slip, lift-off under 6.5, and the
+rally cars must be AWD with a near-even torque split.
+The thresholds sit between the measured after-values and the before-values, so a
+drift back to the old feel fails the suite.
+
+**For the phone:** confirm the cars feel planted under power and that lifting
+still rotates them enough to be fun.

@@ -55,7 +55,12 @@ func test_the_new_cars_differ_from_stock_as_designed() -> void:
 	var stock: CarStats = shipped.cars[0].stats
 	var offroad: CarStats = shipped.cars[1].stats
 	var tuned: CarStats = shipped.cars[2].stats
+	# Every differential stays open on the road cars: the 4x4's locks are what
+	# make it the one that crawls. A partly locked centre was tried in the
+	# 2026-09-23 balance tuning and rejected (see the feel log): it added mud
+	# understeer, and the torque split alone fixed the looseness.
 	assert_eq([stock.front_diff_lock, stock.rear_diff_lock, stock.centre_diff_lock], [0.0, 0.0, 0.0], "stock stays open")
+	assert_eq([tuned.front_diff_lock, tuned.rear_diff_lock, tuned.centre_diff_lock], [0.0, 0.0, 0.0], "tuned stays open")
 	for i in stock.torque_curve_nm.size():
 		assert_almost_eq(tuned.torque_curve_nm[i], stock.torque_curve_nm[i] * 1.3, 0.6, "tuned torque point %d is +30%%" % i)
 	assert_lt(tuned.mass, stock.mass)

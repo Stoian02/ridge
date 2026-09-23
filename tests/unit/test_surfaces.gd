@@ -42,5 +42,7 @@ func test_lookup_falls_back_for_null_and_wrong_meta() -> void:
 
 
 func test_grip_table_lookup_and_default() -> void:
-	assert_almost_eq(GRIP_TABLE.multiplier(&"rally", &"mud"), 1.1, 0.0001)
+	# Mud is the 4x4's terrain: the rally cars lose grip there, it does not.
+	assert_almost_eq(GRIP_TABLE.multiplier(&"rally", &"mud"), 0.95, 0.0001)
+	assert_gt(GRIP_TABLE.multiplier(&"offroad", &"mud"), GRIP_TABLE.multiplier(&"rally", &"mud"))
 	assert_almost_eq(GRIP_TABLE.multiplier(&"unknown", &"mud"), 1.0, 0.0001)
