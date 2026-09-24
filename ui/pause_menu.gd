@@ -20,6 +20,10 @@ const LAYER := 20
 ## Set before adding the menu to the tree.
 var show_restart := true
 var rig: DrivingRig
+## Optional controls owned/supplied by this level; null on all timed levels.
+var level_options: Control
+## A level's covered async operation can temporarily block Escape/close.
+var interaction_locked := false
 
 var _steering: Button
 var _throttle: Button
@@ -70,7 +74,7 @@ func open() -> void:
 
 
 func close() -> void:
-	if not visible:
+	if not visible or interaction_locked:
 		return
 	visible = false
 	get_tree().paused = false
@@ -85,6 +89,8 @@ func toggle() -> void:
 
 ## The back gesture or Escape: closes the menu when it is open, otherwise asks the level.
 func handle_back() -> void:
+	if interaction_locked:
+		return
 	if visible:
 		close()
 	else:
@@ -180,6 +186,8 @@ func _build_ui() -> void:
 	level_select.visible = show_restart
 	navigation.add_child(level_select)
 	navigation.add_child(UiKit.button("Main menu", main_menu_pressed.emit))
+	if level_options != null:
+		navigation.add_child(level_options)
 	_steering = UiKit.button("Steering", _on_steering)
 	settings.add_child(_steering)
 	_throttle = UiKit.button("Throttle", _on_throttle)

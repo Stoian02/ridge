@@ -64,6 +64,7 @@ var _spawn: Transform3D
 var _posts: Array[Vector4] = []
 var loose_rocks: LooseRockCourse
 var water_course: WaterCourse
+var water_waves: WaterWaveTestGround
 
 
 func _ready() -> void:
@@ -74,9 +75,17 @@ func _ready() -> void:
 	rig.car.water.set_world(water_course.water_world)
 	_spawn = rig.car.global_transform
 	rig.car.input.reset_requested.connect(_on_reset_requested)
+	water_waves = WaterWaveTestGround.new()
+	water_waves.name = "WaterWaves"
+	add_child(water_waves)
+	water_waves.setup(water_course, rig, _on_reset_requested)
 	pause_menu = PauseMenu.new()
 	pause_menu.name = "PauseMenu"
 	pause_menu.show_restart = false
+	var wave_controls := WaterWaveTestControls.new()
+	wave_controls.prototype = water_waves
+	wave_controls.menu = pause_menu
+	pause_menu.level_options = wave_controls
 	add_child(pause_menu)
 	pause_menu.setup(rig)
 	rig.pause_requested.connect(pause_menu.toggle)
@@ -88,6 +97,8 @@ func _ready() -> void:
 func _on_reset_requested() -> void:
 	rig.place_car(_spawn)
 	loose_rocks.talus.reset_stones()
+	if water_waves != null:
+		water_waves.reset_history()
 
 
 func _build_layout() -> void:
