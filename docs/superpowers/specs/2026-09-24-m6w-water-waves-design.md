@@ -1,16 +1,26 @@
 # M6W — gentle waves and vehicle-generated water motion
 
-**Date:** 2026-09-24. **Status: complete review draft; not approved for implementation.**
+**Date:** 2026-09-24. **Status: isolated groundwork approved; live integration
+blocked on the M6A hitch fix/retest.**
+
+**Owner approval amendment:** approved the limited maths/mesh/shader start on
+`m6-water-waves` from unmerged M6A `4d5bd21`, with **total water CPU <=4 ms/frame
+p95 and <=5 ms/frame p99**. This supersedes earlier merge-first/unset-ceiling
+language only for isolated work. Do not bind waves to a live car, change existing
+physics, merge master or declare M6A accepted. Synthetic fixtures and standalone
+height sampling are permitted; full integration waits for the hitch fix/retest.
 
 Companion execution plan: `../plans/2026-09-24-m6w-water-waves.md`.
 Conversation record: `../../notes/water-waves-followup.md`.
-Baseline: M6A through `4fc79ab`, including the owner's three-second intake
+Branch baseline: M6A `4d5bd21`, including the owner's three-second intake
 amendment (`9a05499`). M6A is not yet accepted or merged.
 
-The owner requested a finished plan to review **before any wave implementation**.
-Behaviour choices below are agreed; the algorithm, numerical starting values,
-shader, prototype controls and budgets are proposals presented for that review.
-No wave code, shader, scene, build or benchmark has been created for this draft.
+The owner reviewed the plan before implementation and approved the limited start
+above. The algorithm, starting values and shader are being exercised in isolated
+fixtures; this does not yet approve activating the whole gameplay prototype.
+Owner-requested review corrections: gate total water cost before allocating the
+wave increment, and stop for an early owner driving-feel test after Task 5,
+before Task 6 polish. The latest limited-start amendment defines runtime scope.
 
 ## 1. Owner review summary
 
@@ -36,11 +46,16 @@ larger surface movements slightly affect flotation and intake submersion.
 - Provide **Off / Car waves / Full** comparison modes on the Test Ground only.
   Default Off; no persistent setting or changes to timed levels in this part.
 - Measure on the phone early. A good-looking desktop demo is not acceptance.
+- Agree and record an **absolute total-water CPU ceiling per frame** from M6A's
+  phone review first. Waves must fit within that ceiling as well as their own
+  incremental allowance: **4 ms/frame p95 and 5 ms/frame p99**, now approved.
+- **Owner drives immediately after entry/bow/wake work (Task 5a)**, before
+  polish. Stop for feedback on strength, bobbing and readability; adjust and
+  repeat before continuing to Task 6.
 
-Suggested order: close M6A's review/acceptance, owner authorizes its merge,
-build this separate Test Ground prototype, owner/Claude review it, then decide
-rollout/reflections and Coastal Highway. Approving this draft would approve
-that order, not waive M6A's existing failures or authorize a merge.
+Revised order: isolated groundwork may precede M6A acceptance/merge. Fix and
+retest the M6A hitch before live-car integration; preserve later review, phone
+acceptance and owner merge decisions. No exception accepts existing failures.
 
 ## 2. Decisions and authority
 
@@ -53,8 +68,10 @@ that order, not waive M6A's existing failures or authorize a merge.
 | Intake delay | Already implemented: 3.00 s for all three cars |
 | Wall/rock wave reflection | Explicitly deferred until after basic tests |
 | Test Ground first | Agreed prototype location |
-| Analytic travelling-wave model | Proposed in this draft |
-| New ShaderMaterial and refined water-top meshes | Proposed, explicit exception to M6A's no-new-shader approach |
+| Total-water gate before wave allocation | Approved: 4 ms/frame p95, 5 ms/frame p99; not retrospective acceptance |
+| Early owner feel checkpoint | Required after Task 5, before Task 6; delegated initial strength is not feel acceptance |
+| Analytic travelling-wave model | Approved for isolated groundwork |
+| New ShaderMaterial and refined water-top meshes | Approved for isolated groundwork; explicit exception to M6A's no-new-shader approach |
 | Test Ground comparison controls and numeric budgets | Proposed in this draft |
 | Timed-level rollout, Coastal Highway design, later reflections | Not authorized here |
 
@@ -65,18 +82,17 @@ ask before making them; spec approval is not a blanket car-tuning authorization.
 
 ## 3. Entry conditions and stopping point
 
-Before creating runtime work on proposed branch `m6-water-waves`:
+The owner permits Tasks 1–3 in isolated fixtures on `m6-water-waves`, starting
+from unmerged M6A `4d5bd21`. Keep the unmodified waves-Off game path; car binding
+in Task 2 and live vehicle work in later tasks stay deferred until the hitch
+is fixed and retested. No merge/push is authorized by this exception.
 
-1. Owner reviews this spec and its companion plan, then explicitly approves
-   implementation. Do not infer that from approval of an individual behaviour.
-2. M6A review and phone acceptance are resolved, including an explicit decision
-   on its timing/setup gates, the unexplained long pool frame intervals and
-   inherited load misses. A revised gate or an accepted exception must be
-   recorded; this spec supplies neither automatically.
-3. Owner authorizes the M6A merge. Start the new branch from that merged master;
-   never merge/push master as a normal implementation step.
-4. Rebuild/install the three-second-delay baseline before new phone comparisons.
-   The APK installed during the earlier performance audit still has 0.60 s.
+Before later integration/acceptance, resolve M6A's remaining hitch, setup/load
+and acceptance decisions explicitly. Use the approved all-water CPU limits in
+§9; the old 3 ms review trigger is not a replacement. Record the actual build
+and three-second intake delay for phone comparisons: the earlier Codex audit
+APK used 0.60 s, while Claude's fresh `4d5bd21` build includes 3.00 s. Branch
+reconciliation and any merge remain owner decisions, never implicit steps.
 
 Current evidence: `../../notes/m6a-query-fixes-2026-09-24.md` records phone ford
 p95 about 1.6 ms/tick after optimization, course p95 up to 1.376 ms/tick, and
@@ -84,6 +100,8 @@ one current-pool case with intervals up to 79.459 ms. Original timing/setup gate
 remain missed. `../../notes/codex-report-m6a-water.md` records the later
 736-passing / one-pending desktop suite, not new phone acceptance.
 
+There is also a mandatory intermediate stop at Task 5a for the owner's live
+driving-feel review. Do not proceed to Task 6 polish while awaiting that reply.
 End this part with the Test Ground prototype, all verification and a report;
 stop for review. Do not enable waves in Muddy Valley, Rock Canyon, other timed
 levels or a new Coastal Highway. Their flat M6A water remains unchanged during
@@ -154,9 +172,11 @@ design proposals, not performance conclusions from that reference.
 | --- | --- |
 | `water/waves/water_wave_profile.gd` and `.tres` | Immutable proposed numbers; no mutable car state |
 | `water/waves/water_wave_math.gd` and GPU include | Pure height/envelope/taper maths; shared GPU evaluator for rendering and diagnostic parity |
-| `water/waves/water_wave_field.gd` | Per-body view of assigned packets, triangle sampling, tick-local vertex cache |
+| `water/waves/water_wave_field.gd` | Pure world-wide 4-entry/12-wake packet store; no Car/WaterWorld dependency |
+| `water/waves/water_wave_snapshot.gd` | Reusable per-body float32 CPU/GPU parameter buffers |
+| `water/waves/water_wave_sampler.gd` | Standalone drawn-triangle sampling and per-snapshot vertex cache; not bound to gameplay yet |
 | `water/waves/water_wave_mesh.gd` | One-time refined top, footprint index, static attenuation metadata |
-| `water/waves/water_wave_runtime.gd` | Level-owned global packet budget, clock, pre-car tick snapshot, teardown and render upload |
+| `water/waves/water_wave_runtime.gd` | Owns one global field, clock, per-body snapshots/materials and teardown; currently lab-only |
 | `water/waves/water_wave_emitter.gd` | Post-car observation of existing samples; queue next-tick entry/wake/bow state |
 | `water/waves/water_surface.gdshader` | Same height equations; translucent single water surface |
 | `ui/water_wave_test_controls.gd` | Optional Test Ground pause-menu controls, not a new global settings screen |
@@ -241,7 +261,9 @@ zero. Apply this **at vertices**, identically on CPU/GPU, before interpolation.
 The mean level remains the existing level; there is no accumulated pool rise.
 
 Conservative depth includes the maximum solid-bed height over each render
-triangle, including bed-triangle breakpoints, not merely its corner depths.
+cell (therefore every triangle it contains), including bed-triangle breakpoints,
+not merely its corner depths. The implementation uses the slightly stronger
+whole-cell bound to reuse clipping work across triangles.
 Each shared vertex uses the minimum allowed limit of its incident triangles.
 Build this from nearby indexed static bed faces once, so a trough cannot cut
 through a shallow bank or a raised patch between vertices. The global boundary
@@ -319,6 +341,14 @@ proposed **0.75 m XZ cell pitch**, clipped against the existing drawn footprints
 preserving the mean plane and depth colours. Keep every bed/collider, ramp,
 rim, marking, original source array and non-water part of the Test Ground.
 
+The standalone builder extracts one closed footprint and refines it on the grid,
+not each original colour triangle separately. Where clipped source T-junctions
+prevent an edge chain closing, union temporary source triangles snapped to a
+0.1 mm outline grid; registered source arrays never change. Only horizontal,
+single-footprint bodies without islands are supported. Original top/bed indices
+are reused locally for source colour and conservative depth during preparation,
+then freed; the refined mesh is never registered as a static query top.
+
 Reuse compatible static mesh data between the identical calm/current basins.
 Each of the six water bodies gets its own parameters; sharing a ShaderMaterial
 must not accidentally share its wave history. Hide the original two deep tops
@@ -357,6 +387,12 @@ gone away. Do not clear the owner's application data to manufacture a cold run.
 
 ## 8. Test Ground controls and lifecycle
 
+Provide minimal playable Test Ground binding, Off / Car waves / Full selection,
+safe Reset/pause and cleanup by Task 5, so the owner can drive at Task 5a without
+waiting for UI polish. These can be plain prototype controls. Task 6 finishes
+their presentation and lifecycle coverage after feel approval; it must not be
+the first point at which the feature is actually drivable.
+
 Add an optional Test Ground-only section to the pause menu, supplied by the
 level through a small extension hook. Other levels keep the same menu.
 
@@ -389,6 +425,38 @@ shutdown. No new sounds or particle-system expansion are required.
 
 ## 9. Performance plan and provisional acceptance gates
 
+### Absolute total-water gate — prerequisite, not an optional review trigger
+
+The owner approved an absolute ceiling for **all measured water CPU work per
+rendered-frame interval**: 4 ms p95 and 5 ms p99. This allocates about 24% / 30%
+of a 16.7 ms frame, as a ceiling rather than a target or proof of spare capacity.
+See `../../notes/m6a-independent-review-2026-09-24.md` for the rationale and
+approval record. Measure the broader scope below; old controller-only results
+do not demonstrate a pass. Inherited scene cost remains separate.
+
+| Required approval record | Current value |
+| --- | --- |
+| Total-water CPU p95 ceiling, `C95` (ms/frame) | **4.0 — owner approved 2026-09-24** |
+| Total-water CPU p99 ceiling, `C99` (ms/frame) | **5.0 — owner approved 2026-09-24** |
+| Measurement scope / device | All measured controller + external water CPU, no double counting; Xiaomi 13, real-time 120 Hz physics / 60 FPS target; record exact renderer/build/resolution for each run |
+
+This is a ceiling for baseline water **plus** waves, not an allowance to add to
+the baseline. Both waves-Off and waves-On must meet it in each required case;
+the wave-increment and whole-frame gates must pass as well. If baseline water
+uses the available room, waves have no entitlement to another 0.50 ms. A
+baseline exception does not silently transfer to wave-enabled water or a future
+timed-level rollout; any exception requires an explicit scoped owner decision.
+
+For budget intuition only, 1.6 ms/tick at two ticks/frame is roughly 3.2 ms/frame;
+another 0.5 ms would reach about 22% of 16.7 ms. This is **not** a measured p95
+or a justified ceiling. Sum raw costs for each actual frame, including all
+catch-up ticks, then compute percentiles. Do not multiply a tick percentile by
+two, add component percentiles, or subtract them to claim measured headroom.
+The earlier M6A 3 ms/frame **review trigger** remains unapproved and is not a
+substitute for the required absolute ceiling.
+
+### Additional allocations and complete-frame gates
+
 An early synthetic worst-case phone test precedes art polish and natural wake
 tuning. Budgets below are **proposed for review**, not automatically substituted
 for the unresolved M6A gates. If a gate is missed, retain the result and return
@@ -396,7 +464,8 @@ with a measured adjustment proposal; do not silently raise a limit.
 
 | Metric | Proposed gate / reason |
 | --- | --- |
-| Incremental wave CPU work | **<=0.50 ms p95 per rendered-frame interval**, <=1.0 ms p99; allocates about 3% of a 16.7 ms frame at p95 |
+| Total water CPU, absolute | **p95 <=4.0 ms; p99 <=5.0 ms**, per rendered-frame interval, baseline plus waves |
+| Incremental wave CPU work | **<=0.50 ms p95 per rendered-frame interval**, <=1.0 ms p99, and must fit inside the total ceiling; not an extra allowance above it |
 | Incremental measured GPU frame time | **<=0.50 ms p95 increase** in matched fixed-pose views; report absolute GPU time too |
 | Complete Test Ground frame pacing | Average >=59 FPS; process-frame p95 <=18.5 ms, p99 <=25 ms in warmed cases |
 | Long frames | Retain/analyse every interval >33.3 ms; a reproducible wave-induced hitch or unexplained cluster blocks acceptance regardless of averages |
@@ -405,18 +474,26 @@ with a measured adjustment proposal; do not silently raise a limit.
 | Runtime bounds | 16 travelling packets, one bow, two ambient components/body; no per-tick node, mesh or collision creation |
 | Drawing | Section 7 caps plus unchanged global scene limits |
 
-The total-car-water cost is still reported against M6A's agreed final policy.
-An incremental pass cannot excuse an already failing baseline. At 120 Hz,
-measure the work of **all physics ticks belonging to each frame**, including
-catch-up; do not treat one tick as the complete 16.7 ms budget.
+Apply the approved total ceiling at the early synthetic phone gate, after any
+material feel adjustment, and at final acceptance. Keep GPU and whole-frame
+limits separate: CPU and GPU overlap, so their timings are not simply added
+into a purported total-water CPU value. No Test Ground pass authorizes waves
+at the ford; a later rollout must recheck the same ceiling in that level.
 
 Extend `WaterMeasurement`/CSV validation to distinguish:
 
 - Inclusive car-water-controller cost (already includes wave query work).
 - Wave-query subtotal **inside** that controller, for attribution only.
-- Wave runtime/emitter CPU outside the controller, and render-upload CPU time.
-- Total water CPU = inclusive controller + external wave work + upload;
-  incremental wave CPU = query subtotal + external wave work + upload.
+- Other water-owned CPU outside the controller: field/emitter stepping, existing
+  water feedback updates, water-specific material/buffer uploads and any other
+  measured water callbacks. Count each region once; document engine-side costs
+  not directly attributable, and retain complete-frame/GPU checks for those.
+- Total water CPU = sum of inclusive controller costs over all frame ticks +
+  non-overlapping external water CPU for that frame. Preserve controller-only
+  columns for comparison with historical M6A data; do not relabel that older
+  partial measurement as the new all-water total.
+- Incremental wave CPU = nested wave-query subtotal + new external wave work
+  and wave upload for that frame. This attribution never replaces total gating.
 - Whole process-frame intervals, p95/p99/max and threshold counts, plus GPU
   frame timings when supported. Do not add the query subtotal twice.
 - Snapshot IDs, frame/tick IDs, field mode, active/skipped packets, evaluated
@@ -435,7 +512,9 @@ never during performance samples.
    Godot version, renderer, actual resolution and save hash. Install only while
    the owner's device/game is available and idle. No other Godot process runs.
 2. Record a waves-Off baseline with the three-second stall change, not the old
-   0.60 s APK. No accelerated/fixed-fps mode for acceptance timings.
+   0.60 s APK. Record the approved C95/C99 and compute complete total-water frame
+   costs in the agreed scope. Missing limits or an unaccepted baseline stop the
+   run sequence. No accelerated/fixed-fps mode for acceptance timings.
 3. Alternate Off/Full order for **three rounds and all three cars**. Use a
    deterministic 60 s matched-pose replay (cost isolation, labelled as such),
    including shallow/deep positions and moving-source histories. Retain complete
@@ -459,7 +538,33 @@ never during performance samples.
 
 ## 10. Verification requirements
 
-No tests listed here have run for waves; this is the future acceptance checklist.
+This is the full-part acceptance checklist. The isolated desktop subset and
+remaining gaps are reported in `../../notes/codex-report-m6w-waves.md`; a unit
+or synthetic rendering pass is not a live-car or phone acceptance result.
+
+### Early owner driving-feel checkpoint — Task 5a, before polish
+
+After entry, bow and wake are functional and the early phone feasibility gate
+has passed, provide a rough but playable Test Ground build. Basic mode selection,
+Reset, pause and teardown must work; finishing menu visuals, optional highlights
+and telemetry is not a prerequisite. Run focused correctness/safety checks, then
+stop all automated testing before handing the game to the owner.
+
+The owner compares Off / Car waves / Full from the ordinary driving camera:
+enter slowly and faster, turn/reverse, stop and watch the wake settle, feel early
+flotation in the calm pool, then try the current pool and a shallow bay. Start
+with the 4x4 and compare the rally cars. Ask whether entry/wake are visible,
+whether bobbing feels slight rather than disruptive, and whether control and
+the three-second intake rule remain understandable. A screenshot, scripted run
+or an upper-bound test does not replace the owner's actual driving feedback.
+
+**Stop and wait for explicit feel approval before Task 6.** Record feedback,
+selected values and build ID; tune within the agreed scope and repeat the short
+test if requested. Recheck safety and absolute/incremental budgets after material
+changes. If the phone is unavailable, a PC feel pass may unblock polish only
+with the owner's agreement; it does not waive final phone feel/performance
+acceptance. No concurrent tests while the owner plays. Task 7 remains the final
+regression and confirmation, not the first owner playtest.
 
 ### Pure model and query tests
 
@@ -525,6 +630,8 @@ owner playtest, a feature-separated commit history, and
 | Risk | Required response |
 | --- | --- |
 | Shader looks cheap on desktop but costs too much on phone | Early worst-case synthetic gate before polishing/expanding |
+| Small wave increment hides an expensive water baseline | Agreed absolute total-water ceiling first; gate totals and increments in every case |
+| Owner finds the wave strength wrong after polish | Mandatory Task 5a live driving-feel approval before Task 6 |
 | CPU/GPU equations, time or triangle interpolation disagree | Shared packed snapshot contract and measured parity test |
 | A car pumps energy into its own wake | Mean-level source detection, finite history, no direct force/velocity feedback, stopped-car stability test |
 | Shallow trough intersects a raised bed | Conservative triangle-wide depth limit, fixed footprint, bed-intersection tests |
@@ -543,5 +650,8 @@ Owner/Claude should review: the first-version scope and postponed reflections;
 gentle numeric starting values and physical/intake coupling; the shader and
 water-top-only refinement; opt-in comparison/reset behaviour; proposed CPU/GPU,
 drawing and setup allocations; and the M6A acceptance/merge prerequisite.
+The total-water ceiling and isolated start are approved in the amendment above.
+The early Task 5a feel stop remains required. Live-car integration still waits
+for the M6A hitch fix/retest; its acceptance, merge and rollout are not granted.
 
-**Current decision: waiting for review. No wave implementation is authorized.**
+**Current decision: implement isolated groundwork only; preserve the live game.**

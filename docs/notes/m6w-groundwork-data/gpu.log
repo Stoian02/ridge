@@ -1,0 +1,8 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+WARNING: Failed to create wd.xic as the input method or its xim server may not have started yet.
+     at: _create_xic (platform/linuxbsd/x11/display_server_x11.cpp:6347)
+Vulkan 1.4.318 - Forward Mobile - Using Device #0: AMD - AMD Radeon 880M (RADV GFX1150)
+
+wave GPU calibration maximum error_m=0.00000001469538
+wave GPU parity checked=576 maximum_error_m=0.000000286; desktop only, not a phone/performance pass
+wave GPU drawn-triangle parity triangles=21 maximum_error_m=0.000000104

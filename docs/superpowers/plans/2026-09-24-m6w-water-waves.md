@@ -1,16 +1,48 @@
-# M6W — water waves implementation plan (review draft)
+# M6W — water waves implementation plan (isolated start approved)
 
-**Status:** proposed execution order, no tasks executed and no implementation
-approval. Written alongside the design at the owner's request to finish planning
-before review: `../specs/2026-09-24-m6w-water-waves-design.md`.
-Do not treat this plan's existence as permission to start.
+## Approved limited start (2026-09-24; supersedes original sequencing below)
+
+Owner approved **4 ms/frame p95 / 5 ms/frame p99 total water CPU** and Tasks 1–3
+as isolated groundwork on `m6-water-waves` from unmerged M6A `4d5bd21`. Do not
+bind queries to live cars or enable waves in gameplay. Standalone field/mesh/
+shader fixtures may proceed while M6A acceptance remains open. Preserve the
+waves-Off reproduction; stop before live integration until the hitch is fixed
+and retested. No merge/push. Task 5a owner feel approval remains mandatory.
+
+- [x] Owner approval of limited scope and total-water limits recorded.
+- [x] New branch created from unmerged M6A; master untouched.
+- [x] Unchanged desktop baseline recorded: 736 passing, one pending.
+- [x] Isolated pure model complete and tested.
+- [x] Isolated refined mesh/sampling complete and tested (no WaterWorld binding).
+- [x] Synthetic shader/CPU parity verified on desktop; phone parity untested.
+- [x] Final complete regression: 760 passing, one pre-existing pending, no
+  SCRIPT ERROR; report/evidence retained, feature commits made, stopped.
+
+The original full-part checklist below remains for later integration; blocked
+M6A merge/phone items are not prerequisites for this explicit limited exception.
+
+**Status:** isolated groundwork complete and desktop-verified; stopped before
+live-car integration. Phone/setup performance and the M6A hitch remain open.
+Design: `../specs/2026-09-24-m6w-water-waves-design.md`. The remaining full-part
+tasks are not automatically authorized by finishing this groundwork. Task 5a
+is a mandatory live owner-feel stop before polish.
+
+Completed isolated subset: fixed global packet store, packed body snapshots,
+analytic field, conservative refined mesh and standalone sampler, translucent
+shader, pause-aware lab runtime, car-free preview and calibrated GPU evaluator
+checks. No WaterWorld/car binding, natural emitter, phone instrumentation or
+Test Ground controls were added. The detailed full-part boxes below deliberately
+remain open where they include integration/phone requirements beyond this
+exception. See `../../notes/codex-report-m6w-waves.md` and its retained logs.
 
 ## Guardrails
 
-- Finish owner/Claude review and M6A acceptance first. Its existing timing/setup
-  misses and unexplained long frame intervals remain separate open work.
-- Only after owner-authorized M6A merge and explicit wave implementation
-  approval: create `m6-water-waves` from the merged master. Do not merge or push.
+- M6A hitch fix/retest precedes live-car integration; acceptance/setup/load
+  decisions remain open. Isolated work alone is allowed before those decisions.
+- Approved total-water CPU limits are 4 ms/frame p95 and 5 ms/frame p99 in the
+  recorded all-water scope; an incremental wave pass cannot replace this gate.
+- `m6-water-waves` starts from unmerged M6A `4d5bd21` by owner exception. Do not
+  merge or push; future baseline/branch reconciliation requires an explicit step.
 - Wave runtime enabled only through Test Ground opt-in modes. Timed levels,
   Coastal Highway and wall/rock reflections are outside this part.
 - Preserve `car/`, existing surface values and all protected fixtures. Ask if
@@ -22,26 +54,37 @@ Do not treat this plan's existence as permission to start.
   preserve phone progress. No automatic phone runs merely because it reconnects.
 - Tests use accelerated mode when appropriate; acceptance measurements do not.
 - No parameter/budget change to hide a failure. Record it and seek review.
+- Stop after Task 5 for Task 5a owner driving-feel approval. No Task 6 polish
+  while waiting; delegated starting strength does not replace this checkpoint.
 
 Dependency order:
 
-Approval/baseline → pure field and exact sampling → shader/parity → **phone
-feasibility gate** → natural car sources → Test Ground controls/lifecycle →
-full regression, phone acceptance and owner review.
+Agreed total-water ceiling/approval/baseline → pure field and exact sampling →
+shader/parity → **phone feasibility gate** → natural car sources and basic
+playable controls → **Task 5a: owner drives; stop for feel approval** → Test Ground
+polish/lifecycle completion → full regression, phone acceptance and final review.
 
 ## 0. Approval and comparable baseline
 
-- [ ] Record owner/Claude spec feedback, final numbers and explicit start approval.
+- [x] Record owner feedback and explicit **limited** start approval.
+- [x] Record owner-approved C95=4 and C99=5 ms/frame total-water CPU ceilings,
+  scope and rationale. These are not retroactive passes for old measurements.
 - [ ] Verify M6A acceptance decision and merged starting commit. Ensure its
   three-second intake amendment is included; the old audit APK is not baseline.
 - [ ] Create the approved new branch, inspect dirty files and preserve them.
 - [ ] Run the unchanged complete desktop suite and retain its log/exit status.
+- [ ] Verify baseline instrumentation covers the approved total-water scope.
+  If not, add and validate measurement-only coverage before the baseline capture;
+  historical controller-only totals are not a substitute. Task 4 later extends
+  this instrumentation for new wave regions without double-counting them.
 - [ ] With the owner's idle phone, fresh build/install and record hash/save hash.
   Capture Test Ground Off costs, normal frame tails, drawing, setup, shader state
-  and thermal status; confirm existing A acceptance is not being assumed away.
+  and thermal status. Sum all measured water CPU per frame in the approved scope;
+  check absolute ceilings before waves, not just old controller-only timings.
 - [ ] Write baseline results and device availability into the future M6W report.
 
-Exit: comparable accepted baseline, not just a clean-looking desktop run.
+Exit: comparable accepted baseline and numeric total-water ceilings recorded,
+not just a clean-looking desktop run or an unapproved budget proposal.
 
 ## 1. Pure, bounded field
 
@@ -114,15 +157,19 @@ Files: new `debug/water_wave_acceptance.gd` / `.tscn`, measurement extensions,
 independent validator tests and raw-data report.
 
 - [ ] Add non-overlapping timing categories: controller-inclusive, nested wave
-  query subtotal, external field/emitter, upload, frame intervals and GPU timing.
+  query subtotal, external field/emitter, existing water feedback, water uploads,
+  other water callbacks, frame intervals and GPU timing. Sum all water CPU per
+  frame; preserve controller-only columns without confusing them with the total.
   Include snapshot/packet/query/vertex counters and p95/p99/max/long-frame counts.
 - [ ] Validate normal 120 Hz/60 FPS pacing and all completed tick-to-frame sums;
   reject missing/duplicate ticks, incomplete cases and unsupported GPU counters.
 - [ ] Fresh build, verify installed APK hash, stream complete logcat. Record
   3 x 30 s synthetic max-packet cases, matching Off and refined-flat controls,
   actual viewport, temps and save/cleanup hashes. Never infer phone cost from PC.
-- [ ] Check proposed incremental CPU/GPU, drawing, memory, setup and whole-frame
-  limits from spec §9; inspect the water from driving/underwater angles.
+- [ ] Check approved **absolute total-water C95/C99 first**, plus incremental
+  CPU/GPU, drawing, memory, setup and whole-frame limits from spec §9. Compute
+  percentiles from raw frame sums, not sums of percentiles. Inspect the water
+  from driving/underwater angles. Both Off and On must pass the total ceiling.
 - [ ] If unavailable or failed: record the checkpoint and stop for owner input.
   Do not continue adding natural sources/polish on assumed headroom. Neither a
   silent quality reduction nor a gate increase is an approved fix.
@@ -132,7 +179,9 @@ within the already-approved spec, not merging or accepting the complete part.
 
 ## 5. Natural vehicle entry, bow and wake sources
 
-Files: new `water_wave_emitter.gd`, source tests and real-car scenarios.
+Files: new `water_wave_emitter.gd`, source tests and real-car scenarios; minimal
+Test Ground binding/top handles and plain comparison controls brought forward
+from Task 6 only as needed for the immediate owner playtest.
 
 - [ ] Read the completed existing body/wheel/intake sample data at priority 50;
   use rest heights for emission triggers, dynamic height for actual car physics.
@@ -148,20 +197,48 @@ Files: new `water_wave_emitter.gd`, source tests and real-car scenarios.
 - [ ] Test no current + no input stability, no self-exciting entry/wake, decay to
   rest and bounded early flotation relative to Off. Do not freeze flooding or
   give production cars extra buoyancy to make the demo last longer.
+- [ ] Make the existing Test Ground actually drivable with Off / Car waves /
+  Full selection, ordinary camera/input, Reset/pause and safe teardown. Keep Off
+  as scene-entry default; clear history on switches. Use plain controls with the
+  reset warning, not a scripted/frozen-car fixture or a polished settings page.
 
 Exit/commit: natural car effects work in fixtures with existing car/force files
 unchanged. Re-run the phone max-load case if emitted histories differ materially
-from the synthetic feasibility fixture.
+from the synthetic feasibility fixture. Next is the owner feel stop, not polish.
 
-## 6. Test Ground opt-in controls, effects and lifecycle
+## 5a. Early owner driving-feel checkpoint — mandatory stop
+
+- [ ] Run focused safety/correctness tests and check the rough live prototype
+  against the agreed total/incremental budgets before handing it over. No menu,
+  material or optional-effects polish is required to reach this checkpoint.
+- [ ] Stop automated Godot runs; provide a short playtest guide and the exact
+  build/values. Install on the idle phone only when available and authorized.
+- [ ] Owner drives Off / Car waves / Full: slow/faster entry, turning/reversing,
+  stopping/settling, early flotation, current drift and shallow water. Start
+  with the 4x4, then compare rally cars; use the regular driving camera.
+- [ ] Ask for feedback on entry/wake visibility, strength, bobbing and control,
+  plus intake/stall readability. Record the owner's response, not an inferred
+  pass from automated tests, a video capture or delegated numeric choices.
+- [ ] If changes are requested, tune the wave profile within approved scope,
+  recheck safety/total and incremental costs, and repeat the short owner test.
+  No dry-car retuning or budget increase to obtain a pass.
+- [ ] **Wait for explicit owner feel approval before Task 6.** If unavailable,
+  leave a resumable checkpoint and stop. PC feedback can unblock polish only
+  with owner agreement; final phone feel/performance acceptance is still needed.
+
+Exit: recorded owner approval of the rough feature's feel and selected values.
+Commit the approved adjustments and resume polish only after that decision.
+
+## 6. Test Ground polish and lifecycle completion — after feel approval
 
 Files: `levels/test_ground/test_ground.gd`, minimal `water_course.gd` handles,
 optional `ui/pause_menu.gd` extension hook, `ui/water_wave_test_controls.gd`, tests.
 
-- [ ] Bind only the Test Ground world. Off is default on every scene entry; old
+- [ ] Confirm Task 5a owner feel approval is recorded before starting this task.
+- [ ] Retain Task 5's Test Ground-only binding. Off is default on entry; old
   `WaterCourse` meshes/data and assertions still exercise the original baseline.
-- [ ] Add Off / Car waves / Full controls visible only in the Test Ground pause
-  menu. Explicitly label mode-change reset; release touches before applying.
+- [ ] Finish the plain Off / Car waves / Full controls in the Test Ground pause
+  menu; preserve the tested semantics. Label mode-change reset; release touches.
 - [ ] Prepare mesh/material once on first enable behind a loading cover, retain
   for toggles, then detach/free on exit. No hidden transparent layer remains.
 - [ ] Use all existing shallow/calm/current areas; no new wall, pool, bed or
@@ -172,7 +249,8 @@ optional `ui/pause_menu.gd` extension hook, `ui/water_wave_test_controls.gd`, te
 - [ ] Add optional telemetry for active mode/packets/height and CPU categories,
   without altering old recorder columns or exposing a misleading timer display.
 
-Exit/commit: owner-playable Test Ground prototype with controls and no rollout.
+Exit/commit: polished Test Ground prototype preserving the owner's approved feel,
+with full lifecycle coverage and no rollout. Material feel changes return to 5a.
 
 ## 7. Final verification and owner review
 
@@ -186,6 +264,8 @@ Exit/commit: owner-playable Test Ground prototype with controls and no rollout.
   comparison, synthetic stress and at least five minutes warmed Full gameplay.
 - [ ] Capture cold/first use and repeated mode/load behaviour with complete logs,
   every raw sample, temperatures, GPU validity, setup phases and cleanup counts.
+- [ ] Recheck approved total-water C95/C99 in every case alongside incremental
+  and whole-frame limits. No incremental-only acceptance or pooled slow cases.
 - [ ] Investigate all >33.3 ms tails. Use a system/CPU trace if necessary; do not
   attribute them from query counts or averages alone. Keep failed cases visible.
 - [ ] Confirm all timed levels remain waves-Off with baseline geometry and
@@ -193,14 +273,14 @@ Exit/commit: owner-playable Test Ground prototype with controls and no rollout.
 - [ ] Freshly install the measured final build when the phone is available, with
   save preserved; announce when automated tests finish and the owner can play.
 - [ ] Write `docs/notes/codex-report-m6w-waves.md`: change list, approved numbers,
-  performance evidence, limitations and a short Off/Car waves/Full playtest guide.
+  total/incremental performance evidence, Task 5a owner feedback and final feel
+  confirmation, limitations and a short Off/Car waves/Full playtest guide.
 - [ ] Finish feature commits with named files, update AGENTS, stop for owner/Claude
   review. No merge/push, reflected-wave work, timed-level enablement or Coastal
   Highway implementation without the next explicit decision.
 
 ## Review checkpoint
 
-This document and its spec are the deliverable of the current planning turn.
-Every implementation checkbox is intentionally empty. Only documentation/link
-checks are appropriate now; do not run Godot, build/install an APK, change physics
-or consume the phone merely to validate a plan.
+The approved isolated start supersedes the former documentation-only checkpoint.
+Desktop tests and synthetic rendering are permitted; no live-car integration,
+phone acceptance claim, merge or Coastal Highway work follows automatically.

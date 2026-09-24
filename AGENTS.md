@@ -24,11 +24,20 @@ finer index with unchanged sampling/forces; Muddy Valley's ground-supported road
 no longer casts redundant shadows. Matched pre-water/current creek captures
 establish inherited primitive debt. Post-fix phone measurements show the ford's
 controller p95 falling from about 4.2 to 1.6 ms/tick; all three creek views now
-meet the drawing budgets. **Phone acceptance is still pending:** the strict
-water/setup gates still fail, total frame p95 did not improve in the ford A/B,
-and one current-pool case contains unexplained long frame intervals (up to
-79.459 ms). The frame-based gate proposal is not an approved replacement for
-the spec.
+meet the drawing budgets. **Phone acceptance is still pending:** the original
+strict timing failures are retained, setup gates remain missed, and one
+current-pool case contains unexplained long frame intervals (up to 79.459 ms).
+The later approved total-water policy below has not yet been verified in its
+full measurement scope; it does not retroactively pass these runs.
+**Independent review supplied by the owner (2026-09-24):** see
+`docs/notes/m6a-independent-review-2026-09-24.md`. Claude confirms the query and
+creek fixes. Matched no-water Rock Canyon views already have about 20 ms frame
+p95: that baseline is inherited debt, not wholly an M6A regression. The hitch
+remains open. Claude's newer rally-only/flooded-stalled pattern differs from the
+earlier 4x4 hitch on the old intake-delay build; retain both, do not assert a
+cause yet. The owner subsequently approved isolated wave groundwork before
+M6A merge and **4/5 ms p95/p99 total-water CPU ceilings per rendered frame**.
+This does not accept the hitch or authorize a merge.
 The conversation approved progressive drag, temporary flotation and
 sinking, recoverable intake-based stalls, steady currents, translucent water,
 feedback and three Test Ground water areas. Scope also includes Muddy Valley's
@@ -41,22 +50,38 @@ Clearing the intake resets the timer; restart and flooding timings are unchanged
 This change is separate from wave implementation and performance acceptance.
 The owner wants waves/vehicle-displaced water in a **separate future part**;
 the conversation is recorded in `docs/notes/water-waves-followup.md`.
-**M6W planning is ready for owner/Claude review, not implementation:**
+**M6W isolated groundwork is approved (2026-09-24):**
 `docs/superpowers/specs/2026-09-24-m6w-water-waves-design.md` and
 `docs/superpowers/plans/2026-09-24-m6w-water-waves.md`. Agreed behaviours include
 entry/bow/wake waves, gentle flotation effects and wave-driven intake submersion;
-wall/rock reflections are deferred. Shader, numeric values, opt-in Test Ground
-controls, budgets and ordering before Coastal Highway remain review proposals.
-Do not start wave runtime work before explicit approval and resolution of the
-recorded M6A acceptance/merge prerequisites. Neither waves nor Coastal Highway
-is part of this performance retest.
+wall/rock reflections are deferred. Work on `m6-water-waves`, branched from
+unmerged M6A at `4d5bd21`, is limited to pure wave maths, meshes and synthetic
+shader/query fixtures. **Do not connect waves to live cars until the M6A hitch
+is fixed and retested.** Master and M6A acceptance remain untouched. The total
+water CPU limits are **4 ms/frame p95, 5 ms/frame p99**, including baseline and
+waves; incremental limits must fit inside them. **Task 5a is a mandatory
+owner driving-feel stop after entry/bow/wake work, before Task 6 polish**; provide
+minimal playable controls early and wait for explicit feel approval to resume.
+The approved limited start supersedes the original merge-first prerequisite
+only for isolated groundwork. Full integration/phone acceptance and Coastal
+Highway retain their recorded gates. No merge or push is authorized.
+**Groundwork completed:** `docs/notes/codex-report-m6w-waves.md` records the
+isolated field, refined mesh/sampler and car-free shader lab. Final desktop suite:
+**760 passing, one pre-existing pending, no SCRIPT ERROR**; calibrated desktop
+GPU-height checks pass. Normal gameplay remains unchanged. Mesh preparation is
+already about 0.32 s on desktop versus the proposed 0.25 s phone allowance;
+profile it before the early phone gate. One interrupted regression attempt is
+retained in the report; the final complete rerun passed. No phone tests or
+installation were performed for this groundwork. Do not treat this as the
+owner-playable driving feature, hitch resolution or phone acceptance.
 
 **State:** Milestones 1–5 are merged into `master`, plus the 2026-09-23 AWD
 balance tuning and the build-speed refactor. Five levels (Rally Road, Muddy
 Valley, Frozen Pass, Rock Canyon, and the Test Ground as Free Drive), three
 cars. M6A's retested full desktop suite is **736 passing, 1 pre-existing pending, no
 SCRIPT ERROR**, with protected geometry and balance fixtures unchanged. Phone
-retests still fail the water/setup budgets; the creek primitive overage is fixed.
+retests missed the original water/setup budgets; the broader approved total-water
+gate is not yet verified, and the creek primitive overage is fixed.
 Rock Canyon's inherited >3 s phone load miss remains open.
 Part B must not begin before A's review, phone acceptance
 and owner-authorized merge.
