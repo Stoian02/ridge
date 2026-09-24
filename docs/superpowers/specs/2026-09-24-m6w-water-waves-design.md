@@ -1,5 +1,12 @@
 # M6W — gentle waves and vehicle-generated water motion
 
+**Bow-only iteration approved (2026-09-24):** the owner likes the entry and
+selected step 1 of the proposed next pass: refine the leading bow crest around
+the car's sides, including reverse, on the Test Ground before phone tests.
+Trailing wake/splash work (steps 2/3) is not approved here. Preserve ambient,
+entry, coefficients, car tuning, depth/shore limits and all deferred gates;
+stop for another owner feel check after PC verification.
+
 **Entry-feel iteration approved (2026-09-24):** the owner finds ambient waves
 sufficient but entry almost invisible. Improve entry readability on the Test
 Ground and stop for another feel check; phone testing follows when connected.
@@ -345,12 +352,23 @@ Use `smoothstep(-0.2, 0.4, -dot(d/s, travel_direction))`; the same softened core
 keeps this directional mask differentiable. No singular normal or NaN at a
 source centre. The nominal 2 m/s propagation applies outside that small core.
 
-One attached bow field uses the leading hull point in water-relative travel
-direction, longitudinal half-width **1.5 m**, lateral half-width
-`max(1.0, 0.65*body_width)`. With normalized longitudinal/lateral coordinates
-`u,v`, use `(1-u*u)^2*cos(PI*u)*(1-v*v)^2` inside `abs(u),abs(v) < 1`, zero
-outside, multiplied by the smoothed bow coefficient. Losing wet contact fades
-its coefficient; it does not leave an invisible attached force behind.
+**Bow-only refinement:** one attached curved crest uses the water-relative
+leading hull extent plus **0.25 m** clearance. Compute both longitudinal reach
+and cross-flow hull span from the projected car basis, so reverse follows the
+rear and an oblique/sideways car presents a wider front. The lateral half-span
+is `max(1.5, 0.5 * cross_span + 1.0)` m; backward sweep is
+`clamp(0.75 * longitudinal_reach, 0.6, 2.0)` m. Store sweep in the existing
+`bow_direction.w`; no extra field/packet/mesh/query is introduced.
+
+For local lateral coordinate `v = lateral / half_span`, the curved crest lies
+at longitudinal position `-sweep*v*v`. Evaluate
+`u = (longitudinal + sweep*v*v) / 1.5`, then
+`pulse(u) * (1-v^4)^2` inside `abs(u),abs(v) < 1`, otherwise zero, multiplied by
+the original smoothed bow coefficient. Include the derivative of that sweep
+in CPU/GPU normals. This replaces the narrow straight ridge's quadratic lateral
+envelope; it is an attached approximation, not obstacle-aware water flow.
+The 5 cm coefficient cap, speed/depth response and rise/fall times are unchanged.
+Losing wet contact fades its coefficient; no separate rocking or sideways force.
 
 Choose the dominant body from the existing wet samples. On a body change, queue
 new sources only to that body and let old travelling packets finish in their

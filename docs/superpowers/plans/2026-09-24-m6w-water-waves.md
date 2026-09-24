@@ -1,5 +1,25 @@
 # M6W — water waves implementation plan (isolated start approved)
 
+## Bow-only follow-up (2026-09-24; latest scope)
+
+Owner accepted improved entry visibility and chose **step 1 only** from the
+proposed bow / trailing-wake / splash follow-up. Refine the attached leading
+crest and its response to water-relative orientation, including reverse, then
+stop for PC feel feedback. No phone work, wake/splash redesign or further polish
+is implied. Existing hitch deferral and all acceptance/rollout gates remain.
+
+- [x] Capture the original bow in forward/reverse/oblique/slow real-car cases.
+- [x] Curved shoulder crest, projected cross-flow width, small leading clearance;
+  same strength, ambient, entry/wake rules, fixed field and safety caps.
+- [x] Focused unit/source and all-car/60–120 Hz driving/steering checks: 25 pass.
+- [x] Real-GPU bow/triangle parity, normal-speed PC smoke and full regression:
+  780 passing, one inherited pending, no SCRIPT ERROR; code frozen for run.
+- [x] Record evidence and stop for owner feedback before step 2 or phone testing.
+- [ ] Owner drives the refined bow and provides feedback; no further work implied.
+
+Feature `2ba1096`; report/evidence:
+`../../notes/m6w-bow-refinement-2026-09-24.md`. No Android export/install this pass.
+
 ## Approved entry-readability correction (2026-09-24; latest work)
 
 Owner approved proceeding after feedback: preserve satisfactory ambient waves,

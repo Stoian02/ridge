@@ -1,5 +1,22 @@
 # Ridge — notes for coding agents
 
+**Latest scope (2026-09-24):** owner likes the now-visible entry and approved
+**step 1 only: refine the bow wave**, on the Test Ground, before phone testing.
+Make the leading crest wrap around the sides and follow water-relative motion,
+including reverse. Do not change trailing-wake generation, splash particles,
+ambient waves, accepted entry sources, car tuning or depth/shore limits. Stop
+for feedback again after PC verification. Hitch remains open/non-blocking for
+this iteration; phone acceptance, timed-level rollout and merge/push stay pending.
+
+**Bow refinement delivered:** feature `2ba1096`, report and playtest guide at
+`docs/notes/m6w-bow-refinement-2026-09-24.md`. Curved leading/shoulder crest uses
+the hull's projected span and follows reverse/oblique motion. Strength settings,
+ambient/entry/wake sources, splash particles and car tuning are unchanged.
+Final suite: **780 passing, one inherited pending, no SCRIPT ERROR**; dedicated
+GPU bow/triangle checks and normal-speed PC smoke pass. **Stop for owner feedback**
+before steps 2/3 or phone work. No Android build/install this pass; the previous
+APK predates this bow change and must be rebuilt before future installation.
+
 **Latest owner approval (2026-09-24):** keep the intermittent hitch recorded as
 unresolved but **non-blocking for the next Test Ground wave iteration**. Improve
 the barely visible vehicle-entry response; preserve the ambient waves the owner

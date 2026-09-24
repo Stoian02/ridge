@@ -1,5 +1,14 @@
 # Follow-up: waves and vehicle-displaced water
 
+**Bow-only follow-up (2026-09-24):** owner likes the more visible entry and
+explicitly chose step 1 only: improve the bow crest around the leading edge and
+sides, responding to speed/direction including reverse. Stay on the Test Ground,
+preserve ambient/entry/trailing-wake/splash behaviour and car tuning; stop for
+another PC check before phone testing or steps 2/3. Earlier notes are historical.
+Delivered as `2ba1096`: see `m6w-bow-refinement-2026-09-24.md` for captures,
+780-pass desktop regression and GPU checks. Awaiting the owner's next drive;
+phone/hitch acceptance and wake/splash work remain open.
+
 **Latest approval (2026-09-24):** the owner approved fixing the entry-wave
 readability and will connect the phone for testing. The intermittent hitch stays
 recorded as unresolved, but no longer blocks this Test Ground iteration. Preserve
