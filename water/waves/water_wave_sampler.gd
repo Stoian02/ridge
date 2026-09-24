@@ -1,6 +1,6 @@
 class_name WaterWaveSampler
 extends RefCounted
-## Exact drawn-triangle sampling for fixtures; deliberately not bound to WaterWorld.
+## Exact drawn-triangle sampling; optional Test Ground binding, never a collider.
 
 var topology: WaterWaveMesh
 var snapshot: WaterWaveSnapshot

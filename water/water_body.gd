@@ -116,6 +116,7 @@ func sample(point: Vector3, result: WaterSample, radius: float = 0.0) -> void:
 		return
 	result.valid = true
 	result.surface_y = surface
+	result.rest_surface_y = surface
 	result.bed_y = bed
 	result.current = _currents[chosen]
 	result.body_id = id

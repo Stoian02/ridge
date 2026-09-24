@@ -13,6 +13,15 @@ var query_usec: int = 0
 ## TrailLevel's complete "water" build phase instead.
 var setup_usec: int = 0
 
+class WaveBinding:
+	var sampler: WaterWaveSampler
+	var origin: Vector3
+
+var _waves: Dictionary = {}
+## Nested attribution only: already included in query/controller wall time.
+var wave_query_usec := 0
+var wave_query_count := 0
+
 var _bins: Dictionary = {}
 var _candidate := WaterSample.new()
 var _cached_cell := Vector2i(2147483647, 2147483647)
@@ -57,6 +66,31 @@ func reset_metrics() -> void:
 	query_count = 0
 	triangle_tests = 0
 	query_usec = 0
+	wave_query_usec = 0
+	wave_query_count = 0
+
+
+## Explicit translation-only binding for the horizontal Test Ground prototype.
+## Registry mutation invalidates ALL bindings, never retaining an old generation.
+func bind_wave(body: WaterBody, sampler: WaterWaveSampler, origin: Vector3) -> bool:
+	if not bodies.has(body) or sampler == null or sampler.topology == null \
+			or sampler.snapshot == null or not origin.is_finite() \
+			or body.bounds.size.y > 0.00001 \
+			or absf(sampler.topology.level + origin.y - body.bounds.position.y) > 0.00001:
+		return false
+	var binding := WaveBinding.new()
+	binding.sampler = sampler
+	binding.origin = origin
+	_waves[body.id] = binding
+	return true
+
+
+func clear_waves() -> void:
+	_waves.clear()
+
+
+func wave_binding_count() -> int:
+	return _waves.size()
 
 
 func sample(point: Vector3, result: WaterSample, radius: float = 0.0) -> void:
@@ -75,6 +109,16 @@ func sample(point: Vector3, result: WaterSample, radius: float = 0.0) -> void:
 		triangle_tests += body.triangle_tests
 		if not _candidate.valid:
 			continue
+		if not _waves.is_empty():
+			var binding: WaveBinding = _waves.get(body.id)
+			if binding != null:
+				var wave_started := Time.get_ticks_usec()
+				var local := point - binding.origin
+				var height := binding.sampler.height_at(Vector2(local.x, local.z)) + binding.origin.y
+				if is_finite(height) and height > _candidate.bed_y:
+					_candidate.surface_y = height
+				wave_query_usec += Time.get_ticks_usec() - wave_started
+				wave_query_count += 1
 		if not result.valid or _candidate.surface_y > result.surface_y \
 				or (_candidate.surface_y == result.surface_y and String(_candidate.body_id) < String(result.body_id)):
 			result.copy_from(_candidate)
@@ -101,5 +145,6 @@ func _reindex() -> void:
 
 func _invalidate() -> void:
 	generation += 1
+	clear_waves()
 	_cached_cell = Vector2i(2147483647, 2147483647)
 	_cached_bodies = []
