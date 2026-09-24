@@ -58,6 +58,7 @@ seed = 37
 
 [resource]
 script = ExtResource("1_trail")
+shadowless_sections = Array[Vector2]([Vector2(0, 1600)])
 road_width = 9.0
 shoulder_width = 3.0
 detail_step = 0.5
