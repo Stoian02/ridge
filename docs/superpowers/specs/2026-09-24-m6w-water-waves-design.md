@@ -349,6 +349,16 @@ single-footprint bodies without islands are supported. Original top/bed indices
 are reused locally for source colour and conservative depth during preparation,
 then freed; the refined mesh is never registered as a static query top.
 
+**Preparation implementation, following the 2026-09-24 groundwork review:**
+perform that static derivation offline with `tools/bake_water_waves.gd`, storing
+one shared deep resource and four distinct bay resources. At explicit first
+enable, load them under the loading cover, validate an ordered source/top/bed/
+colour and geometry-profile fingerprint plus bake revision, and adopt the exact
+arrays/index/mesh. Stale/missing assets fail closed; do not silently rebuild
+during play, weaken masks or lower detail. Fresh-builder versus packaged-data
+tests must remain exact. Bump the bake revision when the derivation changes.
+This does not hook waves into the default Off course or authorize live coupling.
+
 Reuse compatible static mesh data between the identical calm/current basins.
 Each of the six water bodies gets its own parameters; sharing a ShaderMaterial
 must not accidentally share its wave history. Hide the original two deep tops
@@ -405,8 +415,9 @@ level through a small extension hook. Other levels keep the same menu.
 The visible control says **Changing water mode resets the car**. Applying a
 mode releases touches, uses the existing Test Ground reset path, clears all wave
 history, seeds sources without splash and starts from the fixed phase seed.
-First enable may use a brief loading cover while building/warming the optional
-tops. Do not save the mode to progress or silently carry it to a timed level.
+First enable may use a brief loading cover while loading/validating the baked
+optional tops and warming their rendering. Do not save the mode to progress or
+silently carry it to a timed level.
 Retain prepared meshes for later toggles in the same scene; release on exit.
 
 All three existing areas are reused: shallow bays for tyre-sized ripples and

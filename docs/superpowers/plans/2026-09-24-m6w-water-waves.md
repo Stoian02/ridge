@@ -1,5 +1,29 @@
 # M6W — water waves implementation plan (isolated start approved)
 
+## Follow-up to Claude's e37620d review (2026-09-24)
+
+Owner asked to continue in review order: hitch diagnostics, preparation
+profiling/fix, early phone work. See
+`../../notes/m6w-review-followup-2026-09-24.md` for raw evidence and limitations.
+
+- [x] Trace waves-Off state/effects/audio and scheduling on the phone; retain all
+  cases and failed diagnostic attempt. Two reproduced long frames are dominated
+  by off-CPU scheduling delays, not new stall transitions. No gameplay fix claimed.
+- [x] Separate static preparation phases; identify deep outline/depth/topology
+  work as the main cost, not native mesh commit or four small bays.
+- [x] Package exact offline-generated topology, validate source/profile/revision,
+  fail closed on stale assets, preserve distinct masks and shared deep geometry.
+- [x] Cover real shader first use; phone CPU preparation 27–38 ms across three
+  launches, first-use waits 154–753 ms separately; phone numerical parity passes.
+- [x] Final desktop regression: 765 passing, one inherited pending, no SCRIPT ERROR.
+- [ ] M6A hitch/acceptance prerequisite explicitly resolved after trace review.
+- [ ] Complete Task 0/4 all-water timing coverage and synthetic phone gate.
+  Setup/parity above are subchecks only, not full CPU/GPU/frame/memory acceptance.
+
+No natural source generation or live-car wave sampling was connected. The
+original groundwork checkpoint below is historical; its "phone untested" and
+"no instrumentation" descriptions refer to that earlier stage only.
+
 ## Approved limited start (2026-09-24; supersedes original sequencing below)
 
 Owner approved **4 ms/frame p95 / 5 ms/frame p99 total water CPU** and Tasks 1–3
@@ -112,6 +136,9 @@ Files: new `water_wave_mesh.gd`; limited edits to `WaterSample`, `WaterWorld`,
 - [ ] Build a 0.75 m clipped XZ top from existing Test Ground footprints and source
   colours, with per-triangle lookup and shared-vertex metadata. Keep original
   top/bed source arrays and base query bins unmodified.
+  Follow-up implementation uses offline generation into exact packaged assets;
+  runtime validates source/profile fingerprints and adopts arrays under a cover,
+  with no silent fallback build or reduced detail. Fresh/cache equality is tested.
 - [ ] Precompute conservative bed-wide height limits and shoreline taper using
   nearby static faces, including bed breaks between render vertices.
 - [ ] Reuse compatible static mesh data for calm/current while keeping runtime

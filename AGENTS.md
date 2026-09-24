@@ -75,6 +75,24 @@ retained in the report; the final complete rerun passed. No phone tests or
 installation were performed for this groundwork. Do not treat this as the
 owner-playable driving feature, hitch resolution or phone acceptance.
 
+**Review follow-up (2026-09-24):** read
+`docs/notes/m6w-review-followup-2026-09-24.md` next. Opt-in waves-Off diagnostics
+and a phone system trace attribute two reproduced long frames mainly to the
+game thread being runnable but off CPU, not a new stall/flood/audio transition.
+This is **not a gameplay fix or a universal explanation of historical tails**;
+review the evidence before closing the M6A hitch/integration prerequisite.
+Wave preparation was profiled and replaced by exact offline-generated,
+source/profile-validated packaged assets (no reduced detail or runtime fallback).
+Three phone launches: **27–38 ms wave CPU preparation**, separately **154–753 ms
+covered first-use wait**; GPU evaluator/triangle parity passed. Full suite now
+**765 passing, one pre-existing pending, no SCRIPT ERROR**. These are setup and
+parity subchecks, **not the complete Task 4 total-water/frame-time phone gate**.
+No live-wave binding is enabled. Finish measurement coverage and that gate after
+the M6A prerequisite is resolved; Task 5a owner-feel stop remains mandatory.
+Raw CSVs/logs/SQL are committed; the large scheduling trace is local-only under
+`runs/m6w-review-data/` (see evidence README). Final diagnostic APK is installed,
+one-shot flag consumed, progress unchanged. No merge or push.
+
 **State:** Milestones 1–5 are merged into `master`, plus the 2026-09-23 AWD
 balance tuning and the build-speed refactor. Five levels (Rally Road, Muddy
 Valley, Frozen Pass, Rock Canyon, and the Test Ground as Free Drive), three

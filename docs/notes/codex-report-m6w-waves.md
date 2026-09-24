@@ -1,5 +1,12 @@
 # M6W — isolated wave groundwork (2026-09-24)
 
+**Later review follow-up:**
+[`m6w-review-followup-2026-09-24.md`](m6w-review-followup-2026-09-24.md) records
+phone hitch tracing, exact packaged topology, 27–38 ms phone preparation,
+phone parity and 765 passing desktop tests. Complete total-water phone
+acceptance and live-car integration remain open. The original `e37620d` stage
+and its limitations below are retained as history, not silently rewritten.
+
 ## Scope and status
 
 Branch `m6-water-waves`, based on unmerged M6A `4d5bd21`. The owner approved
