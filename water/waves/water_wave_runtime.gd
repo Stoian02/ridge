@@ -1,0 +1,53 @@
+class_name WaterWaveRuntime
+extends Node
+## Synthetic lab clock only for now. No gameplay binding, source-car or singleton.
+
+const SURFACE := preload("res://water/waves/water_surface.gdshader")
+
+class View:
+	var body_id: StringName
+	var ambient := false
+	var snapshot := WaterWaveSnapshot.new()
+	var sampler := WaterWaveSampler.new()
+	var material: ShaderMaterial
+
+var field := WaterWaveField.new()
+var views: Array[View] = []
+
+
+func _ready() -> void:
+	process_physics_priority = -50
+
+
+func add_view(body_id: StringName, topology: WaterWaveMesh, ambient: bool) -> View:
+	var view := View.new()
+	view.body_id = body_id
+	view.ambient = ambient
+	view.material = ShaderMaterial.new()
+	view.material.shader = SURFACE
+	field.write_snapshot(body_id, ambient, view.snapshot)
+	view.sampler.configure(topology, view.snapshot)
+	view.snapshot.upload(view.material)
+	views.append(view)
+	return view
+
+
+func _physics_process(delta: float) -> void:
+	field.step(delta)
+	refresh()
+
+
+func refresh() -> void:
+	for view: View in views:
+		field.write_snapshot(view.body_id, view.ambient, view.snapshot)
+		view.snapshot.upload(view.material)
+
+
+func reset() -> void:
+	field.reset()
+	refresh()
+
+
+func _exit_tree() -> void:
+	field.reset()
+	views.clear()
