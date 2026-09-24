@@ -1,5 +1,31 @@
 # M6W — water waves implementation plan (isolated start approved)
 
+## Owner-approved PC feel exception (2026-09-24; latest scope)
+
+Owner approved: "let's keep it to the Test grounds and let me test" after an
+explicit proposal to bring PC live integration before the unresolved hitch/full
+phone gate. This supersedes that prerequisite **only for the experimental PC
+Test Ground prototype**; no phone acceptance, rollout, merge or polish is implied.
+
+- [x] Optional drawn-triangle query binding and rest-height source diagnostics.
+- [x] Natural entry/bow/wake with bounded history and no extra bed queries.
+- [x] Test Ground-only comparison controls and covered reset/pause/rebuild lifecycle.
+- [x] Focused unit/lifecycle/live-car checks at 60/120 Hz and real-renderer PC
+  smoke/parity checks; raw evidence retained. Full-part phone gates are not claimed.
+- [x] Final complete regression: 774 passing, one inherited pending, no SCRIPT
+  ERROR; one interrupted attempt retained alongside the unchanged successful rerun.
+- [ ] **Task 5a: owner drives and explicitly approves the feel. STOP HERE.**
+
+Current report/playtest guide: `../../notes/m6w-pc-prototype-2026-09-24.md`.
+The original full-part checklist below is not blanket acceptance: sustained
+phone measurements, the broader driving matrix and polish remain outstanding.
+
+Current execution: exact optional query binding and Off parity → bounded natural
+source generation → Test Ground-only mode/reset/pause lifecycle and plain controls
+→ focused/live PC checks and full regression → **stop at Task 5a for the owner**.
+Keep car/surface tuning and protected fixtures unchanged. Phone cost validation
+and historic hitch classification stay open and must be revisited later.
+
 ## Follow-up to Claude's e37620d review (2026-09-24)
 
 Owner asked to continue in review order: hitch diagnostics, preparation
@@ -308,6 +334,7 @@ with full lifecycle coverage and no rollout. Material feel changes return to 5a.
 
 ## Review checkpoint
 
-The approved isolated start supersedes the former documentation-only checkpoint.
-Desktop tests and synthetic rendering are permitted; no live-car integration,
-phone acceptance claim, merge or Coastal Highway work follows automatically.
+The latest explicit PC exception supersedes the old isolated-only start for
+this Test Ground prototype. It is now implemented and PC-verified: **stop for
+Task 5a owner driving feedback**, not polish. Phone acceptance, historic hitch
+review, timed-level rollout, merge and Coastal Highway remain open.

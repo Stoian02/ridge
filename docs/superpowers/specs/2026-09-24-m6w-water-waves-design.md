@@ -1,9 +1,18 @@
 # M6W — gentle waves and vehicle-generated water motion
 
-**Date:** 2026-09-24. **Status: isolated groundwork approved; live integration
-blocked on the M6A hitch fix/retest.**
+**Latest owner exception (2026-09-24):** a live, experimental **Test Ground-only
+PC driving prototype** is now approved before the outstanding hitch review and
+full phone gate. Connect the already specified height sampling and natural
+sources, expose Off / Car waves / Full (default Off), verify on PC and stop for
+Task 5a owner feedback. This limited sequencing change supersedes older blocked
+integration language below; it does not accept M6A, phone budgets or historic
+hitches, authorize timed-level waves, car tuning, polish, merge or push.
 
-**Owner approval amendment:** approved the limited maths/mesh/shader start on
+**Date:** 2026-09-24. **Status: experimental Test Ground PC prototype implemented;
+awaiting Task 5a owner driving feedback. Phone/hitch acceptance remains open.**
+
+**Original isolated-start approval (superseded in scope by the PC exception):**
+approved the limited maths/mesh/shader start on
 `m6-water-waves` from unmerged M6A `4d5bd21`, with **total water CPU <=4 ms/frame
 p95 and <=5 ms/frame p99**. This supersedes earlier merge-first/unset-ceiling
 language only for isolated work. Do not bind waves to a live car, change existing
@@ -662,7 +671,9 @@ gentle numeric starting values and physical/intake coupling; the shader and
 water-top-only refinement; opt-in comparison/reset behaviour; proposed CPU/GPU,
 drawing and setup allocations; and the M6A acceptance/merge prerequisite.
 The total-water ceiling and isolated start are approved in the amendment above.
-The early Task 5a feel stop remains required. Live-car integration still waits
-for the M6A hitch fix/retest; its acceptance, merge and rollout are not granted.
+The early Task 5a feel stop remains required. The latest explicit exception
+permits live integration only for this experimental Test Ground PC checkpoint;
+M6A/phone acceptance, merge and rollout are not granted.
 
-**Current decision: implement isolated groundwork only; preserve the live game.**
+**Current decision: owner drives the Test Ground PC prototype; stop for feedback
+before polish. Keep phone/hitch gates pending and all timed levels waves-Off.**

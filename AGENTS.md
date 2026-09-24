@@ -1,5 +1,23 @@
 # Ridge — notes for coding agents
 
+**Latest owner exception (2026-09-24):** the owner explicitly approved bringing
+the PC driving-feel prototype forward, on the **Test Ground only**, before the
+M6A hitch review/full phone gate closes. Implement natural entry/bow/wake,
+drawn-height coupling and Off / Car waves / Full controls (Off on scene entry),
+verify on PC, then **stop for owner driving feedback before polish**. This
+supersedes the earlier no-live-binding prerequisite below only for this
+experimental Test Ground checkpoint. Phone acceptance, historic hitch review,
+timed-level rollout and merge/push remain pending; no budgets or car tuning change.
+
+**PC prototype delivered:** `docs/notes/m6w-pc-prototype-2026-09-24.md` is the
+current playtest/report. Free Drive → Pause → Water waves — PC prototype:
+Off / Car waves / Full. Natural sources and drawn-height physics are connected
+only here. Final desktop regression: **774 passing, one inherited pending,
+no SCRIPT ERROR**; the first stalled regression attempt and unchanged successful
+rerun are both retained. PC rendered smoke/parity checks pass, not the full
+phone gate. **Await owner driving-feel feedback now; do not start polish or
+automated Godot runs while they play.** No new phone installation this pass.
+
 **Current handoff:** `docs/notes/handover-codex-2026-09-23-m6.md` — Milestone 6
 in two parts, Codex designing as well as building, stopping for review between
 them. **Part A: water physics** (branch `m6a-water-physics`), validated on the

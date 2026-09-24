@@ -1,5 +1,12 @@
 # M6W — isolated wave groundwork (2026-09-24)
 
+**Latest delivery:** the owner-approved
+[`PC Test Ground driving prototype`](m6w-pc-prototype-2026-09-24.md) now connects
+natural entry/bow/wake, drawn-height physics and Off / Car waves / Full controls.
+**774 tests passed, one inherited pending, no SCRIPT ERROR**. Stop for Task 5a
+owner feel feedback; phone/hitch acceptance remains deferred, not passed.
+Earlier isolated-stage reports below remain historical evidence.
+
 **Later review follow-up:**
 [`m6w-review-followup-2026-09-24.md`](m6w-review-followup-2026-09-24.md) records
 phone hitch tracing, exact packaged topology, 27–38 ms phone preparation,
