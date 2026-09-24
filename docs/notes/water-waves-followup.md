@@ -12,33 +12,64 @@ routes and performance, so the track should be designed around the measured
 result. This ordering is a recommendation awaiting the owner's decision, not a
 change to the current milestone approval gates.
 
-The later discussion should distinguish cosmetic ripples/wakes from a moving
-physical surface, and decide which the owner wants for wind/swell and for
-vehicle entry/displacement. It must define how rendered height agrees with
-intake submersion, buoyancy, banks and bottoms, and measure phone cost before
-committing to a full level. No fluid simulation is promised by this note.
+The design must distinguish cosmetic ripples/wakes from a moving physical
+surface. The owner has now approved a gentle physical response from the larger
+waves, including vehicle-generated waves (see decisions below). Define how
+rendered height agrees with intake submersion, buoyancy, banks and bottoms, and
+measure phone cost before committing to a full level. No fluid simulation is
+promised by this note.
 
 Aquaplaning and deep-water skimming remain separate optional experiments; waves
 do not implicitly approve either one. Visible snorkel art is also still deferred.
 
-## Starting point for the next discussion (2026-09-24)
+## Planning context (2026-09-24)
 
 The owner requested the ford/creek fixes and frame-budget review first, followed
 by waves brainstorming. The fixes are documented in
 `m6a-query-fixes-2026-09-24.md`; the owner reconnected the phone for fresh
-measurements, but acceptance remains open. Brainstorming does not approve implementation or
-waive Part A's review/merge gates.
+measurements, but acceptance remains open. Brainstorming does not approve
+implementation or waive Part A's review/merge gates.
 
-Suggested first prototype: gentle, visible waves that can rock a floating car,
-plus bounded entry ripples and a trailing wake on the Test Ground. The moving
-physical surface must agree with the visible surface for buoyancy and intake
-submersion, with calm/shallow-bank attenuation. No general fluid solver,
-aquaplaning or speed-lift experiment is implied. Any choice of physical versus
-cosmetic vehicle-generated ripples must be explicit in the later spec.
+## Agreed first-prototype behaviour (2026-09-24)
 
-First owner decision: should waves mainly bring the water to life and gently
-affect the car (recommended starting scope), or should swell already be a
-timing/route-selection hazard for Coastal Highway? Choose that before settling
-wave size, wake detail, implementation or track layout. Proposed sequence
-remains a separate measured prototype before Coastal Highway, not unreviewed
-wave work hidden in the level milestone.
+The owner agreed to the following behaviours during brainstorming:
+
+- Gentle background waves, not large swell designed as a driving hazard.
+- An outward-spreading entry wave responding to the car entering the water.
+- A bow wave and trailing wake while driving through it, responding to
+  water-relative movement and submersion.
+- Existing disturbances spread and settle after stopping or leaving; the car
+  must not keep generating an ever-growing wake while stationary.
+- Larger waves, including vehicle-generated waves, slightly affect flotation.
+  The owner explicitly delegated the starting strength to Codex. Fine ripples,
+  foam and splash particles remain visual detail, not separate physical water.
+- Test this first on the Test Ground. Keep transparency and agreement between
+  visible surface movement and the surface used for flotation.
+
+The owner then chose to **defer wall/rock wave reflections**: test the basic
+behaviours first and revisit reflections afterwards. Do not build the suggested
+reflecting-wall test or treat reflection support as approved for the first
+prototype. Moving-obstacle interaction, detailed breaking waves and overflowing
+water also stay out of this initial scope. No general fluid solver, aquaplaning
+or speed-lift experiment is implied.
+
+Recommended initial boundary treatment (not a reflective solver): fade wave
+disturbances near banks and water-footprint edges, keeping them inside the
+water. Geometry-specific obstacle response remains deferred; do not claim the
+first prototype models waves bouncing or bending around arbitrary rocks.
+
+The owner also approved using the moving physical surface for intake submersion
+as well as flotation. Cosmetic splash particles do not count as intake
+submersion. In the same response, they requested **3.00 s of continuous intake
+submersion before stalling**, replacing 0.60 s for all three cars. A dry intake
+sample still resets this timer; restart and body-flooding rules are unchanged.
+This small current-water tuning change is separate from implementing waves and
+is recorded as an amendment in the Part A spec.
+
+These are design decisions, not a complete approved spec or permission to
+implement. Algorithm, numeric starting values, performance checks and the
+written spec still need settling. Proposed sequence remains a separately
+measured prototype before Coastal Highway, subject to Part A acceptance/review
+and owner-authorized merge. The separately requested stall-delay amendment is
+implemented and desktop-tested (see `codex-report-m6a-water.md`); no wave runtime
+work has started.
