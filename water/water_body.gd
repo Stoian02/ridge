@@ -5,6 +5,9 @@ extends RefCounted
 
 const CELL_SIZE := 2.0
 const TRIANGLE_EPSILON := 0.000001
+const BED_SUBDIVISIONS := 4
+const BED_FINE_SIZE := CELL_SIZE / BED_SUBDIVISIONS
+const BED_REFINE_THRESHOLD := 32
 
 var id: StringName
 var bounds: AABB
@@ -17,6 +20,8 @@ var _bed := PackedVector3Array()
 var _currents := PackedVector3Array()
 var _top_bins: Dictionary = {}
 var _bed_bins: Dictionary = {}
+var _bed_fine_bins: Dictionary = {}
+var _refined_bed_cells: Dictionary = {}
 var _edge_bins: Dictionary = {}
 var _edges := PackedVector3Array()
 var _color: Color
@@ -75,6 +80,7 @@ func configure(def: WaterBodyDef, top_faces: PackedVector3Array, bed_faces: Pack
 		_currents.append(rotation * velocity)
 	_index_faces(_top, _top_bins)
 	_index_faces(_bed, _bed_bins)
+	_refine_bed_index()
 	_index_boundary()
 	return true
 
@@ -100,6 +106,9 @@ func sample(point: Vector3, result: WaterSample, radius: float = 0.0) -> void:
 		return
 	var bed := -INF
 	var bottoms: PackedInt32Array = _bed_bins[key]
+	if _refined_bed_cells.has(key):
+		var fine_key := Vector2i(floori(point.x / BED_FINE_SIZE), floori(point.z / BED_FINE_SIZE))
+		bottoms = _bed_fine_bins.get(fine_key, PackedInt32Array())
 	for triangle: int in bottoms:
 		triangle_tests += 1
 		bed = maxf(bed, triangle_height(_bed, triangle * 3, point.x, point.z))
@@ -154,6 +163,38 @@ static func _index_faces(faces: PackedVector3Array, index: Dictionary) -> void:
 		var c := faces[triangle * 3 + 2]
 		_insert_bounds(index, Vector2(minf(a.x, minf(b.x, c.x)), minf(a.z, minf(b.z, c.z))),
 				Vector2(maxf(a.x, maxf(b.x, c.x)), maxf(a.z, maxf(b.z, c.z))), triangle)
+
+
+## Dense road meshes put hundreds of tiny bed triangles in a 2 m cell. Refine
+## only crowded cells beneath a possible water top, retaining face order and
+## the original interpolation. Sparse terrain/pool cells pay no extra lookup.
+## Bounds include the barycentric tolerance; this must never trim a valid hit.
+func _refine_bed_index() -> void:
+	for key: Vector2i in _top_bins:
+		var candidates: PackedInt32Array = _bed_bins.get(key, PackedInt32Array())
+		if candidates.size() <= BED_REFINE_THRESHOLD:
+			continue
+		_refined_bed_cells[key] = true
+		var cell_first := key * BED_SUBDIVISIONS
+		var cell_last := cell_first + Vector2i.ONE * (BED_SUBDIVISIONS - 1)
+		for triangle: int in candidates:
+			var a := _bed[triangle * 3]
+			var b := _bed[triangle * 3 + 1]
+			var c := _bed[triangle * 3 + 2]
+			# u/v can reach 1+2*epsilon when the other is -epsilon. Include
+			# that whole accepted region, plus float-vector rounding.
+			var margin_x := (absf(b.x - a.x) + absf(c.x - a.x)) * 2.0 * TRIANGLE_EPSILON + 0.0001
+			var margin_z := (absf(b.z - a.z) + absf(c.z - a.z)) * 2.0 * TRIANGLE_EPSILON + 0.0001
+			var first := Vector2i(floori((minf(a.x, minf(b.x, c.x)) - margin_x) / BED_FINE_SIZE),
+				floori((minf(a.z, minf(b.z, c.z)) - margin_z) / BED_FINE_SIZE))
+			var last := Vector2i(floori((maxf(a.x, maxf(b.x, c.x)) + margin_x) / BED_FINE_SIZE),
+				floori((maxf(a.z, maxf(b.z, c.z)) + margin_z) / BED_FINE_SIZE))
+			for z in range(maxi(first.y, cell_first.y), mini(last.y, cell_last.y) + 1):
+				for x in range(maxi(first.x, cell_first.x), mini(last.x, cell_last.x) + 1):
+					var fine_key := Vector2i(x, z)
+					var entries: PackedInt32Array = _bed_fine_bins.get(fine_key, PackedInt32Array())
+					entries.append(triangle)
+					_bed_fine_bins[fine_key] = entries
 
 
 ## Count shared edges before making a shoreline: the diagonal of each quad and

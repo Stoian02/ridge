@@ -232,3 +232,64 @@ func test_missing_bed_and_invalid_face_current_counts_do_not_make_unbounded_wate
 	assert_null(world.add_body(definition(), quad(1.0), quad(0.0), Transform3D.IDENTITY,
 			PackedVector3Array([Vector3.ZERO])))
 	assert_eq(world.bodies.size(), 0)
+
+
+func test_dense_bed_refinement_matches_original_bins_at_edges_and_random_points() -> void:
+	var bed := PackedVector3Array()
+	for z in 32:
+		for x in 32:
+			var from := Vector2(x, z) * 0.125 - Vector2.ONE * 2.0
+			var faces := quad(0.0, from, from + Vector2.ONE * 0.125)
+			for index in faces.size():
+				faces[index].y = sin(faces[index].x * 2.0) * cos(faces[index].z) * 0.2
+			bed.append_array(faces)
+	# Overlapping raised faces, slopes, a projected vertical face and a large
+	# diagonal all retain the highest-bed rule and original face interpolation.
+	bed.append_array(quad(1.5, Vector2(-0.6, -0.5), Vector2(0.6, 0.5)))
+	bed.append_array([Vector3(-2, 0, -2), Vector3(2, 0.2, 2), Vector3(2, 0.3, -2)])
+	bed.append_array([Vector3.ZERO, Vector3.UP, Vector3.FORWARD])
+	var world := WaterWorld.new()
+	var body := world.add_body(definition(), quad(1.0), bed)
+	assert_gt(body._refined_bed_cells.size(), 0)
+	var original := WaterSample.new()
+	var refined := WaterSample.new()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 6214
+	var original_tests := 0
+	var refined_tests := 0
+	for index in 2500:
+		var point := Vector3(rng.randf_range(-2.1, 2.1), rng.randf_range(-0.5, 2.0), rng.randf_range(-2.1, 2.1))
+		if index < 300:
+			# Exact sub-cell edges and either side, also at negative coordinates.
+			point.x = (index % 9 - 4) * 0.5 + (index % 3 - 1) * 0.00001
+			point.z = (index % 7 - 3) * 0.5
+		body.sample(point, refined, 0.25)
+		refined_tests += body.triangle_tests
+		var saved := body._refined_bed_cells
+		body._refined_bed_cells = {}
+		body.sample(point, original, 0.25)
+		body._refined_bed_cells = saved
+		original_tests += body.triangle_tests
+		assert_eq(refined.valid, original.valid)
+		assert_eq(refined.bed_y, original.bed_y)
+		assert_eq(refined.surface_y, original.surface_y)
+		assert_eq(refined.current, original.current)
+		assert_eq(refined.edge_weight, original.edge_weight)
+	assert_lt(refined_tests, original_tests / 4)
+
+
+func test_refinement_keeps_barycentric_tolerance_beyond_a_long_triangle_tip() -> void:
+	var bed := quad(-2.0)
+	for index in 33:
+		bed.append_array([Vector3(-1000.0, 0.0, 1.0), Vector3(0.4985, 0.0, 1.0), Vector3(-1000.0, 0.0, 2.0)])
+	var world := WaterWorld.new()
+	var body := world.add_body(definition(), quad(1.0), bed)
+	var point := Vector3(0.5001, 0.5, 0.9999992)
+	var original := WaterSample.new()
+	var refined := WaterSample.new()
+	body.sample(point, refined)
+	body._refined_bed_cells.clear()
+	body.sample(point, original)
+	assert_true(original.valid)
+	assert_eq(original.bed_y, 0.0, "original barycentric tolerance accepts the extended tip")
+	assert_eq(refined.bed_y, original.bed_y, "padding must cross the next 0.5 m bin boundary")
