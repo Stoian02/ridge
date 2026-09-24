@@ -1,11 +1,12 @@
 class_name WaterWaveRuntime
 extends Node
-## Synthetic lab clock only for now. No gameplay binding, source-car or singleton.
+## Pause-aware immutable snapshot clock, shared by the lab and opt-in Test Ground.
 
 const SURFACE := preload("res://water/waves/water_surface.gdshader")
 
 class View:
 	var body_id: StringName
+	var origin := Vector3.ZERO
 	var ambient := false
 	var snapshot := WaterWaveSnapshot.new()
 	var sampler := WaterWaveSampler.new()
@@ -13,6 +14,7 @@ class View:
 
 var field := WaterWaveField.new()
 var views: Array[View] = []
+var step_usec := 0
 
 
 func _ready() -> void:
@@ -33,8 +35,10 @@ func add_view(body_id: StringName, topology: WaterWaveMesh, ambient: bool) -> Vi
 
 
 func _physics_process(delta: float) -> void:
+	var started := Time.get_ticks_usec()
 	field.step(delta)
 	refresh()
+	step_usec = Time.get_ticks_usec() - started
 
 
 func refresh() -> void:
