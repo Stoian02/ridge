@@ -40,9 +40,16 @@ protected. Aquaplaning, deep-water skimming and visible snorkel art are deferred
 Clearing the intake resets the timer; restart and flooding timings are unchanged.
 This change is separate from wave implementation and performance acceptance.
 The owner wants waves/vehicle-displaced water in a **separate future part**;
-recorded in `docs/notes/water-waves-followup.md` for later brainstorming.
-Its order relative to Coastal Highway is not yet approved; implement neither
-as part of this performance retest.
+the conversation is recorded in `docs/notes/water-waves-followup.md`.
+**M6W planning is ready for owner/Claude review, not implementation:**
+`docs/superpowers/specs/2026-09-24-m6w-water-waves-design.md` and
+`docs/superpowers/plans/2026-09-24-m6w-water-waves.md`. Agreed behaviours include
+entry/bow/wake waves, gentle flotation effects and wave-driven intake submersion;
+wall/rock reflections are deferred. Shader, numeric values, opt-in Test Ground
+controls, budgets and ordering before Coastal Highway remain review proposals.
+Do not start wave runtime work before explicit approval and resolution of the
+recorded M6A acceptance/merge prerequisites. Neither waves nor Coastal Highway
+is part of this performance retest.
 
 **State:** Milestones 1–5 are merged into `master`, plus the 2026-09-23 AWD
 balance tuning and the build-speed refactor. Five levels (Rally Road, Muddy

@@ -2,8 +2,15 @@
 
 Owner request, 2026-09-23: waves and water reacting when a jeep enters are
 wanted, but belong to a **separate part/milestone**, not M6A or incidental
-Coastal Highway level work. Brainstorm and approve a new spec later; this note
-does not authorize implementation, physics tuning or a particular algorithm.
+Coastal Highway level work. A separate written spec must be reviewed before
+implementation; this note does not authorize physics tuning or an algorithm.
+
+**Planning finished for owner/Claude review (2026-09-24):**
+`../superpowers/specs/2026-09-24-m6w-water-waves-design.md` and
+`../superpowers/plans/2026-09-24-m6w-water-waves.md`. These are complete review
+drafts, **not implementation approval**. The proposed shader, numerical starting
+values, Test Ground controls, budgets and sequencing are explicitly presented
+for review. No wave runtime work or game/phone tests were started for the plans.
 
 Recommendation: accept and merge M6A first, then prototype this separate water
 part on the Test Ground **before building Coastal Highway**. Dynamic water
@@ -66,10 +73,10 @@ sample still resets this timer; restart and body-flooding rules are unchanged.
 This small current-water tuning change is separate from implementing waves and
 is recorded as an amendment in the Part A spec.
 
-These are design decisions, not a complete approved spec or permission to
-implement. Algorithm, numeric starting values, performance checks and the
-written spec still need settling. Proposed sequence remains a separately
-measured prototype before Coastal Highway, subject to Part A acceptance/review
-and owner-authorized merge. The separately requested stall-delay amendment is
+These are agreed behaviour decisions, not permission to implement. The written
+spec/plan now propose the algorithm, numerical starting values, controls and
+performance checks for review. Proposed sequence remains a separately measured
+prototype before Coastal Highway, subject to Part A acceptance/review and
+owner-authorized merge. The separately requested stall-delay amendment is
 implemented and desktop-tested (see `codex-report-m6a-water.md`); no wave runtime
 work has started.
