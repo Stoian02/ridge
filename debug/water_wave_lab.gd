@@ -151,7 +151,8 @@ func _verify_gpu() -> void:
 		for index in 16:
 			_runtime.field.queue_packet(WaterWaveField.Kind.ENTRY if index < 4 else WaterWaveField.Kind.WAKE,
 				&"calm", Vector2((index % 4) * 0.3, 95.0 + (index / 4) * 0.3),
-				Vector2(0.75, 0.0), 0.08, Vector2(1.0, 0.3).normalized())
+				Vector2(0.75, 0.0), 0.08, Vector2(1.0, 0.3).normalized(),
+				float(index) * 0.5 if index < 4 else 0.0)
 		_runtime.field.set_bow(&"calm", Vector2(0.5, 96.0), Vector2(1.0, 0.3), 1.8, 0.05)
 		_runtime.field.step(0.0)
 		_runtime.field.step(age)
@@ -178,7 +179,7 @@ func _verify_gpu() -> void:
 	# each rendered triangle, interpolate three GPU heights and compare the exact
 	# standalone sampler at its centroid. This also catches UV/vertex quantization.
 	_runtime.field.reset()
-	_runtime.field.queue_packet(WaterWaveField.Kind.ENTRY, &"calm", Vector2(0.0, 96.0), Vector2.ZERO, 0.08)
+	_runtime.field.queue_packet(WaterWaveField.Kind.ENTRY, &"calm", Vector2(0.0, 96.0), Vector2.ZERO, 0.08, Vector2.UP, 1.1)
 	_runtime.field.step(0.0)
 	_runtime.field.step(0.5)
 	_runtime.refresh()

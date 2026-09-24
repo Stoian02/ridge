@@ -15,6 +15,7 @@ class Packet:
 	var amplitude: float
 	var born: float
 	var life: float
+	var entry_radius := 0.0
 
 var serial := 0
 var skipped_packets := 0
@@ -43,9 +44,10 @@ func _init(values: WaterWaveProfile = null) -> void:
 
 
 func queue_packet(kind: Kind, body: StringName, at: Vector2, current: Vector2,
-		amplitude: float, direction := Vector2.UP) -> bool:
+		amplitude: float, direction := Vector2.UP, entry_radius := 0.0) -> bool:
 	if body == &"" or not at.is_finite() or not current.is_finite() \
 			or not direction.is_finite() or not is_finite(amplitude) or amplitude <= 0.0 \
+			or not is_finite(entry_radius) or entry_radius < 0.0 or entry_radius > 1.5 \
 			or (kind != Kind.ENTRY and kind != Kind.WAKE) \
 			or (kind == Kind.WAKE and direction.length_squared() < 0.000001):
 		return false
@@ -62,6 +64,7 @@ func queue_packet(kind: Kind, body: StringName, at: Vector2, current: Vector2,
 		slot.direction = direction.normalized()
 		slot.amplitude = minf(amplitude, profile.entry_amplitude if kind == Kind.ENTRY else profile.wake_amplitude)
 		slot.life = profile.entry_life if kind == Kind.ENTRY else profile.wake_life
+		slot.entry_radius = entry_radius if kind == Kind.ENTRY else 0.0
 		return true
 	skipped_packets += 1
 	return false
@@ -148,7 +151,7 @@ func write_snapshot(body: StringName, ambient_enabled: bool, into: WaterWaveSnap
 		var centre := slot.origin + slot.current * age
 		into.packets[index] = Vector4(centre.x, centre.y, age, slot.amplitude)
 		into.directions[index] = Vector4(slot.direction.x, slot.direction.y, slot.life,
-			1.0 if index >= WaterWaveProfile.ENTRY_SLOTS else 0.0)
+			1.0 if index >= WaterWaveProfile.ENTRY_SLOTS else -slot.entry_radius)
 	into.bow = Vector4(_bow_position.x, _bow_position.y,
 		_bow_value if body == _bow_body else 0.0, profile.bow_half_length)
 	into.bow_direction = Vector4(_bow_direction.x, _bow_direction.y, _bow_width, 0.0)

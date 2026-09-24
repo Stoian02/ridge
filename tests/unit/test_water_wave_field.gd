@@ -166,6 +166,35 @@ func test_analytic_gradients_match_finite_differences_including_soft_core() -> v
 				assert_almost_eq(value[axis + 1], difference, 0.0001)
 
 
+func test_hull_sized_entry_starts_outside_centre_and_keeps_finite_gradients() -> void:
+	var field := WaterWaveField.new()
+	assert_false(field.queue_packet(WaterWaveField.Kind.ENTRY, &"a", Vector2.ZERO, Vector2.ZERO, 0.08, Vector2.UP, NAN))
+	assert_false(field.queue_packet(WaterWaveField.Kind.ENTRY, &"a", Vector2.ZERO, Vector2.ZERO, 0.08, Vector2.UP, -0.1))
+	assert_false(field.queue_packet(WaterWaveField.Kind.ENTRY, &"a", Vector2.ZERO, Vector2.ZERO, 0.08, Vector2.UP, 1.51))
+	assert_true(field.queue_packet(WaterWaveField.Kind.ENTRY, &"a", Vector2.ZERO, Vector2.ZERO, 0.08, Vector2.UP, 1.1))
+	field.step(0.0)
+	field.step(0.25)
+	var snap := WaterWaveSnapshot.new()
+	field.write_snapshot(&"a", false, snap)
+	assert_almost_eq(snap.directions[0].w, -1.1, 0.000001)
+	assert_eq(WaterWaveMath.raw(Vector2.ZERO, snap), Vector3.ZERO, "not a hidden centre hump")
+	# Soft radial coordinate 1.1 + 2*0.25 corresponds to physical radius 2.04m.
+	assert_gt(WaterWaveMath.raw(Vector2(2.04, 0.0), snap).x, 0.05)
+	for x in range(-14, 15):
+		for z in range(-14, 15):
+			var at := Vector2(x, z) * 0.17
+			var value := WaterWaveMath.raw(at, snap)
+			assert_true(value.is_finite())
+			for axis in 2:
+				var step := Vector2.ZERO
+				step[axis] = 0.001
+				var difference := (WaterWaveMath.raw(at + step, snap).x - WaterWaveMath.raw(at - step, snap).x) / 0.002
+				assert_almost_eq(value[axis + 1], difference, 0.0001)
+	field.step(3.75)
+	field.write_snapshot(&"a", false, snap)
+	assert_eq(WaterWaveMath.raw(Vector2(4.0, 0.0), snap), Vector3.ZERO)
+
+
 func test_long_clock_stays_bounded_and_pause_is_no_step() -> void:
 	var field := WaterWaveField.new()
 	field.step(600.0)

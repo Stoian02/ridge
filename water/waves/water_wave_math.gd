@@ -20,7 +20,8 @@ static func packet(point: Vector2, data: Vector4, direction: Vector4,
 	var d := point - Vector2(data.x, data.y)
 	var core := sqrt(d.length_squared() + shape.z * shape.z)
 	var radius := core - shape.z
-	var q := (radius - shape.y * age) / shape.x
+	var entry_radius := maxf(0.0, -direction.w)
+	var q := (radius - entry_radius - shape.y * age) / shape.x
 	if absf(q) >= 1.0:
 		return Vector3.ZERO
 	var profile := pulse(q)

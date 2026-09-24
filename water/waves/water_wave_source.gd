@@ -68,8 +68,11 @@ func step(delta: float, observation: Observation, field: WaterWaveField) -> void
 	var deep_fade := 1.0 - smoothstep(0.30, 0.60, -observation.upper_clearance)
 	if _body != &"" and _armed and _previous_immersion < 0.05 and wet >= 0.05:
 		var entry := clampf(0.02 + 0.004 * speed + 0.01 * maxf(0.0, -observation.velocity.y), 0.02, 0.08)
+		# Displace a hull-sized patch, not a point hidden beneath the bonnet.
+		# The same shore/depth-limited field still determines visible AND physical height.
+		var radius := clampf(observation.size.x * 0.5, 0.6, 1.5)
 		if field.queue_packet(WaterWaveField.Kind.ENTRY, _body, observation.at,
-				observation.current, minf(0.08, entry * size_factor) * deep_fade):
+				observation.current, minf(0.08, entry * size_factor) * deep_fade, Vector2.UP, radius):
 			entries += 1
 		_armed = false
 	_previous_immersion = wet

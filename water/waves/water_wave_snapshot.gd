@@ -6,7 +6,8 @@ extends RefCounted
 var serial: int = -1
 var body_id: StringName
 var ambient := PackedVector4Array()
-## centre.xz, age, amplitude; direction.xz, life, wake flag.
+## centre.xz, age, amplitude; direction.xz, life, kind/radius:
+## w = 1 for wake; w <= 0 for entry with initial soft radius -w metres.
 var packets := PackedVector4Array()
 var directions := PackedVector4Array()
 ## width, propagation speed, soft core, radial attenuation.

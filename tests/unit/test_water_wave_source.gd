@@ -29,6 +29,10 @@ func test_spawn_and_bobbing_never_retrigger_entry_but_dry_rearm_does() -> void:
 	wet.body_immersion = 0.1
 	source.step(1.0 / 120.0, wet, field)
 	assert_eq(source.entries, 1)
+	field.step(0.0)
+	var entry := WaterWaveSnapshot.new()
+	field.write_snapshot(&"pool", false, entry)
+	assert_almost_eq(entry.directions[0].w, -wet.size.x * 0.5, 0.000001)
 	for tick in 240:
 		wet.body_immersion = 0.04 if tick % 2 == 0 else 0.06
 		source.step(1.0 / 120.0, wet, field)

@@ -49,8 +49,16 @@ func test_natural_entries_generate_bounded_sources_for_all_cars_at_both_rates() 
 				wheel.spin_speed = 8.0 / rig.car.stats.wheel_radius
 			rig.car.input.virtual_throttle = 1.0
 			var largest_offset := 0.0
+			var entry_tick := -1
+			var exposed_crest_checked := false
 			for tick in hz * 5:
 				await get_tree().physics_frame
+				if entry_tick < 0 and waves.emitter.source.entries > 0:
+					entry_tick = tick
+				if entry_tick >= 0 and tick - entry_tick == hz / 4:
+					assert_gte(_exposed_entry_vertices(waves, rig.car), 8,
+						"a real entry crest must emerge outside the hull within a quarter-second")
+					exposed_crest_checked = true
 				assert_true(rig.car.linear_velocity.is_finite())
 				assert_true(rig.car.angular_velocity.is_finite())
 				assert_lte(waves.runtime.field.active_count(), 16)
@@ -63,8 +71,31 @@ func test_natural_entries_generate_bounded_sources_for_all_cars_at_both_rates() 
 			assert_gt(waves.emitter.source.wakes, 0)
 			assert_gt(largest_offset, 0.0001, "car waves actually reach physical samples")
 			assert_lt(largest_offset, 0.12)
+			assert_true(exposed_crest_checked)
 			_release(level)
 			await get_tree().process_frame
+
+
+func _exposed_entry_vertices(waves: WaterWaveTestGround, car: Car) -> int:
+	var view := waves.runtime.views[0]
+	var entry := WaterWaveSnapshot.new()
+	waves.runtime.field.write_snapshot(view.body_id, false, entry)
+	entry.bow.z = 0.0
+	for index in range(WaterWaveProfile.ENTRY_SLOTS, WaterWaveProfile.PACKET_SLOTS):
+		entry.packets[index] = Vector4.ZERO
+	var top := view.sampler.topology
+	var sampler := WaterWaveSampler.new()
+	sampler.configure(top, entry)
+	var count := 0
+	for index in top.vertices.size():
+		var height := sampler.vertex_offset(index)
+		assert_lte(absf(height), top.limits[index] + 0.000001, "original depth/shore cap retained")
+		var local := car.to_local(top.vertices[index] + view.origin)
+		if height >= 0.015 and (absf(local.x) > car.stats.body_size.x * 0.5 + 0.3 \
+				or absf(local.z) > car.stats.body_size.z * 0.5 + 0.3):
+			count += 1
+	gut.p("Exposed entry vertices above 15 mm: %d" % count)
+	return count
 
 
 func _equilibrium(stats: CarStats) -> float:

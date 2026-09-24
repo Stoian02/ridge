@@ -21,7 +21,9 @@ vec3 wave_packet(vec2 point, vec4 data, vec4 direction) {
 	vec2 d = point - data.xy;
 	float core = sqrt(dot(d, d) + wave_shape.z * wave_shape.z);
 	float radius = core - wave_shape.z;
-	float q = (radius - wave_shape.y * age) / wave_shape.x;
+	// w=1: directional wake; w<=0: entry's initial soft radius in metres.
+	float entry_radius = max(0.0, -direction.w);
+	float q = (radius - entry_radius - wave_shape.y * age) / wave_shape.x;
 	if (abs(q) >= 1.0) { return vec3(0.0); }
 	vec2 profile = wave_pulse(q);
 	float attenuation = 1.0 / (1.0 + wave_shape.w * radius);
