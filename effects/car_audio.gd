@@ -24,6 +24,9 @@ var effects: CarEffects
 ## StringName sound -> AudioStreamPlayer (the loops and the thump).
 var players := {}
 var thumps_played := 0
+var trace_enabled := false
+var trace_usec := 0
+var trace_loop_starts := 0
 
 ## StringName loop -> current linear volume.
 var _volumes := {}
@@ -76,6 +79,7 @@ func _exit_tree() -> void:
 func _process(delta: float) -> void:
 	if car == null or car.drivetrain == null:
 		return
+	var trace_started := Time.get_ticks_usec() if trace_enabled else 0
 	if _water_reset_serial != car.water.reset_serial:
 		notify_reset()
 	_impact_wait = maxf(0.0, _impact_wait - delta)
@@ -113,6 +117,8 @@ func _process(delta: float) -> void:
 		thump.play()
 		thumps_played += 1
 		_impact_wait = IMPACT_COOLDOWN
+	if trace_enabled:
+		trace_usec = Time.get_ticks_usec() - trace_started
 
 
 func _set_loop(sound_name: StringName, target: float, pitch: float, delta: float) -> void:
@@ -123,6 +129,8 @@ func _set_loop(sound_name: StringName, target: float, pitch: float, delta: float
 	player.pitch_scale = maxf(pitch, 0.01)
 	if level > SILENT and not player.playing:
 		player.play()
+		if trace_enabled:
+			trace_loop_starts += 1
 
 
 func _add_player(sound_name: StringName) -> AudioStreamPlayer:

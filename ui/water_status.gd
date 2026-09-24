@@ -6,6 +6,8 @@ var car: Car
 var telemetry: TelemetryOverlay
 var label: Label
 var intake_marker: MeshInstance3D
+var trace_enabled := false
+var trace_usec := 0
 
 
 func setup(driven: Car, debug_overlay: TelemetryOverlay) -> void:
@@ -42,6 +44,7 @@ func setup(driven: Car, debug_overlay: TelemetryOverlay) -> void:
 func _process(_delta: float) -> void:
 	if car == null or car.water == null:
 		return
+	var trace_started := Time.get_ticks_usec() if trace_enabled else 0
 	var state := car.water.state
 	label.text = WaterFeedback.warning(state.sinking, state.stalled, state.restarting, state.intake_at_risk)
 	label.visible = not label.text.is_empty()
@@ -51,6 +54,8 @@ func _process(_delta: float) -> void:
 	label.position.x = 1120.0 if intake_marker.visible else 660.0
 	label.size.x = 580.0 if intake_marker.visible else 620.0
 	intake_marker.global_position = car.water.intake_world_position
+	if trace_enabled:
+		trace_usec = Time.get_ticks_usec() - trace_started
 
 
 func notify_reset() -> void:

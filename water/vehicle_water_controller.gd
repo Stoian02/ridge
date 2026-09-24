@@ -24,6 +24,11 @@ var buoyancy_force: Vector3 = Vector3.ZERO
 var buoyancy_torque: Vector3 = Vector3.ZERO
 var water_time_usec: int = 0
 var reset_serial: int = 0
+## Optional diagnostic breakdown; never changes forces or sampling order.
+var trace_enabled := false
+var trace_body_usec := 0
+var trace_wheels_usec := 0
+var trace_forces_usec := 0
 
 var _car: Car
 var _local_probes := PackedVector3Array()
@@ -106,6 +111,8 @@ func sample_body(delta: float) -> void:
 	var clearance := intake_world_position.y - intake_sample.surface_y
 	state.step(delta, profile, immersion, intake_sample.valid, clearance)
 	water_time_usec = Time.get_ticks_usec() - started
+	if trace_enabled:
+		trace_body_usec = water_time_usec
 
 
 ## Contacts have been refreshed this tick, so suspension extension is current.
@@ -133,7 +140,11 @@ func sample_wheels_and_apply(delta: float) -> void:
 		_current_weight += fraction
 	current_velocity = _current_sum / _current_weight if _current_weight > 0.0 else Vector3.ZERO
 	relative_speed = (_car.linear_velocity - current_velocity).length() if _current_weight > 0.0 else 0.0
+	var force_started := Time.get_ticks_usec() if trace_enabled else 0
 	_apply_forces(delta)
+	if trace_enabled:
+		trace_wheels_usec = force_started - started
+		trace_forces_usec = Time.get_ticks_usec() - force_started
 	water_time_usec += Time.get_ticks_usec() - started
 
 

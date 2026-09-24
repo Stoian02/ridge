@@ -57,7 +57,7 @@ func _prepare(path: String, id: StringName) -> Node3D:
 	return level
 
 
-func _measure(rig: DrivingRig, label: String, ticks: int) -> void:
+func _measure(rig: DrivingRig, label: String, ticks: int, trace: WaterHitchTrace = null) -> void:
 	# Warm up a full second after the teleport, then collect every completed tick.
 	for tick in 120:
 		await get_tree().physics_frame
@@ -66,7 +66,11 @@ func _measure(rig: DrivingRig, label: String, ticks: int) -> void:
 	_probe.begin(rig.car)
 	while _probe.rows.size() < ticks:
 		await get_tree().physics_frame
+	if trace != null:
+		trace.stop()  # Exclude CSV export and screenshot waits from diagnostic frames.
 	var result := _probe.finish(OUT + "/" + label + ".csv")
+	if trace != null:
+		print("water hitch result ", JSON.stringify(trace.finish(OUT + "/" + label)))
 	result["case"] = label
 	result["final_flooding"] = rig.car.water.state.flooding
 	result["final_stalled"] = rig.car.water.state.stalled
@@ -136,11 +140,29 @@ func _course() -> void:
 				Vector3(105.0, 2.5, 126.0), Vector3(155.0, 2.5, 126.0)]
 			var names: Array[String] = ["shallow05", "shallow30", "calm", "current"]
 			for index in spots.size():
+				if _options.has("spot") and str(_options.spot) != names[index]:
+					continue
 				rig.place_car(Transform3D(Basis(Vector3.UP, PI), spots[index]))
 				rig.car.linear_velocity = Vector3(0.0, 0.0, 3.0)
 				var ticks := 600 if index < 2 else 1920
-				await _measure(rig, "%d_%s_%s" % [round + 1, id, names[index]], ticks)
+				var label := "%d_%s_%s" % [round + 1, id, names[index]]
+				if wants_hitch_trace(_options):
+					# Capture from first tick, including transitions normally lost to warm-up.
+					var trace := WaterHitchTrace.new()
+					add_child(trace)
+					print("water hitch clock ", JSON.stringify({"case": label, "ticks_usec": Time.get_ticks_usec(),
+						"unix_seconds": Time.get_unix_time_from_system()}))
+					trace.begin(rig, ticks + 240)
+					await _measure(rig, label, ticks, trace)
+					trace.queue_free()
+				else:
+					await _measure(rig, label, ticks)
 			await _cleanup(level)
+
+
+static func wants_hitch_trace(options: Dictionary) -> bool:
+	# JSON numbers arrive as floats; command-line values arrive as strings.
+	return int(options.get("trace", 0)) == 1
 
 
 func _views() -> void:

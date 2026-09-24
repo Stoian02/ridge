@@ -14,6 +14,8 @@ var sprays: Array[WheelSpray] = []
 ## so it doesn't have to work out each wheel's motion a second time.
 var wheels: Array[Dictionary] = []
 var water_effects: WaterEffects
+var trace_enabled := false
+var trace_usec := 0
 var _water_reset_serial := -1
 
 
@@ -34,6 +36,7 @@ func setup(driven: Car) -> void:
 func _process(delta: float) -> void:
 	if car == null:
 		return
+	var trace_started := Time.get_ticks_usec() if trace_enabled else 0
 	if _water_reset_serial != car.water.reset_serial:
 		notify_reset()
 		_water_reset_serial = car.water.reset_serial
@@ -74,6 +77,8 @@ func _process(delta: float) -> void:
 		else:
 			sprays[i].update(feel, strength, delta)
 	water_effects.update(delta, largest_slip)
+	if trace_enabled:
+		trace_usec = Time.get_ticks_usec() - trace_started
 
 
 ## A car reset: every spray stops at once.
