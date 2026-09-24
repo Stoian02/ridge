@@ -24,3 +24,17 @@ func test_recorder_runs_after_car_and_records_each_completed_tick_once() -> void
 		assert_eq(meter.rows[index][0], meter.rows[index - 1][0] + 1.0)
 	for row in meter.rows:
 		assert_eq(row[1], 0.0, "unbound dry car has zero water timing")
+		assert_eq(row[6], 0.0)
+		assert_eq(row[7], 0.0)
+		assert_eq(row[8], 0.0)
+	var result := meter.finish("user://water_measurement_test.csv")
+	assert_eq(result.queries, 0.0)
+	assert_eq(result.triangle_tests, 0.0)
+	assert_eq(result.water_frame_p95_ms, 0.0)
+	var frame_ticks := 0
+	for row in meter.frames:
+		assert_gte(row[1], 0.0)
+		frame_ticks += int(row[2])
+	assert_lte(frame_ticks, meter.rows.size(), "partial first/last frames are not counted twice")
+	DirAccess.remove_absolute("user://water_measurement_test.csv")
+	DirAccess.remove_absolute("user://water_measurement_test_frames.csv")

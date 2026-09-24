@@ -1,0 +1,19 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+WARNING: Failed to create wd.xic as the input method or its xim server may not have started yet.
+     at: _create_xic (platform/linuxbsd/x11/display_server_x11.cpp:6347)
+Vulkan 1.4.318 - Forward Mobile - Using Device #0: AMD - AMD Radeon 880M (RADV GFX1150)
+
+MuddyValley built in 0.57 s (field 0.11 s, road 0.13 s, rut_water 0.00 s, shortcut 0.15 s, terrain 0.12 s, road_blend 0.00 s, tunnels 0.00 s, bridges 0.00 s, rock_steps 0.00 s, boulders 0.00 s, fallen_trees 0.00 s, shelf 0.00 s, talus 0.00 s, fords 0.00 s, hedges 0.01 s, creek 0.00 s, scatter 0.05 s, checkpoints 0.00 s; terrain: data 0.06, meshes 0.04, collision 0.02; field: natural 0.02, carve 0.08, walls 0.00, earthworks 0.00; Road: snapshot 0.032, data 0.024, nodes 0.075; Shelf: wall 0.000, subsoil 0.000)
+creek render metadata {"engine":"4.7.2-stable (official)","options":{"tag":"baseline"},"renderer":"mobile","tag":"baseline","window":"(1920, 1050)"}
+creek render result {"camera":"[X: (-0.573585, 0.0, -0.819146), Y: (-0.136045, 0.986112, 0.095262), Z: (0.807769, 0.166082, -0.565619), O: (-201.455, -45.70806, -357.487)]","draws":106,"primitives":314656,"spot":780.0,"tag":"baseline"}
+creek render without {"draws":88,"hidden":"terrain_builder","primitives":247072,"spot":780.0,"tag":"baseline"}
+creek render without {"draws":66,"hidden":"scatter_builder","primitives":240360,"spot":780.0,"tag":"baseline"}
+creek render without {"draws":92,"hidden":"road_builder","primitives":173480,"spot":780.0,"tag":"baseline"}
+creek render result {"camera":"[X: (-0.637939, 0.0, -0.770087), Y: (-0.127898, 0.986112, 0.10595), Z: (0.759392, 0.166082, -0.62908), O: (-235.2489, -45.68744, -333.5894)]","draws":104,"primitives":287380,"spot":820.0,"tag":"baseline"}
+creek render without {"draws":83,"hidden":"terrain_builder","primitives":219796,"spot":820.0,"tag":"baseline"}
+creek render without {"draws":67,"hidden":"scatter_builder","primitives":216168,"spot":820.0,"tag":"baseline"}
+creek render without {"draws":92,"hidden":"road_builder","primitives":170396,"spot":820.0,"tag":"baseline"}
+creek render result {"camera":"[X: (-0.778215, 0.0, -0.627998), Y: (-0.104299, 0.986112, 0.129247), Z: (0.619276, 0.166082, -0.767407), O: (-266.5977, -44.93467, -303.6771)]","draws":105,"primitives":322316,"spot":860.0,"tag":"baseline"}
+creek render without {"draws":82,"hidden":"terrain_builder","primitives":244492,"spot":860.0,"tag":"baseline"}
+creek render without {"draws":70,"hidden":"scatter_builder","primitives":248292,"spot":860.0,"tag":"baseline"}
+creek render without {"draws":92,"hidden":"road_builder","primitives":182988,"spot":860.0,"tag":"baseline"}

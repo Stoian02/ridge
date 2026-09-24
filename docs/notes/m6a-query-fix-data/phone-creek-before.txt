@@ -1,0 +1,3 @@
+  temperature: 282
+Thermal Status: 0
+878845146b3d11fe00678b6fcb86ae2983022b568e74c1a74e623e43a1a83b7c  files/save.json

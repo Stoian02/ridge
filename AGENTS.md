@@ -18,6 +18,17 @@ results, limitations and the playtest guide, and
 desktop timings are not representative of normal gameplay; direct phone
 retests have exceeded the water-cost gate. Do not mark A accepted on the basis
 of the old performance table. This audit changes measurement tools, not physics.
+**Follow-up fixes (2026-09-24):** see
+`docs/notes/m6a-query-fixes-2026-09-24.md`. Crowded water-bed cells now have a
+finer index with unchanged sampling/forces; Muddy Valley's ground-supported road
+no longer casts redundant shadows. Matched pre-water/current creek captures
+establish inherited primitive debt. Post-fix phone measurements show the ford's
+controller p95 falling from about 4.2 to 1.6 ms/tick; all three creek views now
+meet the drawing budgets. **Phone acceptance is still pending:** the strict
+water/setup gates still fail, total frame p95 did not improve in the ford A/B,
+and one current-pool case contains unexplained long frame intervals (up to
+79.459 ms). The frame-based gate proposal is not an approved replacement for
+the spec.
 The conversation approved progressive drag, temporary flotation and
 sinking, recoverable intake-based stalls, steady currents, translucent water,
 feedback and three Test Ground water areas. Scope also includes Muddy Valley's
@@ -32,10 +43,10 @@ as part of this performance retest.
 **State:** Milestones 1–5 are merged into `master`, plus the 2026-09-23 AWD
 balance tuning and the build-speed refactor. Five levels (Rally Road, Muddy
 Valley, Frozen Pass, Rock Canyon, and the Test Ground as Free Drive), three
-cars. M6A's retested full desktop suite is **730 passing, 1 pre-existing pending, no
+cars. M6A's retested full desktop suite is **735 passing, 1 pre-existing pending, no
 SCRIPT ERROR**, with protected geometry and balance fixtures unchanged. Phone
-retests have failed the water/setup budgets, and two creek views exceed the
-primitive limit. Rock Canyon's inherited >3 s phone load miss remains open.
+retests still fail the water/setup budgets; the creek primitive overage is fixed.
+Rock Canyon's inherited >3 s phone load miss remains open.
 Part B must not begin before A's review, phone acceptance
 and owner-authorized merge.
 

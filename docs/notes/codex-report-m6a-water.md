@@ -1,10 +1,21 @@
 # Milestone 6A — water physics
 
+**2026-09-24 follow-up:** ford query optimization and the inherited creek
+rendering fix are documented in `m6a-query-fixes-2026-09-24.md`, with retained
+before/after measurements. Car handling/forces and geometry are unchanged.
+The owner reconnected the phone and the fresh build is installed. Phone ford
+controller p95 fell from about 4.2 to 1.6 ms/tick; all three creek views now meet
+the drawing budgets. The strict water/setup gates still fail, and whole-frame
+p95 did not improve in the ford A/B. The three-round all-car course retest still
+has 34/36 cases above 0.50 ms, plus unexplained long intervals in one current-pool
+case (maximum 79.459 ms). **Acceptance remains open.** The frame-budget
+recommendation is a proposal, not a retroactive passed gate.
+
 **Performance review reopened (2026-09-23).** The original desktop p95 figures
 below came from accelerated uncapped test mode and must not be used to infer
 phone headroom. Claude reported higher, repeatable timings. See
 `m6a-performance-retest-2026-09-23.md` for the repeated desktop/direct-phone
-audit and corrected acceptance status: **34/36 course cases exceed 0.50 ms p95;
+audit and corrected pre-fix acceptance status: **34/36 course cases exceed 0.50 ms p95;
 ford p95 is 4.26–4.28 ms; two creek views exceed 300k primitives; setup limits
 are also missed. Performance acceptance fails.** Historical measurements remain
 below for traceability; they are not a passed phone gate.

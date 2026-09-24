@@ -1,5 +1,9 @@
 # M6A performance retest — 2026-09-23
 
+Follow-up: `m6a-query-fixes-2026-09-24.md` records the subsequent ford query
+optimization and creek rendering fix. This file retains the **pre-fix** audit;
+its phone results must not be presented as measurements of the fixed build.
+
 Completed following Claude's reproducibility review. **Performance acceptance
 fails.** This supersedes the original report's performance interpretation; no
 physics, tuning, surface or accepted level geometry changed during this audit.

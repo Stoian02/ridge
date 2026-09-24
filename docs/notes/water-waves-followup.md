@@ -20,3 +20,25 @@ committing to a full level. No fluid simulation is promised by this note.
 
 Aquaplaning and deep-water skimming remain separate optional experiments; waves
 do not implicitly approve either one. Visible snorkel art is also still deferred.
+
+## Starting point for the next discussion (2026-09-24)
+
+The owner requested the ford/creek fixes and frame-budget review first, followed
+by waves brainstorming. The fixes are documented in
+`m6a-query-fixes-2026-09-24.md`; the owner reconnected the phone for fresh
+measurements, but acceptance remains open. Brainstorming does not approve implementation or
+waive Part A's review/merge gates.
+
+Suggested first prototype: gentle, visible waves that can rock a floating car,
+plus bounded entry ripples and a trailing wake on the Test Ground. The moving
+physical surface must agree with the visible surface for buoyancy and intake
+submersion, with calm/shallow-bank attenuation. No general fluid solver,
+aquaplaning or speed-lift experiment is implied. Any choice of physical versus
+cosmetic vehicle-generated ripples must be explicit in the later spec.
+
+First owner decision: should waves mainly bring the water to life and gently
+affect the car (recommended starting scope), or should swell already be a
+timing/route-selection hazard for Coastal Highway? Choose that before settling
+wave size, wake detail, implementation or track layout. Proposed sequence
+remains a separate measured prototype before Coastal Highway, not unreviewed
+wave work hidden in the level milestone.

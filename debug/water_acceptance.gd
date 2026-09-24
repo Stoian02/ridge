@@ -32,6 +32,10 @@ func _ready() -> void:
 		await _views()
 	else:
 		await _course()
+	if _results.is_empty():
+		push_error("Water acceptance selected no cases; check mode/level/spot/rounds")
+		get_tree().quit(1)
+		return
 	var output := FileAccess.open(OUT + "/summary.json", FileAccess.WRITE)
 	output.store_string(JSON.stringify(_results, "\t"))
 	output.close()
@@ -44,6 +48,10 @@ func _prepare(path: String, id: StringName) -> Node3D:
 	var rig: DrivingRig = level.get_node("DrivingRig")
 	rig.car_override = GameState.car_catalog.find_by_id(id)
 	add_child(level)
+	# Measurement-only A/B switch: same geometry/forces, original coarse query.
+	if str(_options.get("index", "refined")) == "coarse":
+		for body: WaterBody in rig.car.water.world.bodies:
+			body._refined_bed_cells.clear()
 	rig.touch_controls.process_mode = Node.PROCESS_MODE_DISABLED
 	rig.telemetry.visible = false
 	return level
@@ -53,6 +61,8 @@ func _measure(rig: DrivingRig, label: String, ticks: int) -> void:
 	# Warm up a full second after the teleport, then collect every completed tick.
 	for tick in 120:
 		await get_tree().physics_frame
+	if _options.has("layout"):
+		_query_layout(rig.car)
 	_probe.begin(rig.car)
 	while _probe.rows.size() < ticks:
 		await get_tree().physics_frame
@@ -65,6 +75,40 @@ func _measure(rig: DrivingRig, label: String, ticks: int) -> void:
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png(OUT + "/" + label + ".png")
+
+
+## Untimed diagnostic of the exact probe positions and their local bed bins.
+func _query_layout(car: Car) -> void:
+	var positions := car.water.body_positions.duplicate()
+	positions.append(car.water.intake_world_position)
+	positions.append_array(car.water.wheel_positions)
+	for body: WaterBody in car.water.world.bodies:
+		var counts: Array[Dictionary] = []
+		for point: Vector3 in positions:
+			var key := WaterBody._cell(point.x, point.z)
+			if not body._top_bins.has(key):
+				continue
+			var bed: PackedInt32Array = body._bed_bins.get(key, PackedInt32Array())
+			var hits := 0
+			var point_boxes := 0
+			var half_metre_boxes := 0
+			var low := Vector2(floorf(point.x * 2.0), floorf(point.z * 2.0)) * 0.5
+			for triangle: int in bed:
+				var a := body._bed[triangle * 3]
+				var b := body._bed[triangle * 3 + 1]
+				var c := body._bed[triangle * 3 + 2]
+				var first := Vector2(minf(a.x, minf(b.x, c.x)), minf(a.z, minf(b.z, c.z)))
+				var last := Vector2(maxf(a.x, maxf(b.x, c.x)), maxf(a.z, maxf(b.z, c.z)))
+				if first.x <= point.x and first.y <= point.z and last.x >= point.x and last.y >= point.z:
+					point_boxes += 1
+				if first.x <= low.x + 0.5 and first.y <= low.y + 0.5 and last.x >= low.x and last.y >= low.y:
+					half_metre_boxes += 1
+				if is_finite(WaterBody.triangle_height(body._bed, triangle * 3, point.x, point.z)):
+					hits += 1
+			counts.append({"position": str(point), "top": body._top_bins[key].size(),
+				"bed": bed.size(), "bed_hits": hits, "point_boxes": point_boxes, "half_metre_boxes": half_metre_boxes})
+		if not counts.is_empty():
+			print("water query layout ", JSON.stringify({"body": body.id, "probes": counts}))
 
 
 func _cleanup(level: Node) -> void:
@@ -102,6 +146,8 @@ func _course() -> void:
 func _views() -> void:
 	for round in int(_options.rounds):
 		for name: String in ["muddy_valley", "rock_canyon"]:
+			if _options.has("level") and str(_options.level) != name:
+				continue
 			var id := &"rally" if name == "muddy_valley" else &"offroad_4x4"
 			var level: RunLevel = _prepare("res://levels/%s/%s.tscn" % [name, name], id)
 			while level.run.clock.stage == RunClock.Stage.COUNTDOWN:
@@ -115,6 +161,8 @@ func _views() -> void:
 			else:
 				spots.assign([340.0, 1290.0])
 			for spot in spots:
+				if _options.has("spot") and float(_options.spot) != spot:
+					continue
 				var target := level.trail.sampler.transform_at(spot, 1.0, level.trail.profile)
 				if name == "muddy_valley":
 					target.origin += level.trail.sampler.right(spot) * 17.0
