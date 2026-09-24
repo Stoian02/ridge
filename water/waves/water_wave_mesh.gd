@@ -15,6 +15,8 @@ var mesh: ArrayMesh
 var pitch := 0.75
 var level := 0.0
 var build_usec := 0
+## Optional preparation audit. Timing never changes the generated geometry.
+var build_phases: Dictionary = {}
 var error := ""
 var _cells: Dictionary = {}
 var _points: Dictionary = {}
@@ -25,8 +27,28 @@ var _shore := PackedVector2Array()
 var _shore_bins: Dictionary = {}
 
 
+## Fail closed on stale/missing packaged data: never silently rebuild in play.
+## Arrays are copy-on-write; topology remains scene-owned, not mutable global state.
+func use_bake(bake: WaterWaveBake, expected: String) -> bool:
+	var started := Time.get_ticks_usec()
+	clear()
+	if bake == null or not bake.matches(expected):
+		return _fail("Wave bake missing/stale; regenerate offline before enabling waves")
+	vertices = bake.vertices
+	indices = bake.indices
+	colors = bake.colors
+	limits = bake.limits
+	limit_gradients = bake.limit_gradients
+	_cells = bake.cells.duplicate()
+	mesh = bake.mesh
+	pitch = bake.pitch
+	level = bake.level
+	build_usec = Time.get_ticks_usec() - started
+	return true
+
+
 func build(top: PackedVector3Array, bed: PackedVector3Array,
-		top_colors := PackedColorArray(), settings: WaterWaveProfile = null) -> bool:
+		top_colors := PackedColorArray(), settings: WaterWaveProfile = null, audit := false) -> bool:
 	var started := Time.get_ticks_usec()
 	clear()
 	_profile = settings if settings != null else WaterWaveProfile.new()
@@ -42,6 +64,9 @@ func build(top: PackedVector3Array, bed: PackedVector3Array,
 	_source = WaterBody.new()
 	if not _source.configure(def, top, bed, Transform3D.IDENTITY, PackedVector3Array()):
 		return _fail("Invalid static water geometry")
+	var indexed := Time.get_ticks_usec()
+	if audit:
+		build_phases["source_index_usec"] = indexed - started
 	_source_colors = top_colors
 	var outline := _outline()
 	if outline.size() < 3:
@@ -67,6 +92,10 @@ func build(top: PackedVector3Array, bed: PackedVector3Array,
 				var edges: PackedInt32Array = _shore_bins.get(key, PackedInt32Array())
 				edges.append(index)
 				_shore_bins[key] = edges
+	var outlined := Time.get_ticks_usec()
+	var depth_usec := 0
+	if audit:
+		build_phases["outline_shore_index_usec"] = outlined - indexed
 	var first := _cell(Vector2(_source.bounds.position.x, _source.bounds.position.z))
 	var last := _cell(Vector2(_source.bounds.end.x, _source.bounds.end.z))
 	for z in range(first.y, last.y + 1):
@@ -84,7 +113,10 @@ func build(top: PackedVector3Array, bed: PackedVector3Array,
 				continue
 			# Maximum over every intersecting static bed face, including breakpoints
 			# within the cell. A whole-cell bound is conservative for both triangles.
+			var depth_started := Time.get_ticks_usec() if audit else 0
 			var bottom := _cell_highest_bed(low, high)
+			if audit:
+				depth_usec += Time.get_ticks_usec() - depth_started
 			if not is_finite(bottom):
 				return _fail("Water cell has no bed")
 			var local_limit := minf(_profile.maximum_offset, maxf(0.0, level - bottom) * _profile.depth_fraction)
@@ -111,7 +143,10 @@ func build(top: PackedVector3Array, bed: PackedVector3Array,
 					_cells[key] = cell_triangles
 	if indices.is_empty():
 		return _fail("Empty refined water top")
-	_finish_arrays()
+	if audit:
+		build_phases["depth_derivation_usec"] = depth_usec
+		build_phases["topology_attributes_usec"] = Time.get_ticks_usec() - outlined - depth_usec
+	_finish_arrays(audit)
 	# Source extraction/index data is build-only, not another persistent bed cache.
 	_source = null
 	_source_colors = PackedColorArray()
@@ -120,6 +155,8 @@ func build(top: PackedVector3Array, bed: PackedVector3Array,
 	_shore_bins.clear()
 	_profile = null
 	build_usec = Time.get_ticks_usec() - started
+	if audit:
+		build_phases["total_usec"] = build_usec
 	return true
 
 
@@ -139,6 +176,7 @@ func clear() -> void:
 	_shore_bins.clear()
 	error = ""
 	build_usec = 0
+	build_phases.clear()
 
 
 func _fail(message: String) -> bool:
@@ -339,7 +377,8 @@ static func _clip_axis(polygon: PackedVector3Array, axis: int, cut: float, below
 	return result
 
 
-func _finish_arrays() -> void:
+func _finish_arrays(audit := false) -> void:
+	var started := Time.get_ticks_usec()
 	limit_gradients.resize(vertices.size())
 	var counts := PackedInt32Array()
 	counts.resize(vertices.size())
@@ -371,6 +410,10 @@ func _finish_arrays() -> void:
 	arrays[Mesh.ARRAY_TEX_UV] = uv
 	arrays[Mesh.ARRAY_TEX_UV2] = limit_gradients
 	arrays[Mesh.ARRAY_INDEX] = indices
+	var prepared := Time.get_ticks_usec()
 	mesh = ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	mesh.custom_aabb = mesh.get_aabb().grow(_profile.maximum_offset)
+	if audit:
+		build_phases["normals_arrays_usec"] = prepared - started
+		build_phases["mesh_commit_usec"] = Time.get_ticks_usec() - prepared

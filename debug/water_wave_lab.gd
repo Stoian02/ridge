@@ -3,6 +3,7 @@ extends Node3D
 ## binding. Run with --verify to calibrate/read GPU heights and exit automatically.
 
 const PROBE := preload("res://debug/water_wave_probe.gdshader")
+@export var verify_on_ready := false
 var _runtime: WaterWaveRuntime
 var _top: WaterWaveMesh
 var _view: WaterWaveRuntime.View
@@ -13,27 +14,37 @@ var _verify := false
 
 
 func _ready() -> void:
-	_verify = "--verify" in OS.get_cmdline_user_args()
+	_verify = verify_on_ready or "--verify" in OS.get_cmdline_user_args()
 	process_physics_priority = 50
+	set_physics_process(false)
+	var cover := LoadingScreen.new()
+	add_child(cover)
+	cover.show_for("wave preview")
+	await RenderingServer.frame_post_draw
+	var setup_started := Time.get_ticks_usec()
 	var course := WaterCourse.new()
 	add_child(course)
 	course.set_process(false)
-	_top = WaterWaveMesh.new()
-	if not _top.build(course.pool_water_faces, course.pool_floor_faces, course.pool_water_colors):
-		push_error(_top.error)
+	var prepare_started := Time.get_ticks_usec()
+	var cache := WaterWaveCourseCache.new()
+	if not cache.prepare(course):
+		push_error(cache.error)
 		get_tree().quit(1)
 		return
+	_top = cache.tops[0]
 	_runtime = WaterWaveRuntime.new()
 	add_child(_runtime)
 	_view = _runtime.add_view(&"calm", _top, true)
-	# Keep the actual pool/closed banks, but replace only this unregistered visual.
-	course.get_node("CalmWater").hide()
-	var instance := MeshInstance3D.new()
-	instance.mesh = _top.mesh
-	instance.material_override = _view.material
-	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	instance.position = Vector3(WaterCourse.CALM_X, 0.0, WaterCourse.START_Z)
-	add_child(instance)
+	_runtime.set_physics_process(false)
+	# Visual replacement only: these samplers remain unregistered with WaterWorld.
+	for name: String in ["CalmWater", "CurrentWater", "ShallowWater"]:
+		course.get_node(name).hide()
+	_add_top(_top, _view, WaterCourse.CALM_X)
+	_add_top(_top, _runtime.add_view(&"current", _top, true), WaterCourse.CURRENT_X)
+	for index in 4:
+		var top := cache.tops[index + 1]
+		_add_top(top, _runtime.add_view(StringName("bay_%d" % index), top, false), WaterCourse.SHALLOW_X)
+	var prepared := Time.get_ticks_usec()
 	var light := DirectionalLight3D.new()
 	light.rotation_degrees = Vector3(-35.0, -35.0, 0.0)
 	add_child(light)
@@ -48,13 +59,39 @@ func _ready() -> void:
 	add_child(environment)
 	var camera := Camera3D.new()
 	add_child(camera)
+	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	camera.size = 240.0
+	camera.position = Vector3(110.0, 145.0, 240.0)
+	camera.look_at(Vector3(110.0, 0.0, 126.0))
+	camera.current = true
+	# Actually submit all six tops beneath the existing cover before close-up play.
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	print("wave lab preparation ", JSON.stringify({"cache": cache.phases,
+		"cpu_prepare_usec": prepared - prepare_started,
+		"course_cpu_usec": prepare_started - setup_started,
+		"covered_first_use_usec": Time.get_ticks_usec() - prepared,
+		"draws": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
+		"primitives": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)}))
+	camera.projection = Camera3D.PROJECTION_PERSPECTIVE
 	camera.position = Vector3(115.0, 10.0, 111.0)
 	camera.look_at(Vector3(105.0, 2.82, 126.0))
-	camera.current = true
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	cover.queue_free()
+	_runtime.set_physics_process(not _verify)
+	set_physics_process(not _verify)
 	if _verify:
-		set_physics_process(false)
-		_runtime.set_physics_process(false)
 		await _verify_gpu()
+
+
+func _add_top(top: WaterWaveMesh, view: WaterWaveRuntime.View, center_x: float) -> void:
+	var instance := MeshInstance3D.new()
+	instance.mesh = top.mesh
+	instance.material_override = view.material
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	instance.position = Vector3(center_x, 0.0, WaterCourse.START_Z)
+	add_child(instance)
 
 
 func _physics_process(delta: float) -> void:
@@ -132,7 +169,7 @@ func _verify_gpu() -> void:
 			var expected := WaterWaveMath.bounded(WaterWaveMath.raw(Vector2(point.x, point.y), _view.snapshot), point.z).x
 			maximum = maxf(maximum, absf(_decode(image.get_pixel(index, 0)) - expected))
 			checked += 1
-	print("wave GPU parity checked=%d maximum_error_m=%.9f; desktop only, not a phone/performance pass" % [checked, maximum])
+	print("wave GPU parity checked=%d maximum_error_m=%.9f device=%s; numerical check only, not performance acceptance" % [checked, maximum, OS.get_name()])
 	if maximum > 0.001:
 		push_error("CPU and GPU wave surface differ by more than 1 mm")
 		get_tree().quit(1)

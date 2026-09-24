@@ -21,6 +21,11 @@ func _ready() -> void:
 		if pair.size() == 2:
 			_options[pair[0]] = pair[1]
 	DirAccess.make_dir_recursive_absolute(OUT)
+	if str(_options.mode) == "wave_lab":
+		var lab: Node = load("res://debug/water_wave_lab.tscn").instantiate()
+		lab.set("verify_on_ready", true)
+		add_child(lab)
+		return
 	_probe = WaterMeasurement.new()
 	add_child(_probe)
 	print("water acceptance metadata ", JSON.stringify({"options": _options,
