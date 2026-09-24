@@ -35,6 +35,10 @@ feedback and three Test Ground water areas. Scope also includes Muddy Valley's
 creek and Rock Canyon's rut puddles. The written spec's numeric starting values
 and water-only car integration are now approved; existing dry tuning stays
 protected. Aquaplaning, deep-water skimming and visible snorkel art are deferred.
+**Owner tuning amendment (2026-09-24):** the intake must stay submerged for
+**3.00 s continuously** before stalling (was 0.60 s), for all three cars.
+Clearing the intake resets the timer; restart and flooding timings are unchanged.
+This change is separate from wave implementation and performance acceptance.
 The owner wants waves/vehicle-displaced water in a **separate future part**;
 recorded in `docs/notes/water-waves-followup.md` for later brainstorming.
 Its order relative to Coastal Highway is not yet approved; implement neither
@@ -43,7 +47,7 @@ as part of this performance retest.
 **State:** Milestones 1–5 are merged into `master`, plus the 2026-09-23 AWD
 balance tuning and the build-speed refactor. Five levels (Rally Road, Muddy
 Valley, Frozen Pass, Rock Canyon, and the Test Ground as Free Drive), three
-cars. M6A's retested full desktop suite is **735 passing, 1 pre-existing pending, no
+cars. M6A's retested full desktop suite is **736 passing, 1 pre-existing pending, no
 SCRIPT ERROR**, with protected geometry and balance fixtures unchanged. Phone
 retests still fail the water/setup budgets; the creek primitive overage is fixed.
 Rock Canyon's inherited >3 s phone load miss remains open.

@@ -10,11 +10,11 @@ func before_each() -> void:
 
 
 func test_intake_requires_continuous_submersion_and_ignores_dry_splashes() -> void:
-	state.step(0.50, profile, 0.0, true, -0.01)
+	state.step(2.50, profile, 0.0, true, -0.01)
 	assert_false(state.stalled)
 	state.step(0.01, profile, 0.0, true, 0.0)
 	assert_eq(state.intake_seconds, 0.0)
-	state.step(0.59, profile, 0.0, true, -0.01)
+	state.step(2.99, profile, 0.0, true, -0.01)
 	assert_false(state.stalled)
 	state.step(0.01, profile, 0.0, true, -0.01)
 	assert_true(state.stalled)
@@ -22,8 +22,20 @@ func test_intake_requires_continuous_submersion_and_ignores_dry_splashes() -> vo
 	assert_eq(state.flooding, 0.0, "intake and body immersion are independent")
 
 
+func test_three_second_stall_boundary_at_60_and_120_hz() -> void:
+	for hz: int in [60, 120]:
+		state.reset()
+		var delta := 1.0 / hz
+		for tick in 3 * hz - 1:
+			state.step(delta, profile, 0.0, true, -0.01)
+			assert_false(state.stalled, "%d Hz tick %d is before three seconds" % [hz, tick + 1])
+		state.step(delta, profile, 0.0, true, -0.01)
+		assert_true(state.stalled, "%d Hz stalls at exactly three seconds" % hz)
+		assert_eq(state.torque_scale, 0.0)
+
+
 func test_restart_hysteresis_countdown_and_torque_ramp() -> void:
-	state.step(0.60, profile, 1.0, true, -1.0)
+	state.step(3.00, profile, 1.0, true, -1.0)
 	state.step(0.90, profile, 0.5, true, 0.05)
 	assert_true(state.restarting)
 	state.step(0.10, profile, 0.5, true, 0.049)
@@ -36,13 +48,13 @@ func test_restart_hysteresis_countdown_and_torque_ramp() -> void:
 	assert_almost_eq(state.torque_scale, 0.5, 0.000001)
 	state.step(0.25, profile, 0.5, true, 0.05)
 	assert_eq(state.torque_scale, 1.0)
-	state.step(0.60, profile, 0.5, true, -0.01)
+	state.step(3.00, profile, 0.5, true, -0.01)
 	assert_true(state.stalled)
 	assert_eq(state.torque_scale, 0.0, "a second stall immediately cancels restart torque")
 
 
 func test_leaving_every_water_column_counts_as_clear() -> void:
-	state.step(0.60, profile, 0.0, true, -0.1)
+	state.step(3.00, profile, 0.0, true, -0.1)
 	state.step(1.00, profile, 0.0, false, -100.0)
 	assert_false(state.stalled)
 	assert_false(state.intake_at_risk)
@@ -126,6 +138,7 @@ func test_configured_profiles_have_only_the_approved_water_starting_values() -> 
 	assert_eq(rally.water_profile.wheel_quadratic_drag, 8.0)
 	assert_eq(offroad.water_profile.wheel_quadratic_drag, 10.0)
 	for stats: CarStats in [rally, tuned, offroad]:
+		assert_eq(stats.water_profile.stall_submerged_seconds, 3.0)
 		assert_eq(stats.water_profile.fresh_buoyancy_ratio, 1.15)
 		assert_eq(stats.water_profile.flooded_buoyancy_ratio, 0.35)
 		assert_eq(stats.water_profile.flood_grace_seconds, 3.0)

@@ -4,6 +4,12 @@
 
 **Status:** Approved by the owner on 2026-09-23: "I approve of the plan. So go ahead".
 
+**Owner-approved tuning amendment (2026-09-24):** raise continuous intake
+submersion before stalling from 0.60 s to **3.00 s** for all cars. Restart,
+flooding, buoyancy and dry handling values remain unchanged. Wave-driven intake
+submersion was approved for the separate future waves part; this amendment does
+not implement waves or close Part A's performance review.
+
 **Builds on:** `master` at `a3dbee4`, after the reviewed build-speed refactor and AWD tuning.
 
 **Branch:** `m6a-water-physics`. No merge or push.
@@ -246,7 +252,7 @@ buoyancy is included in the body approximation, not added a second time.
 
 | Parameter | Starting value and meaning |
 | --- | --- |
-| `stall_submerged_seconds` | **0.60 s** of continuous intake submersion |
+| `stall_submerged_seconds` | **3.00 s** of continuous intake submersion (owner amendment, 2026-09-24; originally 0.60 s) |
 | `restart_clearance` | Intake at least **0.05 m** above water, or outside every volume |
 | `restart_clear_seconds` | **1.00 s** continuously clear before restart |
 | `restart_torque_ramp_seconds` | **0.50 s** to restore requested engine torque smoothly |

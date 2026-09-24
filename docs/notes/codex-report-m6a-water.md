@@ -1,5 +1,21 @@
 # Milestone 6A — water physics
 
+**Owner tuning amendment (2026-09-24, after the performance retest):** all three
+cars now require **3.00 s of continuous intake submersion** before stalling,
+instead of 0.60 s. Clearing the intake resets the timer; restart, flooding,
+buoyancy, dry handling and surface values are unchanged. The updated focused
+water-state tests pass **11/11**, including the exact threshold at 60/120 Hz and
+interrupted exposure. The old value failed the new threshold tests first.
+The completed full desktop suite passes **736 tests, 1 pre-existing pending**,
+110 scripts / 356,878 assertions, 447.726 s, exit 0, no SCRIPT ERROR. Real-car
+scenarios verify grace and recovery for all three cars; protected geometry and
+balance fixtures pass unchanged. Tests used isolated temporary XDG save paths.
+The complete log is retained in `m6a-stall-delay-tests.log.gz`.
+Phone was disconnected for this amendment: the installed APK and retained
+performance evidence predate it. Rebuild and reinstall before phone playtesting
+this delay; no new performance-acceptance claim is made. Wave-driven intake
+submersion is agreed for the later waves part, not implemented by this change.
+
 **2026-09-24 follow-up:** ford query optimization and the inherited creek
 rendering fix are documented in `m6a-query-fixes-2026-09-24.md`, with retained
 before/after measurements. Car handling/forces and geometry are unchanged.

@@ -167,7 +167,9 @@ func test_actual_intake_points_stall_rally_before_reserved_snorkel_and_reset_cle
 	for stats in STATS:
 		var car := _spawn(stats, Vector3(0.0, 1.0, 0.0), _pool(1.5))
 		car.freeze = true
-		await _wait(0.8)
+		await _wait(2.9)
+		assert_false(car.water.state.stalled, "intake exposure below three seconds must not stall")
+		await _wait(0.2)
 		var should_stall := stats.archetype == &"rally"
 		assert_eq(car.water.state.stalled, should_stall)
 		assert_almost_eq(car.water.intake_world_position.y, 1.0 + stats.water_profile.intake_local_position.y, 0.000001)
@@ -196,7 +198,9 @@ func test_all_cars_recover_after_intake_clears_without_clearing_flooding_or_over
 		# at controlled intake heights, without resetting the controller state.
 		car.freeze = true
 		car.input.virtual_throttle = 1.0
-		await _wait(0.65)
+		await _wait(2.9)
+		assert_false(car.water.state.stalled, stats.display_name + " retains the full intake grace")
+		await _wait(0.2)
 		assert_true(car.water.state.stalled, stats.display_name)
 		assert_eq(car.drivetrain.rpm, 0.0)
 		assert_eq(car.drivetrain.drive_torque, 0.0)
@@ -217,7 +221,9 @@ func test_all_cars_recover_after_intake_clears_without_clearing_flooding_or_over
 		await wait_physics_frames(2)
 		assert_lte(car.drivetrain.drive_torque, 0.0, "restart ramp never overrides released throttle")
 		car.position.y = 2.0
-		await _wait(0.65)
+		await _wait(2.9)
+		assert_false(car.water.state.stalled, "re-entry starts a fresh three-second timer")
+		await _wait(0.2)
 		assert_true(car.water.state.stalled, "re-entering water can stall the restarted engine")
 		assert_eq(car.drivetrain.drive_torque, 0.0)
 		assert_eq(car.water.state.torque_scale, 0.0)
