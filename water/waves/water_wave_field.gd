@@ -26,6 +26,7 @@ var _bow_body: StringName
 var _bow_position: Vector2
 var _bow_direction := Vector2.UP
 var _bow_width := 1.0
+var _bow_sweep := 1.5
 var _bow_target := 0.0
 var _bow_value := 0.0
 var _bow_pending := false
@@ -33,6 +34,7 @@ var _next_bow_body: StringName
 var _next_bow_position: Vector2
 var _next_bow_direction: Vector2
 var _next_bow_width := 1.0
+var _next_bow_sweep := 1.5
 var _next_bow_target := 0.0
 
 
@@ -71,15 +73,18 @@ func queue_packet(kind: Kind, body: StringName, at: Vector2, current: Vector2,
 
 
 ## Input coefficient is a target. Position/direction are committed at snapshot time.
-func set_bow(body: StringName, at: Vector2, direction: Vector2, width: float, amplitude: float) -> void:
+func set_bow(body: StringName, at: Vector2, direction: Vector2, width: float,
+		amplitude: float, sweep := 1.5) -> void:
 	if not at.is_finite() or not direction.is_finite() or not is_finite(width) \
-			or width <= 0.0 or not is_finite(amplitude):
+			or width <= 0.0 or not is_finite(amplitude) or not is_finite(sweep) \
+			or sweep < 0.0 or sweep > 2.0:
 		return
 	_bow_pending = true
 	_next_bow_body = body
 	_next_bow_position = at
 	_next_bow_direction = direction.normalized() if direction.length_squared() > 0.000001 else Vector2.UP
-	_next_bow_width = maxf(1.0, width * 0.65)
+	_next_bow_width = maxf(1.5, width * 0.5 + 1.0)
+	_next_bow_sweep = sweep
 	_next_bow_target = clampf(amplitude, 0.0, profile.bow_amplitude) if body != &"" else 0.0
 
 
@@ -104,6 +109,7 @@ func step(delta: float) -> void:
 		_bow_position = _next_bow_position
 		_bow_direction = _next_bow_direction
 		_bow_width = _next_bow_width
+		_bow_sweep = _next_bow_sweep
 		_bow_target = _next_bow_target
 		_bow_pending = false
 	var response := profile.bow_rise_seconds if _bow_target > _bow_value else profile.bow_fall_seconds
@@ -154,4 +160,4 @@ func write_snapshot(body: StringName, ambient_enabled: bool, into: WaterWaveSnap
 			1.0 if index >= WaterWaveProfile.ENTRY_SLOTS else -slot.entry_radius)
 	into.bow = Vector4(_bow_position.x, _bow_position.y,
 		_bow_value if body == _bow_body else 0.0, profile.bow_half_length)
-	into.bow_direction = Vector4(_bow_direction.x, _bow_direction.y, _bow_width, 0.0)
+	into.bow_direction = Vector4(_bow_direction.x, _bow_direction.y, _bow_width, _bow_sweep)

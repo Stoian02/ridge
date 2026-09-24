@@ -116,6 +116,55 @@ func _equilibrium(stats: CarStats) -> float:
 	return (lower + upper) * 0.5
 
 
+func test_bow_tracks_leading_edge_in_forward_reverse_oblique_and_steering_motion() -> void:
+	for hz: int in [60, 120]:
+		Engine.physics_ticks_per_second = hz
+		for car_def in CARS:
+			for kind: String in ["forward", "reverse", "oblique"]:
+				var level := _level(car_def, WaterWaveTestGround.Mode.CAR_WAVES)
+				var rig: DrivingRig = level.rig
+				var waves: WaterWaveTestGround = level.water_waves
+				var z := 68.5
+				var start := Vector3(105.0, WaterCourse.pool_floor_height(0.0, z - WaterCourse.START_Z) + 1.0, z)
+				var yaw := 0.0 if kind == "reverse" else PI
+				var motion := Vector3(0.6, 0.0, 0.8) if kind == "oblique" else Vector3.BACK
+				rig.place_car(Transform3D(Basis(Vector3.UP, yaw), start))
+				await wait_physics_frames(hz)
+				rig.car.linear_velocity = motion * 8.0
+				for wheel in rig.car.wheels:
+					wheel.spin_speed = 8.0 / rig.car.stats.wheel_radius * (-1.0 if kind == "reverse" else 1.0)
+				await wait_physics_frames(hz / 3)
+				_check_live_bow(rig, waves)
+				if kind == "forward":
+					var before := waves.emitter.observation.velocity
+					rig.car.input.virtual_steer = 0.7
+					await wait_physics_frames(hz / 2)
+					_check_live_bow(rig, waves)
+					assert_gt(absf(waves.emitter.observation.velocity.x - before.x), 0.01,
+						"the steering fixture must actually turn")
+				_release(level)
+				await get_tree().process_frame
+
+
+func _check_live_bow(rig: DrivingRig, waves: WaterWaveTestGround) -> void:
+	var view := waves.runtime.views[0]
+	var snap := view.snapshot
+	var direction := Vector2(snap.bow_direction.x, snap.bow_direction.y)
+	var relative := waves.emitter.observation.velocity
+	assert_gt(direction.dot(Vector2(relative.x, relative.z).normalized()), 0.98)
+	var local_car := rig.car.global_position - view.origin
+	assert_gt((Vector2(snap.bow.x, snap.bow.y) - Vector2(local_car.x, local_car.z)).dot(direction), 0.7,
+		"crest sits on the leading side of motion, even in reverse")
+	assert_gt(snap.bow.z, 0.003)
+	assert_lte(snap.bow.z, 0.05 + 0.000001)
+	assert_almost_eq(snap.bow_direction.z,
+		maxf(1.5, waves.emitter.observation.bow_width * 0.5 + 1.0), 0.04)
+	assert_gte(snap.bow_direction.w, 0.6 - 0.000001)
+	assert_lte(snap.bow_direction.w, 2.0)
+	assert_true(rig.car.linear_velocity.is_finite())
+	assert_true(rig.car.angular_velocity.is_finite())
+
+
 func test_early_flotation_is_measurable_but_gentle_without_self_propulsion() -> void:
 	for hz: int in [60, 120]:
 		Engine.physics_ticks_per_second = hz

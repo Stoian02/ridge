@@ -49,14 +49,20 @@ static func bow(point: Vector2, data: Vector4, direction: Vector4) -> Vector3:
 	var forward := Vector2(direction.x, direction.y)
 	var right := Vector2(-forward.y, forward.x)
 	var d := point - Vector2(data.x, data.y)
-	var u := d.dot(forward) / data.w
 	var v := d.dot(right) / direction.z
-	if absf(u) >= 1.0 or absf(v) >= 1.0:
+	if absf(v) >= 1.0:
+		return Vector3.ZERO
+	# The ridge bends aft toward the shoulders. The broad quartic envelope
+	# retains water beside the hull, tapering smoothly outside it.
+	var u := (d.dot(forward) + direction.w * v * v) / data.w
+	if absf(u) >= 1.0:
 		return Vector3.ZERO
 	var longitudinal := pulse(u)
-	var side := 1.0 - v * v
+	var side := 1.0 - v * v * v * v
+	var lateral_gradient := longitudinal.y * (2.0 * direction.w * v / data.w) * side * side \
+		- longitudinal.x * 8.0 * v * v * v * side
 	var gradient := forward * (longitudinal.y * side * side / data.w) \
-		+ right * (longitudinal.x * -4.0 * v * side / direction.z)
+		+ right * (lateral_gradient / direction.z)
 	return Vector3(longitudinal.x * side * side, gradient.x, gradient.y) * data.z
 
 

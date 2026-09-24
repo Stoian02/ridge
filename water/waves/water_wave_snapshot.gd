@@ -13,7 +13,8 @@ var directions := PackedVector4Array()
 ## width, propagation speed, soft core, radial attenuation.
 var shape: Vector4
 var envelope: Vector2
-## centre.xz, amplitude, longitudinal half-width; direction.xz, lateral half-width.
+## leading crest centre.xz, amplitude, thickness half-width;
+## travel direction.xz, lateral half-span, backward sweep in metres.
 var bow: Vector4
 var bow_direction: Vector4
 

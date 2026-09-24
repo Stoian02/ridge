@@ -109,9 +109,14 @@ func _observe() -> void:
 	var right := Vector2(car.global_basis.x.x, car.global_basis.x.z)
 	var reach := 0.5 * (absf(direction.dot(forward)) * observation.size.z \
 		+ absf(direction.dot(right)) * observation.size.x)
+	var lateral := Vector2(-direction.y, direction.x)
+	# Cross-flow span includes the long side of a sliding car, not just its width.
+	observation.bow_width = absf(lateral.dot(forward)) * observation.size.z \
+		+ absf(lateral.dot(right)) * observation.size.x
+	observation.bow_sweep = clampf(reach * 0.75, 0.6, 2.0)
 	var local_car := car.global_position - view.origin
 	var middle := Vector2(local_car.x, local_car.z)
-	observation.bow_at = middle + direction * reach
+	observation.bow_at = middle + direction * (reach + 0.25)
 	observation.wake_at = middle - direction * reach
 	if view.sampler.topology.triangle_at(observation.bow_at) < 0:
 		observation.bow_at = observation.at

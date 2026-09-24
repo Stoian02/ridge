@@ -14,6 +14,8 @@ class Observation:
 	var body_immersion := 0.0
 	var wheel_immersion := 0.0
 	var upper_clearance := 0.0
+	var bow_width := 1.8
+	var bow_sweep := 1.5
 
 var entries := 0
 var wakes := 0
@@ -28,6 +30,7 @@ var _bow_body: StringName
 var _bow_at := Vector2.ZERO
 var _direction := Vector2.UP
 var _width := 1.8
+var _sweep := 1.5
 
 
 func reset() -> void:
@@ -84,7 +87,8 @@ func step(delta: float, observation: Observation, field: WaterWaveField) -> void
 		_direction = velocity.normalized()
 		_bow_body = _body
 		_bow_at = observation.bow_at
-		_width = observation.size.x
+		_width = observation.bow_width
+		_sweep = observation.bow_sweep
 		_wake_seconds += delta
 		_wake_distance += speed * delta
 		if _wake_seconds >= 0.30 - 0.00000001 and _wake_distance >= 1.0 - 0.00000001:
@@ -98,4 +102,4 @@ func step(delta: float, observation: Observation, field: WaterWaveField) -> void
 		_wake_distance = 0.0
 	# Keep the last wet body's bow location while fading, not an abrupt reset.
 	field.set_bow(_bow_body, _bow_at, _direction, _width,
-		minf(0.05, field.profile.bow_amplitude * size_factor * strength))
+		minf(0.05, field.profile.bow_amplitude * size_factor * strength), _sweep)

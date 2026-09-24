@@ -49,13 +49,16 @@ vec3 wave_bow_value(vec2 point) {
 	vec2 forward = wave_bow_direction.xy;
 	vec2 right = vec2(-forward.y, forward.x);
 	vec2 d = point - wave_bow.xy;
-	float u = dot(d, forward) / wave_bow.w;
 	float v = dot(d, right) / wave_bow_direction.z;
-	if (abs(u) >= 1.0 || abs(v) >= 1.0) { return vec3(0.0); }
+	if (abs(v) >= 1.0) { return vec3(0.0); }
+	float u = (dot(d, forward) + wave_bow_direction.w * v * v) / wave_bow.w;
+	if (abs(u) >= 1.0) { return vec3(0.0); }
 	vec2 longitudinal = wave_pulse(u);
-	float side = 1.0 - v * v;
+	float side = 1.0 - v * v * v * v;
+	float lateral_gradient = longitudinal.y * (2.0 * wave_bow_direction.w * v / wave_bow.w) * side * side
+		- longitudinal.x * 8.0 * v * v * v * side;
 	vec2 gradient = forward * (longitudinal.y * side * side / wave_bow.w)
-		+ right * (longitudinal.x * -4.0 * v * side / wave_bow_direction.z);
+		+ right * (lateral_gradient / wave_bow_direction.z);
 	return vec3(longitudinal.x * side * side, gradient) * wave_bow.z;
 }
 

@@ -175,11 +175,42 @@ func _verify_gpu() -> void:
 		push_error("CPU and GPU wave surface differ by more than 1 mm")
 		get_tree().quit(1)
 		return
+	# Dedicated bow-only grids cover both curved shoulders, reverse/oblique
+	# directions and narrow/broad hulls; packet saturation must not hide a bow bug.
+	var bow_maximum := 0.0
+	var bow_checked := 0
+	for heading: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2(0.6, 0.8)]:
+		for width: float in [1.8, 4.0]:
+			_runtime.field.reset()
+			_runtime.field.set_bow(&"calm", Vector2(0.0, 96.0), heading, width, 0.05, 1.8)
+			_runtime.field.step(0.5)
+			_runtime.refresh()
+			_view.snapshot.upload(material)
+			var side := Vector2(-heading.y, heading.x)
+			for index in 64:
+				var at := Vector2(0.0, 96.0) + heading * ((index % 8 - 4) * 0.7) \
+					+ side * ((index / 8 - 3.5) * 0.8)
+				points[index] = Vector4(at.x, at.y, 0.006 if index % 3 == 0 else 0.12, 0.0)
+			material.set_shader_parameter("probe_points", points)
+			await RenderingServer.frame_post_draw
+			await RenderingServer.frame_post_draw
+			image = target.get_texture().get_image()
+			for index in 64:
+				var point := points[index]
+				var expected := WaterWaveMath.bounded(WaterWaveMath.raw(Vector2(point.x, point.y), _view.snapshot), point.z).x
+				bow_maximum = maxf(bow_maximum, absf(_decode(image.get_pixel(index, 0)) - expected))
+				bow_checked += 1
+	print("wave GPU bow parity checked=%d maximum_error_m=%.9f" % [bow_checked, bow_maximum])
+	if bow_maximum > 0.001 or not is_finite(bow_maximum):
+		push_error("CPU and GPU curved bow differ by more than 1 mm")
+		get_tree().quit(1)
+		return
 	# Read actual mesh attributes, not an independently reconstructed grid. For
 	# each rendered triangle, interpolate three GPU heights and compare the exact
 	# standalone sampler at its centroid. This also catches UV/vertex quantization.
 	_runtime.field.reset()
 	_runtime.field.queue_packet(WaterWaveField.Kind.ENTRY, &"calm", Vector2(0.0, 96.0), Vector2.ZERO, 0.08, Vector2.UP, 1.1)
+	_runtime.field.set_bow(&"calm", Vector2(0.5, 96.0), Vector2(0.6, 0.8), 2.5, 0.05, 1.8)
 	_runtime.field.step(0.0)
 	_runtime.field.step(0.5)
 	_runtime.refresh()
@@ -190,6 +221,8 @@ func _verify_gpu() -> void:
 	var centroids := PackedVector2Array()
 	for index in 21:
 		var triangle := mini(_top.indices.size() / 3 - 1, index * (_top.indices.size() / 3 - 1) / 20)
+		if index < 16:
+			triangle = _top.triangle_at(Vector2((index % 4 - 1.5) * 1.0, 96.0 + (index / 4 - 1.5) * 1.0))
 		var centroid := Vector2.ZERO
 		for corner in 3:
 			var id := _top.indices[triangle * 3 + corner]
