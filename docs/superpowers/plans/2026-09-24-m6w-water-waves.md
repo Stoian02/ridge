@@ -1,5 +1,28 @@
 # M6W — water waves implementation plan (isolated start approved)
 
+## Approved entry-readability correction (2026-09-24; latest work)
+
+Owner approved proceeding after feedback: preserve satisfactory ambient waves,
+improve barely visible entry response, and prepare for connected-phone testing.
+The intermittent hitch remains recorded and unresolved but is explicitly
+non-blocking for this iteration. Keep diagnostics and revisit on phone before
+final acceptance; budgets, timed-level restrictions and no-merge rule remain.
+
+- [x] Record the decision and capture the original natural entry from chase/side.
+- [x] Diagnose early hull occlusion and weak crest contrast; retain original
+  coefficients, depth/shore caps, car tuning and ambient response.
+- [x] Add a hull-sized entry origin radius and displacement-linked crest contrast
+  on the existing surface, with CPU/GPU equations kept parallel.
+- [x] Focused all-car/60–120 Hz source, early visibility and flotation tests.
+- [x] Slow-entry visual check, real-GPU parity and complete regression: 775
+  passing, one inherited pending, no SCRIPT ERROR. Runtime/tests frozen for run.
+- [x] Fresh Android export (feature `78bb1b8`) ready for the owner's phone.
+- [ ] Install for owner phone playtesting when connected; no device detected at
+  handoff. No phone result/full-gate acceptance inferred from PC or export.
+- [ ] Stop for renewed owner feel feedback; no automatic expansion into polish.
+
+Report/evidence: `../../notes/m6w-entry-readability-2026-09-24.md`.
+
 ## Owner-approved PC feel exception (2026-09-24; latest scope)
 
 Owner approved: "let's keep it to the Test grounds and let me test" after an

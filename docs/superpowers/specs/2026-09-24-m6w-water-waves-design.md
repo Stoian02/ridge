@@ -1,5 +1,13 @@
 # M6W — gentle waves and vehicle-generated water motion
 
+**Entry-feel iteration approved (2026-09-24):** the owner finds ambient waves
+sufficient but entry almost invisible. Improve entry readability on the Test
+Ground and stop for another feel check; phone testing follows when connected.
+The owner explicitly accepts tracking the intermittent hitch as unresolved but
+non-blocking for this iteration, retaining Off-mode diagnostics and a phone
+recheck before final acceptance. This supersedes the older hitch-fix prerequisite
+for this work, not the all-water budgets or merge/rollout restrictions.
+
 **Latest owner exception (2026-09-24):** a live, experimental **Test Ground-only
 PC driving prototype** is now approved before the outstanding hitch review and
 full phone gate. Connect the already specified height sampling and natural
@@ -285,6 +293,16 @@ exact depth-dependent wave dispersion.
 
 ### 6.2 Entry, bow and wake sources
 
+**Owner-feedback adjustment:** keep the original coefficients, cadence, ambient
+values and all geometric safety limits. A natural entry now begins with soft
+radial coordinate `r0 = clamp(0.5 * hull_width, 0.6, 1.5)` metres, rather than
+zero, so the crest emerges beside the hull instead of starting under it. Use
+`q = (r - r0 - 2*a)/1.5` for entry; ordinary wake retains `r0 = 0`. The actual
+distance includes the existing soft-core transform. This is still a bounded
+height-field approximation, not conserved fluid volume or a new applied force.
+Pack `-r0` in entry direction.w; wake keeps `+1`. Synthetic point-entry fixtures
+can still use zero. No extra source, slot, mesh or base-bed query is introduced.
+
 | Field | Initial value / rule |
 | --- | --- |
 | Travelling slots | **16 total**: 4 reserved entry slots, 12 wake slots |
@@ -386,7 +404,15 @@ One shared shader program: vertical vertex displacement; correctly updated
 normals; existing base colours/alpha, roughness **0.18**, metallic **0**, specular
 **0.65**; double-sided, no water shadow casting, depth testing retained. Fine
 surface ripples and a restrained light wake highlight may be normal/colour
-detail only. Keep sub-centimetre visual detail from pretending to be a separate
+detail only. The entry-feel iteration adds a crest highlight using the difference
+between the drawn bounded height and its ambient-only counterpart, interpolated
+over those same triangles. For 4–45 mm positive vehicle displacement, smoothly
+mix toward a pale aerated colour (linear RGB 0.72/0.84/0.80, max blend 0.85) and
+roughness 0.45. Original alpha is unchanged; zero vehicle disturbance leaves
+ambient appearance unchanged. This adds one varying/two ambient sine evaluations
+per vertex, not another packet loop, transparent sheet or draw call. Validate
+phone cost rather than infer it from the absence of new geometry.
+Keep sub-centimetre visual detail from pretending to be a separate
 large geometric waterline. No refraction, planar reflections, screen-depth
 sampling, extra transparent foam sheet or new post-processing pipeline.
 

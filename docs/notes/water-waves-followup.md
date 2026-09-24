@@ -1,6 +1,23 @@
 # Follow-up: waves and vehicle-displaced water
 
-**Latest owner decision (2026-09-24):** approved isolated wave maths/mesh/shader
+**Latest approval (2026-09-24):** the owner approved fixing the entry-wave
+readability and will connect the phone for testing. The intermittent hitch stays
+recorded as unresolved, but no longer blocks this Test Ground iteration. Preserve
+Off-mode diagnostics and revisit during phone performance testing before final
+acceptance; investigate earlier if it becomes noticeable/reproducible in normal
+driving. Two traced scheduling delays do not explain every historic tail. No
+change to the total-water budgets, ambient strength, car tuning, reflection
+deferral, timed-level rollout or merge authority. Stop for another feel check.
+
+**Latest owner feedback (2026-09-24):** the subsequently approved Test Ground-only
+PC prototype is playable. Ambient waves are visible and sufficient, but entering
+water is barely visible or not visible. The owner wants GTA IV-like physical
+interaction as the eventual reference, with stylized visuals acceptable. See
+`m6w-pc-prototype-2026-09-24.md` for the feedback and limitations. This is a
+record/discussion request, not full feel approval or authorization for further
+implementation. Phone/hitch gates remain open; reflections remain deferred.
+
+**Earlier limited-start decision (2026-09-24):** approved isolated wave maths/mesh/shader
 work on `m6-water-waves` from unmerged M6A `4d5bd21`, and total-water CPU limits
 of **4 ms/frame p95 / 5 ms/frame p99**. Live-car integration waits for the hitch
 fix/retest; no merge or acceptance is implied. Earlier pending/merge-first

@@ -1,5 +1,9 @@
 # M6W — Test Ground PC driving prototype (2026-09-24)
 
+**Subsequent owner-approved entry correction:** see
+`m6w-entry-readability-2026-09-24.md`. This report preserves the initial delivery
+and first feedback; the newer note records the hitch deferral and follow-up work.
+
 ## Scope and playtest
 
 The owner explicitly approved bringing the **Test Ground-only PC feel test**
@@ -35,6 +39,34 @@ normal camera and the existing square spray particles can dominate it. The
 prototype does not add foam/highlight polish to conceal that question. Your
 driving feedback, not these screenshots, decides whether the strength/readability
 is right. **Stop here for Task 5a; no Task 6 polish without owner feedback.**
+
+## First owner feedback (2026-09-24)
+
+- Ambient/normal waves are visible and sufficient; preserve their current
+  strength unless the owner later requests otherwise.
+- Entering a water body is barely visible, or not visible at all. The entry
+  response has not passed the owner-readability checkpoint.
+- The owner named **GTA IV** as a reference for the eventual physical behaviour
+  of water, while accepting a more animated/stylized visual presentation.
+  This records the owner's desired experience, not a verified comparison with
+  that game's implementation or a promise of equivalent simulation.
+- No separate approval of flotation strength, wake readability, or the complete
+  Task 5a feel gate was given. The request is to note this and discuss direction,
+  not to implement further changes now.
+
+Recommended next discussion: make the car's interaction clearly readable from
+the driving camera—entry pushing a travelling wave out, a bow ridge and wake
+while moving, and disturbance settling afterwards—while retaining agreement
+between visible height and flotation. Inspect entry timing, shore/depth fading
+and visibility before assuming that a larger coefficient alone is the fix.
+Supporting spray/foam must not substitute for the requested physical response.
+
+The current bounded height-field approximation is not a volume-conserving
+displacement solver and does not simulate water flowing around arbitrary
+obstacles. Matching the reference's overall feel is an aspiration to validate
+by playtesting, not an accepted capability. Reflections and other deferred
+behaviours stay deferred; phone budgets and the separate physics-change approval
+remain in force. No code, tuning, tests or game runs changed for this feedback.
 
 ## Implementation
 
@@ -158,7 +190,8 @@ as the earlier lab, not a readback of rasterized spatial depth/GPU normals.
 
 ## Remaining decisions
 
-- **Owner PC feel feedback now**, before any polish or strength changes.
+- **Resolve the owner's entry-visibility feedback and agree the next change**;
+  ambient strength is sufficient, but the overall feel checkpoint remains open.
 - Full all-water CPU/GPU/whole-frame phone gate, broader shallow/current/reverse
   driving matrix and sustained/repeated-load phone tests remain open. This pass
   adds no phone installation; the phone still has the prior diagnostic build.
@@ -168,5 +201,6 @@ as the earlier lab, not a readback of rasterized spatial depth/GPU normals.
 
 Evidence and commands: [`m6w-pc-prototype-data/README.md`](m6w-pc-prototype-data/README.md).
 
-All automated Godot runs have ended. Await owner driving feedback; no polish
-or additional automated tests should start while the owner is playing.
+All automated Godot runs have ended. First owner feedback is recorded above;
+await agreement on the next change. No polish or additional automated tests
+should start while the owner is playing.

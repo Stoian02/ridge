@@ -1,5 +1,23 @@
 # Ridge — notes for coding agents
 
+**Latest owner approval (2026-09-24):** keep the intermittent hitch recorded as
+unresolved but **non-blocking for the next Test Ground wave iteration**. Improve
+the barely visible vehicle-entry response; preserve the ambient waves the owner
+likes, car tuning and depth/shore safety limits. The owner will connect the phone
+for testing. Retain Off-mode diagnostics and revisit hitches in phone checks
+before final acceptance, sooner if reproducible in ordinary driving. This is
+not a hitch fix, waived performance gate, timed-level rollout or merge approval.
+Stop again for owner feel feedback after the entry adjustment.
+
+**Entry correction delivered:** see `docs/notes/m6w-entry-readability-2026-09-24.md`.
+Feature `78bb1b8` makes the entry crest emerge beside the hull and highlights
+actual vehicle-wave displacement on the existing surface. Ambient values,
+coefficients, depth/shore caps, geometry and car tuning stay unchanged. Final
+suite: **775 passing, one inherited pending, no SCRIPT ERROR**; GPU height parity
+and PC smoke checks pass. Fresh Android APK exported, but no phone detected and
+**no installation/phone acceptance** this pass. Stop for owner feel feedback;
+do not start another Godot run while they play.
+
 **Latest owner exception (2026-09-24):** the owner explicitly approved bringing
 the PC driving-feel prototype forward, on the **Test Ground only**, before the
 M6A hitch review/full phone gate closes. Implement natural entry/bow/wake,
@@ -15,8 +33,13 @@ Off / Car waves / Full. Natural sources and drawn-height physics are connected
 only here. Final desktop regression: **774 passing, one inherited pending,
 no SCRIPT ERROR**; the first stalled regression attempt and unchanged successful
 rerun are both retained. PC rendered smoke/parity checks pass, not the full
-phone gate. **Await owner driving-feel feedback now; do not start polish or
-automated Godot runs while they play.** No new phone installation this pass.
+phone gate. **First owner feedback received:** ambient waves are visible and
+sufficient; entry disturbance is barely visible or not visible. GTA IV is the
+owner's reference for eventual physical interaction, with stylized visuals
+acceptable. See the playtest report's feedback section. Initially this was a
+record/discussion request only; the latest approval above now permits the entry
+correction, not full feel acceptance or unrelated polish. Do not start automated
+Godot runs while they play. The original PC delivery made no phone installation.
 
 **Current handoff:** `docs/notes/handover-codex-2026-09-23-m6.md` — Milestone 6
 in two parts, Codex designing as well as building, stopping for review between
