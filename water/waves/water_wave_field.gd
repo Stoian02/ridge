@@ -85,7 +85,10 @@ func set_bow(body: StringName, at: Vector2, direction: Vector2, width: float,
 	_next_bow_direction = direction.normalized() if direction.length_squared() > 0.000001 else Vector2.UP
 	_next_bow_width = maxf(1.5, width * 0.5 + 1.0)
 	_next_bow_sweep = sweep
-	_next_bow_target = clampf(amplitude, 0.0, profile.bow_amplitude) if body != &"" else 0.0
+	# The ceiling covers the steady crest plus an entry's short-lived boost;
+	# WaterWaveProfile keeps that sum inside the field's maximum offset.
+	var ceiling := profile.bow_amplitude + profile.entry_kick_amplitude
+	_next_bow_target = clampf(amplitude, 0.0, ceiling) if body != &"" else 0.0
 
 
 ## Advance old sources, then commit queued new ones at age zero. Zero is a valid

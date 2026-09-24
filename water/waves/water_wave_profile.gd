@@ -30,19 +30,31 @@ const PACKET_SLOTS := ENTRY_SLOTS + WAKE_SLOTS
 @export var bow_half_length: float = 1.5
 @export var bow_rise_seconds: float = 0.12
 @export var bow_fall_seconds: float = 0.40
+## Entry throws water the way the car is already moving: a short-lived boost to
+## the bow crest, on top of the symmetric entry ring. 0 restores the plain ring.
+@export var entry_kick_amplitude: float = 0.045
+@export var entry_kick_seconds: float = 0.45
+## Wake packets alternate to this fraction of the hull's half width either side
+## of the centre line, so the trail reads as a spreading V rather than one file.
+@export_range(0.0, 1.0) var wake_side_fraction: float = 0.55
 
 
 func is_valid() -> bool:
 	for value: float in [mesh_pitch, maximum_offset, depth_fraction, shore_distance,
 			ambient_wavelengths.x, ambient_wavelengths.y, ambient_periods.x, ambient_periods.y,
 			entry_life, wake_life, onset_seconds, fade_seconds, front_width, front_speed,
-			core_radius, bow_half_length, bow_rise_seconds, bow_fall_seconds]:
+			core_radius, bow_half_length, bow_rise_seconds, bow_fall_seconds,
+			entry_kick_seconds]:
 		if not is_finite(value) or value <= 0.0:
 			return false
 	for value: float in [ambient_amplitudes.x, ambient_amplitudes.y, radial_decay,
-			entry_amplitude, wake_amplitude, bow_amplitude]:
+			entry_amplitude, wake_amplitude, bow_amplitude, entry_kick_amplitude,
+			wake_side_fraction]:
 		if not is_finite(value) or value < 0.0:
 			return false
+	# An entry boost rides on the bow crest, so their sum is the real ceiling.
+	if bow_amplitude + entry_kick_amplitude > maximum_offset:
+		return false
 	return maximum_offset <= 0.12 and depth_fraction <= 0.20 \
 		and ambient_phases.is_finite() and ambient_direction_a.is_finite() \
 		and ambient_direction_b.is_finite() and ambient_direction_a.length_squared() > 0.0 \

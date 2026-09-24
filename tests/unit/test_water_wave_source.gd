@@ -86,3 +86,79 @@ func test_deep_fade_reverse_direction_and_body_isolation() -> void:
 	for slot: WaterWaveField.Packet in field._slots:
 		if slot.active:
 			assert_eq(slot.body_id, &"pool")
+
+
+## An entry throws water the way the car is already going: the bow crest, which
+## sits ahead of the hull, is boosted briefly on top of the symmetric ring.
+func test_entry_leans_the_crest_toward_travel_and_the_boost_fades() -> void:
+	var field := WaterWaveField.new()
+	var wet := _wet()
+	var steady := WaterWaveSource.new()
+	# A car already in the water, at the same speed, is the comparison.
+	for tick in 240:
+		steady.step(1.0 / 120.0, wet, field)
+		field.step(1.0 / 120.0)
+	field.step(0.0)
+	var settled := WaterWaveSnapshot.new()
+	field.write_snapshot(&"pool", false, settled)
+	var cruising: float = settled.bow.z
+
+	var entering := WaterWaveField.new()
+	var source := WaterWaveSource.new()
+	var dry := _wet()
+	dry.body_immersion = 0.0
+	for tick in 120:
+		source.step(1.0 / 120.0, dry, entering)
+		entering.step(1.0 / 120.0)
+	source.step(1.0 / 120.0, wet, entering)
+	assert_eq(source.entries, 1, "the entry ring is still emitted")
+	# The crest ramps in over bow_rise_seconds, so the boost shows as a peak
+	# over the following moments rather than on the entry tick itself.
+	var peak := 0.0
+	for tick in 36:
+		entering.step(1.0 / 120.0)
+		var rising := WaterWaveSnapshot.new()
+		entering.write_snapshot(&"pool", false, rising)
+		peak = maxf(peak, rising.bow.z)
+		source.step(1.0 / 120.0, wet, entering)
+	assert_gt(peak, cruising, "entering leans the crest forward harder than cruising does")
+	assert_lte(peak, entering.profile.bow_amplitude + entering.profile.entry_kick_amplitude,
+			"the boost stays inside its own ceiling")
+
+	# Allow the boost to expire and the crest itself to fall back (bow_fall_seconds).
+	for tick in int((entering.profile.entry_kick_seconds + 1.5) * 120.0):
+		source.step(1.0 / 120.0, wet, entering)
+		entering.step(1.0 / 120.0)
+	entering.step(0.0)
+	var faded := WaterWaveSnapshot.new()
+	entering.write_snapshot(&"pool", false, faded)
+	assert_almost_eq(faded.bow.z, cruising, 0.002, "the boost fades back to the cruising crest")
+
+
+## Consecutive wake packets straddle the centre line, so the trail spreads into
+## a V instead of a single file of rings behind the car.
+func test_wake_packets_alternate_across_the_travel_line() -> void:
+	var field := WaterWaveField.new()
+	var source := WaterWaveSource.new()
+	var wet := _wet()
+	var sides: Array[float] = []
+	for tick in 600:
+		source.step(1.0 / 120.0, wet, field)
+		field.step(1.0 / 120.0)
+		if source.wakes > sides.size():
+			field.step(0.0)
+			var snapshot := WaterWaveSnapshot.new()
+			field.write_snapshot(&"pool", false, snapshot)
+			var latest := Vector2.ZERO
+			var newest := INF
+			for index in range(WaterWaveProfile.ENTRY_SLOTS, WaterWaveProfile.PACKET_SLOTS):
+				var packet := snapshot.packets[index]
+				if packet.w > 0.0 and packet.z < newest:
+					newest = packet.z
+					latest = Vector2(packet.x, packet.y)
+			# Travel is +Z, so the across-track axis is X.
+			sides.append(signf(latest.x - wet.wake_at.x))
+	assert_gt(sides.size(), 3, "several wake packets were emitted")
+	for index in range(1, sides.size()):
+		assert_ne(sides[index], sides[index - 1], "wake packet %d swaps side" % index)
+		assert_ne(sides[index], 0.0, "each packet is offset from the centre line")

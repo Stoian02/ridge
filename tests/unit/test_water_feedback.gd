@@ -175,3 +175,20 @@ func test_particle_curve_resources_are_reused_and_direct_reset_stops_audio() -> 
 	rig.car.reset_to(Transform3D(Basis.IDENTITY, Vector3(0.0, 2.0, 0.0)))
 	rig.audio._process(0.016)
 	assert_false(entry.playing)
+
+
+## Water thrown by a moving car travels with it, so the spray cone leans toward
+## the car's motion while still pointing upward.
+func test_the_spray_cone_leans_toward_travel_but_never_lies_flat() -> void:
+	var effects := WaterEffects.new()
+	var upright := WaterEffects.MAXIMUM_LEAN
+	assert_between(upright, 0.0, 1.0, "the lean is a share of an upward cone")
+	# Vector3.UP plus a horizontal share, normalised: the vertical part stays
+	# dominant at any speed, so the cone never becomes a horizontal jet.
+	for share: float in [0.0, upright * 0.5, upright]:
+		var aim := (Vector3.UP + Vector3(share, 0.0, 0.0)).normalized()
+		assert_gt(aim.y, 0.8, "share %.2f keeps the cone upward" % share)
+	var slow := (Vector3.UP + Vector3(1.0, 0.0, 0.0) * clampf(1.0 / 6.0, 0.0, upright)).normalized()
+	var fast := (Vector3.UP + Vector3(1.0, 0.0, 0.0) * clampf(9.0 / 6.0, 0.0, upright)).normalized()
+	assert_gt(fast.x, slow.x, "a faster car throws its spray further forward")
+	effects.free()

@@ -1,10 +1,13 @@
 class_name WaterEffects
 extends Node3D
 ## One bounded surface emitter shared by entry splashes and the short wake.
+## The spray cone tilts toward travel; it never becomes horizontal.
 ## Updated by CarEffects, before CarAudio; no independent sampling or forces.
 
 const AMOUNT := 32
 const LIFETIME := 0.50
+## Horizontal share of the spray cone's aim at speed; the cone stays upward.
+const MAXIMUM_LEAN := 0.6
 
 var car: Car
 var emitter: CPUParticles3D
@@ -79,6 +82,14 @@ func update(delta: float, wheel_slip: float) -> void:
 	if _entry_left > 0.0 and total > 0.0:
 		strength = maxf(strength, entry_strength)
 	if total > 0.0 and strength > 0.01:
+		# Thrown water follows the car, so the cone leans the way it is moving
+		# rather than going straight up out of a moving hull.
+		var lean := Vector3(relative.x, 0.0, relative.z)
+		if lean.length() > 0.1:
+			emitter.direction = (Vector3.UP + lean.normalized()
+				* clampf(horizontal / 6.0, 0.0, MAXIMUM_LEAN)).normalized()
+		else:
+			emitter.direction = Vector3.UP
 		emitter.global_transform = Transform3D(Basis.IDENTITY, surface / total)
 		emitter.color = Color(tint.lightened(0.35), strength * 0.55)
 		emitter.initial_velocity_min = 0.4 + strength
