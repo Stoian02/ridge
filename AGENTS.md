@@ -1,5 +1,26 @@
 # Ridge — notes for coding agents
 
+**Latest verification handoff (2026-09-25):** the owner requested all remaining
+phone/GPU/lifecycle checks and the final review package. See
+`docs/notes/codex-report-m6w-waves.md` and `docs/notes/m6w-completion-data/README.md`.
+Implementation is ready for owner/Claude review, **not performance acceptance**.
+`f0c033b` adds opt-in lifecycle/trace verification; production wave feel, car and
+surface tuning, geometry and protected fixtures are unchanged. Full desktop:
+**799 passing, one inherited pending, no SCRIPT ERROR, exit 0**. Actual phone
+controls/cleanup: **342 checks over nine scene-car cycles pass, twice**. Real
+desktop/Android GPU-height parity passes. Forty-eight complete phone timing
+cases cover balanced all-car replay, 16-source saturation, live driving and
+five minutes of warmed Full per car. All numerical whole-frame gates pass at
+about 60 FPS; live/soak CPU cases pass. **CPU 6/7 ms fails 19 cases** (16 replay,
+3 saturation); GPU increment still fails (+0.64–0.71 ms replay, +0.91–0.92 ms
+saturation versus +0.50 ms). No gate is waived. Three untraced >33.3 ms frames
+(35.656, 36.583, 53.558 ms) remain unexplained; none recurred in the traced soak.
+The trace's sub-threshold maxima show scheduling waits, not a universal hitch
+explanation or gameplay fix. The historical M6A hitch stays open.
+Tested APK installed, save unchanged, all one-shot flags consumed; no more game
+runs planned. **Stop for owner/Claude review**, no timed-level rollout, Coastal
+Highway, native rewrite, merge or push. Do not start tests while the owner plays.
+
 **Latest owner budget amendment (2026-09-25):** provisional **Test Ground**
 total-water CPU limits are now **6 ms/frame p95 / 7 ms/frame p99**, replacing
 4/5 only in this scope. The old incremental CPU 0.50/1.0 ms targets remain

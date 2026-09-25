@@ -1,5 +1,27 @@
 # M6W — water waves implementation plan (isolated start approved)
 
+## Final verification / owner-review handoff (2026-09-25)
+
+The owner connected the phone and requested all remaining checks and the final
+review handoff. Current evidence is consolidated in
+`../../notes/codex-report-m6w-waves.md`; the dated sections/checklists below are
+the original sequence and historical checkpoints, not instructions to repeat
+already delivered work or silently treat an earlier stop as current scope.
+
+| Original task | Current implementation / acceptance distinction |
+| --- | --- |
+| 0 — prerequisites | Owner's isolated/live Test Ground exceptions recorded; no M6A acceptance or merge. Corrected Off/total-water measurement is delivered. |
+| 1–3 — model, topology, shader | Delivered, including exact packaged preparation and CPU/GPU parity. Original/reference maths retained alongside exact height-only optimizations. |
+| 4 — phone feasibility | Measurement coverage and repeated cases delivered; longer replay still misses provisional CPU and unchanged GPU limits. **Not accepted.** |
+| 5 — natural vehicle waves | Entry, curved bow, wake and spray delivered through the owner's iterations and Claude's `135c33f`. |
+| 5a — owner feel | Early playable checks and feedback occurred; later explicit authorization permits completion. Automated checks do not grant final feel acceptance. |
+| 6 — controls/lifecycle | Delivered. Actual-control PC audit and nine-cycle phone audit pass; no timed-level binding. |
+| 7 — final verification | Complete: 799 desktop tests pass/one inherited pending; real desktop and Android parity; 48 phone timing cases including all-car five-minute Full soaks; two nine-cycle lifecycle audits. CPU/GPU misses and three untraced tails are retained, not accepted. Tested APK installed, save unchanged, flags consumed. |
+
+No car tuning, geometry, master merge, push or Coastal Highway work is included.
+The historical hitch remains open. The owner budget amendment below does not
+turn the remaining measured failures into passes.
+
 ## Current CPU budget amendment (2026-09-25)
 
 Owner approved provisional **Test Ground total-water CPU 6 ms/frame p95 /
