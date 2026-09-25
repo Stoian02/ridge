@@ -42,9 +42,16 @@ func _ready() -> void:
 		"adapter": RenderingServer.get_video_adapter_name(), "physics_hz": Engine.physics_ticks_per_second,
 		"max_fps": Engine.max_fps, "start_unix": Time.get_unix_time_from_system(),
 		"feedback_scope": "water regions incl. shared wet spray/mixed tyre audio; whole mixed upper bound retained separately",
-		"recorder_version": 2}
+		"recorder_version": 3,
+		"clock_scope": "frame end_usec plus bracketed per-case UNIX/uptime anchor; no trace attribution without a matching system capture"}
 	_store(output + "/metadata.json", metadata)
 	print("WAVE_GATE metadata ", JSON.stringify(metadata))
+	if str(options.fixture) == "lifecycle":
+		var audit: Node = load("res://debug/water_wave_lifecycle_check.gd").new()
+		add_child(audit)
+		var passed: bool = await audit.run(output, int(options.rounds))
+		get_tree().quit(0 if passed else 1)
+		return
 	var cars := PackedStringArray([str(options.car)])
 	var modes := str(options.get("modes", "0,1,2")).split(",")
 	if str(options.car) == "all":
@@ -94,6 +101,9 @@ func _ready() -> void:
 				# Identical phase and elapsed source history in every timed case.
 				var label := "%s_r%d_o%d_m%d" % [car_id, round_index, order_index, mode]
 				print("WAVE_GATE begin ", label, " uptime_usec=", Time.get_ticks_usec())
+				var clock_before := Time.get_ticks_usec()
+				var clock_unix := Time.get_unix_time_from_system()
+				var clock_after := Time.get_ticks_usec()
 				_case_start_usec = Time.get_ticks_usec()
 				probe.begin(rig, level.water_waves)
 				while probe.frames.is_empty() or _duration() < float(options.seconds):
@@ -107,6 +117,7 @@ func _ready() -> void:
 				summary["preparation_usec"] = level.water_waves.preparation_usec
 				summary["covered_wait_usec"] = level.water_waves.covered_wait_usec
 				summary["start_phase"] = phase - probe.ticks.size()
+				summary["clock_anchor"] = {"unix": clock_unix, "before_usec": clock_before, "after_usec": clock_after}
 				results.append(summary)
 				_store(output + "/summary.json", results)
 				print("WAVE_GATE result ", JSON.stringify(summary))
@@ -181,17 +192,29 @@ func _live() -> void:
 	var cycle := phase / (hz * 12)
 	if cycle != _live_cycle:
 		_live_cycle = cycle
-		var kind := cycle % 6
+		var kind := cycle % 8
 		var x := 155.0 if kind == 4 else 105.0
-		var z := 126.0 if kind >= 4 else 59.0
-		var y := 2.5 if kind >= 4 else WaterCourse.pool_floor_height(0.0, 29.0) + 1.0
-		rig.place_car(Transform3D(Basis(Vector3.UP, 0.0 if kind == 3 else PI), Vector3(x, y, z)))
+		var z := 126.0 if kind in [4, 5] else 59.0
+		var y := 2.5 if kind in [4, 5] else WaterCourse.pool_floor_height(0.0, 29.0) + 1.0
+		if kind == 6:
+			# Explicit recovery precondition: coast uphill out of shallow water
+			# with the engine initially stalled. This is not a naturally earned
+			# preceding stall; subsequent recovery uses ordinary water state.
+			z = 72.0
+			y = WaterCourse.pool_floor_height(0.0, z - WaterCourse.START_Z) + 1.0
+		elif kind == 7:
+			x = WaterCourse.SHALLOW_X
+			z = 48.0
+			y = 1.0
+		rig.place_car(Transform3D(Basis(Vector3.UP, 0.0 if kind in [3, 6] else PI), Vector3(x, y, z)))
 		rig.car.input.virtual_throttle = 0.0
-		var speed: float = [3.0, 8.0, 15.0, 8.0, 0.0, 0.0][kind]
+		var speed: float = [3.0, 8.0, 15.0, 8.0, 0.0, 0.0, -8.0, 4.0][kind]
 		rig.car.linear_velocity = Vector3(0.0, 0.0, speed)
 		for wheel: Wheel in rig.car.wheels:
-			wheel.spin_speed = speed / rig.car.stats.wheel_radius * (-1.0 if kind == 3 else 1.0)
-	if cycle % 6 < 3:
+			wheel.spin_speed = speed / rig.car.stats.wheel_radius * (-1.0 if kind in [3, 6] else 1.0)
+		if kind == 6:
+			rig.car.water.state.stalled = true
+	if cycle % 8 in [0, 1, 2, 6, 7]:
 		rig.car.input.virtual_throttle = 1.0 if phase % (hz * 12) < hz * 5 else 0.0
 	_camera.position = rig.car.global_position + Vector3(-9.0, 7.0, -12.0)
 	_camera.look_at(rig.car.global_position)

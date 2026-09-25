@@ -19,7 +19,12 @@ func test_recorder_groups_complete_frames_and_bounds_water_feedback_by_whole_cal
 	assert_gt(result.frames, 0)
 	assert_false(result.gpu_valid, "headless renderer is never a GPU acceptance pass")
 	var count := 0
+	var previous_end := 0.0
 	for frame: PackedFloat64Array in recorder.frames:
+		assert_gt(frame[20], previous_end, "trace timestamps advance")
+		if previous_end > 0.0:
+			assert_eq(frame[20] - previous_end, frame[1], "timestamps preserve raw elapsed intervals")
+		previous_end = frame[20]
 		assert_lte(frame[7], frame[17], "wet/shared effects are a subset of the complete callback")
 		assert_lte(frame[8], frame[18], "water/shared tyre audio is a subset of the complete callback")
 		assert_lte(frame[11], frame[19])

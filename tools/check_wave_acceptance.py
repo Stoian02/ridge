@@ -52,6 +52,9 @@ def validate_case(directory, result):
         require(all(b[key] == a[key] + 1 for a, b in zip(rows, rows[1:])), name + ": missing/reordered " + key)
         signed = {"x", "y", "z", "velocity_x", "velocity_y", "velocity_z"}
         require(all(math.isfinite(value) and (value >= 0 or key in signed) for row in rows for key, value in row.items()), name + ": invalid number")
+    if "end_usec" in frames[0]:
+        require(all(b["end_usec"] - a["end_usec"] == b["frame_usec"] for a, b in zip(frames, frames[1:])),
+                name + ": inconsistent frame clock")
     groups = defaultdict(list)
     for row in ticks:
         groups[row["process_frame"]].append(row)

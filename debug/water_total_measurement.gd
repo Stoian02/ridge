@@ -7,7 +7,7 @@ extends Node
 ## Engine renderer/physics/audio worker cost is represented by frame/GPU timing.
 
 const TICK_HEADER := "process_frame,physics_tick,controller_usec,runtime_usec,emitter_usec,coordinator_usec,wave_query_usec,immersion,flooding,stalled,vertices,packets,x,y,z,velocity_x,velocity_y,velocity_z"
-const FRAME_HEADER := "process_frame,frame_usec,physics_ticks,controller_usec,runtime_usec,emitter_usec,coordinator_usec,effects_upper_usec,audio_upper_usec,hud_usec,flat_usec,total_upper_usec,wave_query_usec,gpu_ms,render_cpu_ms,draws,primitives,effects_all_usec,audio_all_usec,total_mixed_upper_usec"
+const FRAME_HEADER := "process_frame,frame_usec,physics_ticks,controller_usec,runtime_usec,emitter_usec,coordinator_usec,effects_upper_usec,audio_upper_usec,hud_usec,flat_usec,total_upper_usec,wave_query_usec,gpu_ms,render_cpu_ms,draws,primitives,effects_all_usec,audio_all_usec,total_mixed_upper_usec,end_usec"
 var rig: DrivingRig
 var waves: WaterWaveTestGround
 var active := false
@@ -74,7 +74,7 @@ func _process(_delta: float) -> void:
 	var now := Time.get_ticks_usec()
 	if _last_usec != 0:
 		var row := PackedFloat64Array()
-		row.resize(20)
+		row.resize(21)
 		row[0] = Engine.get_process_frames()
 		row[1] = now - _last_usec
 		row[2] = _pending.size()
@@ -100,6 +100,9 @@ func _process(_delta: float) -> void:
 		row[17] = rig.effects.trace_usec
 		row[18] = rig.audio.trace_usec
 		row[19] = row[11] - row[7] - row[8] + row[17] + row[18]
+		# Existing timestamp, no extra per-frame clock call. Allows a retained
+		# frame interval to be matched to an independent scheduling trace.
+		row[20] = now
 		frames.append(row)
 	_last_usec = now
 	_pending.clear()

@@ -56,6 +56,23 @@ class WaveMeasurementChecks(unittest.TestCase):
     def test_valid_components_are_counted_once(self):
         self.check()
 
+    def two_timestamped_frames(self):
+        self.frames[0]["end_usec"] = 16000
+        self.frames.append(dict(self.frames[0], process_frame=11, end_usec=32000))
+        self.ticks.extend([dict(row, process_frame=11, physics_tick=row["physics_tick"] + 2)
+                           for row in self.ticks[:]])
+        self.summary["frames"] = 2
+
+    def test_frame_timestamps_agree_with_elapsed_intervals(self):
+        self.two_timestamped_frames()
+        self.check()
+
+    def test_inconsistent_frame_timestamp_is_rejected(self):
+        self.two_timestamped_frames()
+        self.frames[1]["end_usec"] += 1
+        with self.assertRaisesRegex(ValueError, "inconsistent frame clock"):
+            self.check()
+
     def test_nested_query_cannot_be_counted_twice(self):
         self.frames[0]["total_upper_usec"] += 200
         with self.assertRaisesRegex(ValueError, "overlapping/missing total"):
