@@ -5,6 +5,8 @@ Usage: python3 tools/check_wave_acceptance.py <exported run directory>
 Exit 1: corrupt/incomplete evidence. Gate failures print FAIL, not parser failure.
 Recorder v1 includes whole mixed effects/audio; v2 measures water regions with
 shared work conservatively and retains the original mixed upper bound separately.
+Current policy: owner-approved Test Ground CPU ceilings of 6/7 ms p95/p99
+(2026-09-25). This does not waive GPU, frame-pacing or hitch checks.
 """
 import argparse
 import csv
@@ -12,6 +14,16 @@ import json
 import math
 from collections import defaultdict
 from pathlib import Path
+
+
+# Scope/rationale: docs/notes/m6w-budget-amendment-2026-09-25.md.
+TOTAL_WATER_P95_MS = 6.0
+TOTAL_WATER_P99_MS = 7.0
+
+
+def total_water_pass(result):
+    return (result["total_upper_p95_ms"] <= TOTAL_WATER_P95_MS
+            and result["total_upper_p99_ms"] <= TOTAL_WATER_P99_MS)
 
 
 def percentile(values, fraction):
@@ -74,10 +86,11 @@ def validate_case(directory, result):
         wave_work = [sum(row[key + "_usec"] for key in ("runtime", "emitter", "coordinator", "wave_query")) / 1000 for row in frames]
         for quantile in (95, 99):
             require(math.isclose(percentile(wave_work, quantile / 100), result[f"wave_work_p{quantile}_ms"], abs_tol=.000001), name + ": wave work attribution")
-    total_pass = result["total_upper_p95_ms"] <= 4 and result["total_upper_p99_ms"] <= 5
+    total_pass = total_water_pass(result)
     frame_pass = fps >= 59 and result["frame_p95_ms"] <= 18.5 and result["frame_p99_ms"] <= 25
     print(f"{name}: total {result['total_upper_p95_ms']:.3f}/{result['total_upper_p99_ms']:.3f} ms p95/p99 "
-          f"{'PASS' if total_pass else 'FAIL'}; frame {result['frame_p95_ms']:.3f}/{result['frame_p99_ms']:.3f} "
+          f"{'PASS' if total_pass else 'FAIL'} (Test Ground limits {TOTAL_WATER_P95_MS:g}/{TOTAL_WATER_P99_MS:g}); "
+          f"frame {result['frame_p95_ms']:.3f}/{result['frame_p99_ms']:.3f} "
           f"{'PASS' if frame_pass else 'FAIL'}; {fps:.2f} fps, {tails} tails; GPU valid={result['gpu_valid']}")
     return frames, ticks
 

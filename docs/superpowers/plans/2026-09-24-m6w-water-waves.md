@@ -1,12 +1,23 @@
 # M6W — water waves implementation plan (isolated start approved)
 
+## Current CPU budget amendment (2026-09-25)
+
+Owner approved provisional **Test Ground total-water CPU 6 ms/frame p95 /
+7 ms/frame p99**, replacing 4/5 in this scope. Incremental CPU 0.50/1.0 ms
+figures are now reported optimization targets, not a second blocking gate.
+Whole-frame/GPU/hitch/setup/memory/drawing checks are unchanged. Defer native/C++
+work. See `../../notes/m6w-budget-amendment-2026-09-25.md` for evidence and
+`../../notes/m6w-completion-plan-2026-09-25.md` for the current remaining work.
+Historical checklists below are not final acceptance and do not supersede these
+later owner decisions. No rollout/merge/Coastal Highway authority is added.
+
 ## Completion authorized (2026-09-25; current scope)
 
 Owner approved the measurement correction and finishing M6W for a whole review,
 with focused commits and documentation. Claude's intervening wake/splash work
 (`135c33f`) and phone launcher (`de50ab5`) are delivered; earlier step-only stops
 below are historical. See `../../notes/m6w-completion-plan-2026-09-25.md` for the
-current sequence. Preserve wave feel and the total-water ceilings. Test Ground
+current sequence. Preserve wave feel and apply the amended CPU policy. Test Ground
 only; no merge, push, timed-level rollout or Coastal Highway. Implementation
 completion is not a claim of owner/reviewer or phone acceptance.
 
@@ -142,8 +153,9 @@ exception. See `../../notes/codex-report-m6w-waves.md` and its retained logs.
 
 - M6A hitch fix/retest precedes live-car integration; acceptance/setup/load
   decisions remain open. Isolated work alone is allowed before those decisions.
-- Approved total-water CPU limits are 4 ms/frame p95 and 5 ms/frame p99 in the
-  recorded all-water scope; an incremental wave pass cannot replace this gate.
+- Approved provisional Test Ground total-water CPU limits are 6 ms/frame p95
+  and 7 ms/frame p99 in the recorded all-water scope. Incremental CPU is a
+  reported optimization target; it cannot replace the absolute total gate.
 - `m6-water-waves` starts from unmerged M6A `4d5bd21` by owner exception. Do not
   merge or push; future baseline/branch reconciliation requires an explicit step.
 - Wave runtime enabled only through Test Ground opt-in modes. Timed levels,
@@ -170,8 +182,9 @@ polish/lifecycle completion → full regression, phone acceptance and final revi
 ## 0. Approval and comparable baseline
 
 - [x] Record owner feedback and explicit **limited** start approval.
-- [x] Record owner-approved C95=4 and C99=5 ms/frame total-water CPU ceilings,
-  scope and rationale. These are not retroactive passes for old measurements.
+- [x] Record original C95=4 and C99=5 ms/frame approval, scope and rationale;
+  superseded for the Test Ground by the 2026-09-25 C95=6 / C99=7 amendment.
+  Neither approval is a retroactive full-protocol pass for old measurements.
 - [ ] Verify M6A acceptance decision and merged starting commit. Ensure its
   three-second intake amendment is included; the old audit APK is not baseline.
 - [ ] Create the approved new branch, inspect dirty files and preserve them.
@@ -272,8 +285,9 @@ independent validator tests and raw-data report.
 - [ ] Fresh build, verify installed APK hash, stream complete logcat. Record
   3 x 30 s synthetic max-packet cases, matching Off and refined-flat controls,
   actual viewport, temps and save/cleanup hashes. Never infer phone cost from PC.
-- [ ] Check approved **absolute total-water C95/C99 first**, plus incremental
-  CPU/GPU, drawing, memory, setup and whole-frame limits from spec §9. Compute
+- [ ] Check approved **absolute total-water C95/C99 first**, plus GPU, drawing,
+  memory, setup and whole-frame limits from spec §9; report incremental CPU
+  target misses without using them as blocking gates. Compute
   percentiles from raw frame sums, not sums of percentiles. Inspect the water
   from driving/underwater angles. Both Off and On must pass the total ceiling.
 - [ ] If unavailable or failed: record the checkpoint and stop for owner input.
@@ -315,7 +329,7 @@ from the synthetic feasibility fixture. Next is the owner feel stop, not polish.
 ## 5a. Early owner driving-feel checkpoint — mandatory stop
 
 - [ ] Run focused safety/correctness tests and check the rough live prototype
-  against the agreed total/incremental budgets before handing it over. No menu,
+  against agreed total/GPU/frame budgets; report incremental CPU. No menu,
   material or optional-effects polish is required to reach this checkpoint.
 - [ ] Stop automated Godot runs; provide a short playtest guide and the exact
   build/values. Install on the idle phone only when available and authorized.
@@ -326,7 +340,8 @@ from the synthetic feasibility fixture. Next is the owner feel stop, not polish.
   plus intake/stall readability. Record the owner's response, not an inferred
   pass from automated tests, a video capture or delegated numeric choices.
 - [ ] If changes are requested, tune the wave profile within approved scope,
-  recheck safety/total and incremental costs, and repeat the short owner test.
+  recheck safety/total/GPU/frame costs, report incremental CPU, and repeat the
+  short owner test.
   No dry-car retuning or budget increase to obtain a pass.
 - [ ] **Wait for explicit owner feel approval before Task 6.** If unavailable,
   leave a resumable checkpoint and stop. PC feedback can unblock polish only
@@ -370,8 +385,9 @@ with full lifecycle coverage and no rollout. Material feel changes return to 5a.
   comparison, synthetic stress and at least five minutes warmed Full gameplay.
 - [ ] Capture cold/first use and repeated mode/load behaviour with complete logs,
   every raw sample, temperatures, GPU validity, setup phases and cleanup counts.
-- [ ] Recheck approved total-water C95/C99 in every case alongside incremental
-  and whole-frame limits. No incremental-only acceptance or pooled slow cases.
+- [ ] Recheck approved total-water C95/C99 in every case alongside GPU and
+  whole-frame limits; report incremental CPU target misses. No incremental-only
+  acceptance or pooled slow cases.
 - [ ] Investigate all >33.3 ms tails. Use a system/CPU trace if necessary; do not
   attribute them from query counts or averages alone. Keep failed cases visible.
 - [ ] Confirm all timed levels remain waves-Off with baseline geometry and

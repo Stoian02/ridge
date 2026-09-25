@@ -1,5 +1,14 @@
 # Follow-up: waves and vehicle-displaced water
 
+**Current budget decision (2026-09-25):** owner approved provisional Test Ground
+total-water CPU limits of **6 ms/frame p95 / 7 ms/frame p99**. Incremental CPU
+0.50/1.0 ms figures are reported optimization targets, no longer blocking gates;
+whole-frame/GPU/hitch and other checks remain. Defer native/C++ work. See
+`m6w-budget-amendment-2026-09-25.md` for phone evidence and rationale, and
+`m6w-completion-plan-2026-09-25.md` for remaining verification/review work.
+Earlier budget/scope statements below are historical, not a renewed stop on
+the already-authorized M6W completion. No phone acceptance or rollout is implied.
+
 **Bow-only follow-up (2026-09-24):** owner likes the more visible entry and
 explicitly chose step 1 only: improve the bow crest around the leading edge and
 sides, responding to speed/direction including reverse. Stay on the Test Ground,

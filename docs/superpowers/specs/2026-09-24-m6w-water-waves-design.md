@@ -1,11 +1,21 @@
 # M6W — gentle waves and vehicle-generated water motion
 
+**Current CPU budget amendment (2026-09-25):** owner approved provisional
+**Test Ground** total-water CPU ceilings of **6 ms/frame p95 / 7 ms/frame p99**.
+The earlier incremental CPU 0.50/1.0 ms figures are now reported optimization
+targets, not blocking gates. Whole-frame, GPU, setup, memory, drawing and hitch
+checks remain unchanged. See §9 and
+`../../notes/m6w-budget-amendment-2026-09-25.md` for evidence and rationale.
+Defer native/C++ work; preserve wave look, strength and physical response. This
+does not accept M6A/M6W or approve timed-level rollout, Coastal Highway or merge.
+
 **Current completion approval (2026-09-25):** the owner authorized correcting
 the measurement harness and finishing M6W for a whole-milestone review, with
 focused commits/evidence. See `../../notes/m6w-completion-plan-2026-09-25.md`.
 The older step-only stops below are historical; accepted ambient/vehicle wave
-feel and all budgets remain unchanged. Test Ground only, no timed-level rollout,
-Coastal Highway, merge or push. Historical M6A hitch acceptance remains separate.
+feel remains unchanged. Use the amended CPU policy above. Test Ground only;
+no timed-level rollout, Coastal Highway, merge or push. Historical M6A hitch
+acceptance remains separate.
 
 **Bow-only iteration approved (2026-09-24):** the owner likes the entry and
 selected step 1 of the proposed next pass: refine the leading bow crest around
@@ -77,9 +87,10 @@ larger surface movements slightly affect flotation and intake submersion.
 - Provide **Off / Car waves / Full** comparison modes on the Test Ground only.
   Default Off; no persistent setting or changes to timed levels in this part.
 - Measure on the phone early. A good-looking desktop demo is not acceptance.
-- Agree and record an **absolute total-water CPU ceiling per frame** from M6A's
-  phone review first. Waves must fit within that ceiling as well as their own
-  incremental allowance: **4 ms/frame p95 and 5 ms/frame p99**, now approved.
+- Gate **absolute total-water CPU per frame**, not just the wave increment.
+  The current provisional Test Ground ceiling is **6 ms/frame p95 and
+  7 ms/frame p99**; report incremental CPU as an optimization target. The
+  historical 4/5 ms approval remains recorded below, not a pass for old runs.
 - **Owner drives immediately after entry/bow/wake work (Task 5a)**, before
   polish. Stop for feedback on strength, bobbing and readability; adjust and
   repeat before continuing to Task 6.
@@ -99,7 +110,8 @@ acceptance and owner merge decisions. No exception accepts existing failures.
 | Intake delay | Already implemented: 3.00 s for all three cars |
 | Wall/rock wave reflection | Explicitly deferred until after basic tests |
 | Test Ground first | Agreed prototype location |
-| Total-water gate before wave allocation | Approved: 4 ms/frame p95, 5 ms/frame p99; not retrospective acceptance |
+| Total-water gate before wave allocation | Amended 2026-09-25: Test Ground 6 ms/frame p95, 7 ms/frame p99; not retrospective acceptance |
+| Incremental wave CPU | 0.50/1.0 ms p95/p99 retained as reporting/optimization targets, not blocking gates |
 | Early owner feel checkpoint | Required after Task 5, before Task 6; delegated initial strength is not feel acceptance |
 | Analytic travelling-wave model | Approved for isolated groundwork |
 | New ShaderMaterial and refined water-top meshes | Approved for isolated groundwork; explicit exception to M6A's no-new-shader approach |
@@ -498,24 +510,31 @@ shutdown. No new sounds or particle-system expansion are required.
 
 ### Absolute total-water gate — prerequisite, not an optional review trigger
 
-The owner approved an absolute ceiling for **all measured water CPU work per
-rendered-frame interval**: 4 ms p95 and 5 ms p99. This allocates about 24% / 30%
+On 2026-09-25 the owner approved provisional **Test Ground** ceilings for **all
+measured water CPU work per rendered-frame interval**: **6 ms p95 and 7 ms p99**,
+replacing the previous 4/5 ms policy in this scope. This allocates about 36% / 42%
 of a 16.7 ms frame, as a ceiling rather than a target or proof of spare capacity.
-See `../../notes/m6a-independent-review-2026-09-24.md` for the rationale and
-approval record. Measure the broader scope below; old controller-only results
-do not demonstrate a pass. Inherited scene cost remains separate.
+Recent 30-second 4x4 replay/saturation subchecks held about 60 FPS; the owner
+accepts reduced headroom instead of pursuing a native rewrite solely for 4 ms.
+See `../../notes/m6w-budget-amendment-2026-09-25.md` for the exact evidence,
+limitations and remaining verification. The original 4/5 ms approval and
+failed results remain historical evidence, not retroactively accepted runs.
+Measure the broader scope below; old controller-only results do not demonstrate
+a pass. Inherited scene cost remains separate. No budget or acceptance decision
+for M6A's timed levels or Coastal Highway is implied by this Test Ground change.
 
 | Required approval record | Current value |
 | --- | --- |
-| Total-water CPU p95 ceiling, `C95` (ms/frame) | **4.0 — owner approved 2026-09-24** |
-| Total-water CPU p99 ceiling, `C99` (ms/frame) | **5.0 — owner approved 2026-09-24** |
+| Total-water CPU p95 ceiling, `C95` (ms/frame) | **6.0 — Test Ground amendment approved 2026-09-25** |
+| Total-water CPU p99 ceiling, `C99` (ms/frame) | **7.0 — Test Ground amendment approved 2026-09-25** |
 | Measurement scope / device | All measured controller + external water CPU, no double counting; Xiaomi 13, real-time 120 Hz physics / 60 FPS target; record exact renderer/build/resolution for each run |
 
 This is a ceiling for baseline water **plus** waves, not an allowance to add to
 the baseline. Both waves-Off and waves-On must meet it in each required case;
-the wave-increment and whole-frame gates must pass as well. If baseline water
-uses the available room, waves have no entitlement to another 0.50 ms. A
-baseline exception does not silently transfer to wave-enabled water or a future
+whole-frame, GPU and other unchanged gates must pass as well. The incremental
+CPU figures below are reported optimization targets, no longer another blocking
+gate. If baseline water uses the available room, waves have no entitlement to
+another 0.50 ms. A baseline exception does not silently transfer to wave-enabled water or a future
 timed-level rollout; any exception requires an explicit scoped owner decision.
 
 For budget intuition only, 1.6 ms/tick at two ticks/frame is roughly 3.2 ms/frame;
@@ -528,15 +547,17 @@ substitute for the required absolute ceiling.
 
 ### Additional allocations and complete-frame gates
 
-An early synthetic worst-case phone test precedes art polish and natural wake
-tuning. Budgets below are **proposed for review**, not automatically substituted
-for the unresolved M6A gates. If a gate is missed, retain the result and return
-with a measured adjustment proposal; do not silently raise a limit.
+The original sequence placed the synthetic worst-case phone test before art
+polish/natural wake tuning; the owner later approved the early Test Ground feel
+exception. The explicit CPU amendment does not change the other allocations
+below or substitute for unresolved M6A gates. If a remaining gate is missed,
+retain the result and return with a measured adjustment proposal; do not silently
+raise a limit. Incremental CPU misses must still be reported as target misses.
 
-| Metric | Proposed gate / reason |
+| Metric | Gate / target and reason |
 | --- | --- |
-| Total water CPU, absolute | **p95 <=4.0 ms; p99 <=5.0 ms**, per rendered-frame interval, baseline plus waves |
-| Incremental wave CPU work | **<=0.50 ms p95 per rendered-frame interval**, <=1.0 ms p99, and must fit inside the total ceiling; not an extra allowance above it |
+| Total water CPU, absolute | **p95 <=6.0 ms; p99 <=7.0 ms**, per rendered-frame interval, baseline plus waves; provisional Test Ground policy |
+| Incremental wave CPU work | **0.50 ms p95 / 1.0 ms p99 optimization targets, not blocking gates**; report actual per-frame wave subtotal and misses; never extra allowance above total |
 | Incremental measured GPU frame time | **<=0.50 ms p95 increase** in matched fixed-pose views; report absolute GPU time too |
 | Complete Test Ground frame pacing | Average >=59 FPS; process-frame p95 <=18.5 ms, p99 <=25 ms in warmed cases |
 | Long frames | Retain/analyse every interval >33.3 ms; a reproducible wave-induced hitch or unexplained cluster blocks acceptance regardless of averages |
@@ -549,7 +570,8 @@ Apply the approved total ceiling at the early synthetic phone gate, after any
 material feel adjustment, and at final acceptance. Keep GPU and whole-frame
 limits separate: CPU and GPU overlap, so their timings are not simply added
 into a purported total-water CPU value. No Test Ground pass authorizes waves
-at the ford; a later rollout must recheck the same ceiling in that level.
+at the ford; later timed-level/Coastal Highway work requires a scoped budget
+review and fresh measurements, not automatic inheritance of this higher ceiling.
 
 Extend `WaterMeasurement`/CSV validation to distinguish:
 
@@ -631,8 +653,9 @@ or an upper-bound test does not replace the owner's actual driving feedback.
 
 **Stop and wait for explicit feel approval before Task 6.** Record feedback,
 selected values and build ID; tune within the agreed scope and repeat the short
-test if requested. Recheck safety and absolute/incremental budgets after material
-changes. If the phone is unavailable, a PC feel pass may unblock polish only
+test if requested. Recheck safety and absolute/GPU/frame gates after material
+changes; report incremental CPU target misses. If the phone is unavailable,
+a PC feel pass may unblock polish only
 with the owner's agreement; it does not waive final phone feel/performance
 acceptance. No concurrent tests while the owner plays. Task 7 remains the final
 regression and confirmation, not the first owner playtest.
@@ -701,7 +724,7 @@ owner playtest, a feature-separated commit history, and
 | Risk | Required response |
 | --- | --- |
 | Shader looks cheap on desktop but costs too much on phone | Early worst-case synthetic gate before polishing/expanding |
-| Small wave increment hides an expensive water baseline | Agreed absolute total-water ceiling first; gate totals and increments in every case |
+| Small wave increment hides an expensive water baseline | Gate absolute totals in every case; report incremental CPU and retain independent GPU/frame gates |
 | Owner finds the wave strength wrong after polish | Mandatory Task 5a live driving-feel approval before Task 6 |
 | CPU/GPU equations, time or triangle interpolation disagree | Shared packed snapshot contract and measured parity test |
 | A car pumps energy into its own wake | Mean-level source detection, finite history, no direct force/velocity feedback, stopped-car stability test |

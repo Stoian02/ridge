@@ -1,13 +1,26 @@
 # Ridge — notes for coding agents
 
+**Latest owner budget amendment (2026-09-25):** provisional **Test Ground**
+total-water CPU limits are now **6 ms/frame p95 / 7 ms/frame p99**, replacing
+4/5 only in this scope. The old incremental CPU 0.50/1.0 ms targets remain
+reported optimization targets, not another blocking gate. Whole-frame, GPU,
+setup, memory, drawing and hitch checks are unchanged. See
+`docs/notes/m6w-budget-amendment-2026-09-25.md` for the approval, phone evidence,
+remaining checks and rationale: recent replay/stress cases held about 60 FPS,
+so the owner accepts less headroom instead of a native rewrite solely for 4 ms.
+The 30-second 4x4 subchecks do not constitute final phone acceptance; retain the
+original failed results. C++ work is deferred, not approved or necessary on this
+evidence. No wave feel/physics change, M6A acceptance, timed-level rollout,
+Coastal Highway, merge or push is authorized by this amendment.
+
 **Latest owner approval (2026-09-25): finish M6W implementation.** Correct the
 measurement protocol/coverage first, then measured performance hardening and
 remaining behaviour/lifecycle verification. Preserve the approved ambient and
 vehicle-wave feel, exact drawn-height queries, car tuning and geometry. Keep
 focused commits and retained evidence for Claude's whole-milestone review.
 See `docs/notes/m6w-completion-plan-2026-09-25.md`. This supersedes the earlier
-diagnostic-only/step-by-step implementation stops, not the 4/5 ms total-water
-ceilings or owner/reviewer acceptance. Test Ground only; no Coastal Highway,
+diagnostic-only/step-by-step implementation stops, not owner/reviewer acceptance.
+Use the amended Test Ground CPU policy above. Test Ground only; no Coastal Highway,
 timed-level rollout, merge or push. The historical M6A hitch remains separate.
 
 **Preceding diagnosis (2026-09-25):** Owner supplied Claude's

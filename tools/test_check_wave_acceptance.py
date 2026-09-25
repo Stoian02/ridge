@@ -6,7 +6,22 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from check_wave_acceptance import validate_case
+from check_wave_acceptance import total_water_pass, validate_case
+
+
+class WaveBudgetChecks(unittest.TestCase):
+    def test_owner_approved_boundaries_are_inclusive(self):
+        self.assertTrue(total_water_pass(dict(total_upper_p95_ms=6, total_upper_p99_ms=7)))
+
+    def test_p95_excess_fails_even_when_p99_is_inside_budget(self):
+        self.assertFalse(total_water_pass(dict(total_upper_p95_ms=6.001, total_upper_p99_ms=6.5)))
+
+    def test_p99_excess_fails_even_when_p95_is_inside_budget(self):
+        self.assertFalse(total_water_pass(dict(total_upper_p95_ms=5.5, total_upper_p99_ms=7.001)))
+
+    def test_retained_stress_result_meets_new_cpu_limits(self):
+        # This checks policy only, not full phone/milestone acceptance.
+        self.assertTrue(total_water_pass(dict(total_upper_p95_ms=5.938, total_upper_p99_ms=6.341)))
 
 
 class WaveMeasurementChecks(unittest.TestCase):
