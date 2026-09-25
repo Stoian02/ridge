@@ -8,6 +8,9 @@ var source := WaterWaveSource.new()
 var observation := WaterWaveSource.Observation.new()
 var step_usec := 0
 var _weights := PackedFloat32Array()
+var _body_fractions := PackedFloat64Array()
+var _wheel_fractions := PackedFloat64Array()
+var _view_indices: Dictionary = {}
 
 
 func _ready() -> void:
@@ -18,13 +21,15 @@ func setup(driven: Car, clock: WaterWaveRuntime) -> void:
 	car = driven
 	runtime = clock
 	_weights.resize(runtime.views.size())
+	_body_fractions.resize(8)
+	_wheel_fractions.resize(4)
+	_view_indices.clear()
+	for index in runtime.views.size():
+		_view_indices[runtime.views[index].body_id] = index
 
 
 func _view_index(id: StringName) -> int:
-	for index in runtime.views.size():
-		if runtime.views[index].body_id == id:
-			return index
-	return -1
+	return _view_indices.get(id, -1)
 
 
 func _physics_process(delta: float) -> void:
@@ -45,14 +50,16 @@ func _observe() -> void:
 		var sample := water.body_samples[index]
 		var view_index := _view_index(sample.body_id) if sample.valid else -1
 		if view_index >= 0:
-			_weights[view_index] += WaterForces.probe_fraction(water.body_positions[index].y,
+			_body_fractions[index] = WaterForces.probe_fraction(water.body_positions[index].y,
 				water.probe_radius, sample.rest_surface_y, sample.bed_y, sample.edge_weight)
+			_weights[view_index] += _body_fractions[index]
 	for index in 4:
 		var sample := water.wheel_samples[index]
 		var view_index := _view_index(sample.body_id) if sample.valid else -1
 		if view_index >= 0:
-			_weights[view_index] += WaterForces.wheel_fraction(water.wheel_positions[index].y,
-				water.wheel_extents[index], sample.rest_surface_y, sample.bed_y, sample.edge_weight) * 0.15
+			_wheel_fractions[index] = WaterForces.wheel_fraction(water.wheel_positions[index].y,
+				water.wheel_extents[index], sample.rest_surface_y, sample.bed_y, sample.edge_weight)
+			_weights[view_index] += _wheel_fractions[index] * 0.15
 	var chosen := -1
 	var weight := 0.0
 	for index in _weights.size():
@@ -73,8 +80,7 @@ func _observe() -> void:
 		var sample := water.body_samples[index]
 		if not sample.valid or sample.body_id != view.body_id:
 			continue
-		var fraction := WaterForces.probe_fraction(point.y, water.probe_radius,
-			sample.rest_surface_y, sample.bed_y, sample.edge_weight)
+		var fraction := _body_fractions[index]
 		observation.body_immersion += fraction / 8.0
 		centre += point * fraction
 		current += sample.current * fraction
@@ -84,8 +90,7 @@ func _observe() -> void:
 		if not sample.valid or sample.body_id != view.body_id:
 			continue
 		var point := water.wheel_positions[index]
-		var fraction := WaterForces.wheel_fraction(point.y, water.wheel_extents[index],
-			sample.rest_surface_y, sample.bed_y, sample.edge_weight)
+		var fraction := _wheel_fractions[index]
 		observation.wheel_immersion += fraction / 4.0
 		centre += point * fraction * 0.15
 		current += sample.current * fraction * 0.15

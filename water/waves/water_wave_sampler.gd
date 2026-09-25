@@ -7,6 +7,8 @@ var snapshot: WaterWaveSnapshot
 var evaluated_vertices := 0
 var _serials := PackedInt64Array()
 var _values := PackedFloat32Array()
+var _height := WaterWaveHeight.new()
+var _prepared_serial := -2
 
 
 func configure(top: WaterWaveMesh, data: WaterWaveSnapshot) -> void:
@@ -16,23 +18,27 @@ func configure(top: WaterWaveMesh, data: WaterWaveSnapshot) -> void:
 	_serials.fill(-2)
 	_values.resize(top.vertices.size())
 	evaluated_vertices = 0
+	_prepared_serial = -2
 
 
 func height_at(at: Vector2) -> float:
-	var triangle := topology.triangle_at(at)
+	var located := topology.locate(at)
+	var triangle := int(located.w)
 	if triangle < 0:
 		return -INF
-	var weights := topology.barycentric(at, triangle)
 	var result := topology.level
 	for corner in 3:
-		result += weights[corner] * vertex_offset(topology.indices[triangle * 3 + corner])
+		result += located[corner] * vertex_offset(topology.indices[triangle * 3 + corner])
 	return result
 
 
 func vertex_offset(index: int) -> float:
 	if _serials[index] != snapshot.serial:
+		if _prepared_serial != snapshot.serial:
+			_height.prepare(snapshot)
+			_prepared_serial = snapshot.serial
 		var at := topology.vertices[index]
-		_values[index] = WaterWaveMath.bounded(WaterWaveMath.raw(Vector2(at.x, at.z), snapshot), topology.limits[index]).x
+		_values[index] = _height.bounded(Vector2(at.x, at.z), topology.limits[index])
 		_serials[index] = snapshot.serial
 		evaluated_vertices += 1
 	return _values[index]

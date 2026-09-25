@@ -150,10 +150,10 @@ func write_snapshot(body: StringName, ambient_enabled: bool, into: WaterWaveSnap
 		var phase := fposmod(profile.ambient_phases[index] - TAU \
 			* fposmod(clock_seconds, profile.ambient_periods[index]) / profile.ambient_periods[index], TAU)
 		into.ambient[index] = Vector4(k.x, k.y, profile.ambient_amplitudes[index] if ambient_enabled else 0.0, phase)
+	into.packets.fill(Vector4.ZERO)
+	into.directions.fill(Vector4.ZERO)
 	for index in _slots.size():
 		var slot := _slots[index]
-		into.packets[index] = Vector4.ZERO
-		into.directions[index] = Vector4.ZERO
 		if not slot.active or slot.body_id != body:
 			continue
 		var age := clock_seconds - slot.born

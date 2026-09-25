@@ -186,18 +186,32 @@ func _fail(message: String) -> bool:
 
 
 func triangle_at(at: Vector2) -> int:
+	return int(locate(at).w)
+
+
+## Same triangle order and barycentric equations as the original search. A
+## generated triangle stays inside its grid cell except tiny weld/float error;
+## don't triangle-test lower neighbours when the point is well past that seam.
+## Return weights with the ID so a height query needn't calculate them twice.
+func locate(at: Vector2) -> Vector4:
 	if not at.is_finite():
-		return -1
+		return Vector4(0.0, 0.0, 0.0, -1.0)
 	var key := _cell(at)
+	var margin := 2.0 / WELD + 4.0 * EPS * maxf(1.0, pitch) \
+		+ maxf(absf(at.x), absf(at.y)) * 0.000001
 	# Boundary points can belong to the cell immediately below a grid seam.
 	for dz in range(-1, 1):
+		if dz == -1 and at.y > key.y * pitch + margin:
+			continue
 		for dx in range(-1, 1):
+			if dx == -1 and at.x > key.x * pitch + margin:
+				continue
 			var candidates: PackedInt32Array = _cells.get(key + Vector2i(dx, dz), PackedInt32Array())
 			for triangle: int in candidates:
 				var weights := barycentric(at, triangle)
 				if weights.x >= -EPS and weights.y >= -EPS and weights.z >= -EPS:
-					return triangle
-	return -1
+					return Vector4(weights.x, weights.y, weights.z, triangle)
+	return Vector4(0.0, 0.0, 0.0, -1.0)
 
 
 func barycentric(at: Vector2, triangle: int) -> Vector3:
