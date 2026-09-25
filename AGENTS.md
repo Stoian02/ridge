@@ -1,5 +1,26 @@
 # Ridge — notes for coding agents
 
+**Latest scope/status (2026-09-25): diagnostic only.** Owner supplied Claude's
+phone report and asked to measure the suspected ambient-wave cost before any
+optimization. See `docs/notes/m6w-ambient-cost-diagnosis-2026-09-25.md` and retained
+raw evidence. The slow late Full case reproduces, but reversing mode order makes
+Full fast and Off slow. Full evaluates fewer vertices; ambient maths is a small
+component. Read-only CPU samples show a frequency drop before the late case.
+The playcheck measures **controller-only**, not total water. Full's late-state
+ceiling misses remain real; no budget is waived and no all-water pass is claimed.
+Only opt-in debug instrumentation/tests/reporting were added; production wave
+maths, behaviour and tuning are untouched. Suite: **785 passing, one inherited
+pending, no SCRIPT ERROR**. Diagnostic APK installed, flags consumed, save
+unchanged. No optimization, merge or push. Next: agree a steady-state, balanced
+measurement protocol and complete total-water coverage before choosing a fix.
+The historical flooded/stalled M6A hitch stays open and separate.
+
+**Claude's intervening work:** `135c33f` completed the owner-approved trailing
+wake and directional entry/spray work; `de50ab5` added the phone playcheck flag.
+Read `docs/notes/m6w-wake-and-splash-2026-09-24.md` and
+`docs/notes/m6w-phone-waves-2026-09-25.md`. Earlier step-1-only notes below describe
+the preceding checkpoint, not the latest delivered feature scope.
+
 **Latest scope (2026-09-24):** owner likes the now-visible entry and approved
 **step 1 only: refine the bow wave**, on the Test Ground, before phone testing.
 Make the leading crest wrap around the sides and follow water-relative motion,

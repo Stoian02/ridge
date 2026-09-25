@@ -1,5 +1,15 @@
 # M6W on the phone: waves measured on the Xiaomi 13 (2026-09-25)
 
+**Subsequent diagnostic qualification:**
+[`m6w-ambient-cost-diagnosis-2026-09-25.md`](m6w-ambient-cost-diagnosis-2026-09-25.md)
+reproduces the slow case but finds mode-order/device-frequency confounding:
+Full first is fast, Off last becomes slow, and ambient maths is a small cost.
+The original measurements below are retained, but their **total-water** label
+is incorrect: `WaterMeasurement` records controller-only cost. A Car-waves
+controller result below the ceiling is not complete total-water acceptance.
+The ambient-specific +2.7 ms attribution below is not supported by the controlled
+follow-up; the late-state ceiling misses themselves remain real and unresolved.
+
 Measured by Claude after the owner approved the wake and splash work on the
 desktop. Branch `m6-water-waves` at `135c33f` plus the phone launcher below,
 built and installed fresh. Not merged, not pushed.

@@ -6,6 +6,10 @@ const OUT := "user://wave_pc_playcheck"
 var _level: Node3D
 var _rig: DrivingRig
 var _probe: WaterMeasurement
+var _diagnosis := false
+var _split := true
+var _reverse := false
+var _trace: Node
 
 
 func _ready() -> void:
@@ -14,6 +18,18 @@ func _ready() -> void:
 		get_tree().quit(2)
 		return
 	DirAccess.make_dir_recursive_absolute(OUT)
+	var config := ""
+	if FileAccess.file_exists("user://wave_cost_diagnosis"):
+		config = FileAccess.get_file_as_string("user://wave_cost_diagnosis")
+		DirAccess.remove_absolute("user://wave_cost_diagnosis")
+		_diagnosis = true
+	var args := OS.get_cmdline_user_args()
+	_diagnosis = _diagnosis or args.has("--diagnose")
+	_split = not (config.contains("counts") or args.has("--counts"))
+	_reverse = config.contains("reverse") or args.has("--reverse")
+	if _diagnosis:
+		_trace = load("res://debug/water_wave_cost_trace.gd").new()
+		add_child(_trace)
 	_level = load("res://levels/test_ground/test_ground.tscn").instantiate()
 	(_level.get_node("DrivingRig") as DrivingRig).car_override = load("res://car/cars/offroad_4x4.tres")
 	add_child(_level)
@@ -24,7 +40,11 @@ func _ready() -> void:
 	print("PC wave playcheck: ", Engine.get_version_info().string, " ", DisplayServer.get_name(),
 		" viewport=", DisplayServer.window_get_size(), " physics_hz=", Engine.physics_ticks_per_second,
 		" max_fps=", Engine.max_fps, " controller-only costs; NOT all-water acceptance")
-	for mode: int in [WaterWaveTestGround.Mode.OFF, WaterWaveTestGround.Mode.CAR_WAVES, WaterWaveTestGround.Mode.FULL]:
+	var modes: Array[int] = [WaterWaveTestGround.Mode.OFF, WaterWaveTestGround.Mode.CAR_WAVES, WaterWaveTestGround.Mode.FULL]
+	if _reverse:
+		modes.reverse()
+	print("Wave cost diagnosis=", _diagnosis, " split=", _split, " reverse=", _reverse)
+	for mode: int in modes:
 		_level.pause_menu.open()
 		if mode != _level.water_waves.mode:
 			# A back press during covered first use must not leave a hidden,
@@ -45,6 +65,8 @@ func _ready() -> void:
 		for wheel in _rig.car.wheels:
 			wheel.spin_speed = 8.0 / _rig.car.stats.wheel_radius
 		_rig.car.input.virtual_throttle = 1.0
+		if _diagnosis:
+			_trace.begin(_level.water_waves, _split)
 		_probe.begin(_rig.car)
 		await _ticks(600)
 		var result := _probe.finish(OUT + "/mode_%d.csv" % mode)
@@ -54,6 +76,10 @@ func _ready() -> void:
 			result["wakes"] = _level.water_waves.emitter.source.wakes
 			result["preparation_usec"] = _level.water_waves.preparation_usec
 		print("PC wave playcheck result ", JSON.stringify(result))
+		if _diagnosis:
+			_trace.finish(OUT + "/cost_mode_%d.csv" % mode)
+			# After the timed window; no live physics observes replay snapshots.
+			_trace.replay()
 		await _capture("drive_%d" % mode)
 		_rig.car.input.virtual_throttle = 0.0
 		await _ticks(360)
@@ -85,7 +111,7 @@ func _ready() -> void:
 	camera.make_current()
 	await _capture("underwater_full")
 	_level._on_reset_requested()
-	if _level.water_waves.runtime.field.active_count() != 0:
+	if _level.water_waves.runtime != null and _level.water_waves.runtime.field.active_count() != 0:
 		push_error("Reset retained wave packets")
 		get_tree().quit(1)
 		return
