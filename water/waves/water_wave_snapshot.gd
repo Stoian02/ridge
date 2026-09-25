@@ -33,3 +33,30 @@ func upload(material: ShaderMaterial) -> void:
 	material.set_shader_parameter("wave_envelope", envelope)
 	material.set_shader_parameter("wave_bow", bow)
 	material.set_shader_parameter("wave_bow_direction", bow_direction)
+
+
+## Suppress redundant server submissions, not snapshot updates. Packed arrays
+## are copy-on-write, so the retained last-uploaded values stay immutable.
+## Every actual uniform still equals this complete current-tick snapshot.
+func upload_changed(material: ShaderMaterial, previous: WaterWaveSnapshot) -> void:
+	if ambient != previous.ambient:
+		material.set_shader_parameter("wave_ambient", ambient)
+		previous.ambient = ambient
+	if packets != previous.packets:
+		material.set_shader_parameter("wave_packets", packets)
+		previous.packets = packets
+	if directions != previous.directions:
+		material.set_shader_parameter("wave_directions", directions)
+		previous.directions = directions
+	if shape != previous.shape:
+		material.set_shader_parameter("wave_shape", shape)
+		previous.shape = shape
+	if envelope != previous.envelope:
+		material.set_shader_parameter("wave_envelope", envelope)
+		previous.envelope = envelope
+	if bow != previous.bow:
+		material.set_shader_parameter("wave_bow", bow)
+		previous.bow = bow
+	if bow_direction != previous.bow_direction:
+		material.set_shader_parameter("wave_bow_direction", bow_direction)
+		previous.bow_direction = bow_direction

@@ -44,3 +44,22 @@ func test_preparation_drops_expired_and_foreign_packets_without_carrying_previou
 	field.write_snapshot(&"pool", false, snapshot)
 	height.prepare(snapshot)
 	assert_true(height._active.is_empty())
+
+
+func test_support_culling_preserves_values_at_float32_packet_boundaries() -> void:
+	var field := WaterWaveField.new()
+	var snapshot := WaterWaveSnapshot.new()
+	var height := WaterWaveHeight.new()
+	for age: float in [0.001, 0.12, 1.0, 2.99, 3.99]:
+		field.reset()
+		field.queue_packet(WaterWaveField.Kind.ENTRY, &"pool", Vector2(0.4, 96.0), Vector2.ZERO, 0.08, Vector2.UP, 1.5)
+		field.step(0.0)
+		field.step(age)
+		field.write_snapshot(&"pool", true, snapshot)
+		height.prepare(snapshot)
+		for q: float in [-1.00001, -1.0, -0.99999, 0.0, 0.99999, 1.0, 1.00001]:
+			var radius := snapshot.shape.z + 1.5 + snapshot.shape.y * age + q * snapshot.shape.x
+			var distance := sqrt(maxf(0.0, radius * radius - snapshot.shape.z * snapshot.shape.z))
+			for direction: Vector2 in [Vector2.RIGHT, Vector2.UP, Vector2(0.6, 0.8)]:
+				var at := Vector2(0.4, 96.0) + direction * distance
+				assert_eq(height.raw(at), WaterWaveMath.raw(at, snapshot).x)

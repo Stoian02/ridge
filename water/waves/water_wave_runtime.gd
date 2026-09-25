@@ -9,6 +9,7 @@ class View:
 	var origin := Vector3.ZERO
 	var ambient := false
 	var snapshot := WaterWaveSnapshot.new()
+	var uploaded := WaterWaveSnapshot.new()
 	var sampler := WaterWaveSampler.new()
 	var material: ShaderMaterial
 
@@ -30,6 +31,7 @@ func add_view(body_id: StringName, topology: WaterWaveMesh, ambient: bool) -> Vi
 	field.write_snapshot(body_id, ambient, view.snapshot)
 	view.sampler.configure(topology, view.snapshot)
 	view.snapshot.upload(view.material)
+	view.snapshot.upload_changed(view.material, view.uploaded)
 	views.append(view)
 	return view
 
@@ -44,7 +46,7 @@ func _physics_process(delta: float) -> void:
 func refresh() -> void:
 	for view: View in views:
 		field.write_snapshot(view.body_id, view.ambient, view.snapshot)
-		view.snapshot.upload(view.material)
+		view.snapshot.upload_changed(view.material, view.uploaded)
 
 
 func reset() -> void:

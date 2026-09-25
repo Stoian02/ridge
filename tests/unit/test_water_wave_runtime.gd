@@ -58,3 +58,20 @@ func test_scene_pause_freezes_snapshot_clock_and_render_uniforms() -> void:
 	get_tree().paused = false
 	await wait_physics_frames(2)
 	assert_gt(runtime.field.clock_seconds, before)
+
+
+func test_changed_only_upload_keeps_every_uniform_equal_to_current_snapshot() -> void:
+	var runtime := WaterWaveRuntime.new()
+	add_child_autofree(runtime)
+	var view := runtime.add_view(&"pool", _top(), false)
+	for index in 60:
+		if index % 10 == 0:
+			runtime.field.queue_packet(WaterWaveField.Kind.ENTRY, &"pool", Vector2.ZERO, Vector2.ZERO, 0.08)
+		view.ambient = index > 20
+		runtime.field.set_bow(&"pool", Vector2(index * 0.1, 0.0), Vector2.RIGHT, 2.0, 0.05)
+		runtime._physics_process(0.1)
+		if index == 50:
+			runtime.reset()
+		var snapshot := view.snapshot
+		for property: String in ["ambient", "packets", "directions", "shape", "envelope", "bow", "bow_direction"]:
+			assert_eq(view.material.get_shader_parameter("wave_" + property), snapshot.get(property))
