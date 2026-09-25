@@ -16,6 +16,9 @@ var emitter: WaterWaveEmitter
 var busy := false
 var error := ""
 var preparation_usec := 0
+var trace_enabled := false
+var trace_usec := 0
+var covered_wait_usec := 0
 var _tops: Array[MeshInstance3D] = []
 var _generation := -1
 var _reset_serial := -1
@@ -38,6 +41,7 @@ func request_mode(next: int) -> void:
 	if busy or next == mode:
 		return
 	busy = true
+	var covered_started := Time.get_ticks_usec()
 	var was_paused := get_tree().paused
 	get_tree().paused = true
 	rig.touch_controls.release_all_touches()
@@ -68,6 +72,7 @@ func request_mode(next: int) -> void:
 	cover.queue_free()
 	get_tree().paused = was_paused
 	busy = false
+	covered_wait_usec = Time.get_ticks_usec() - covered_started
 	mode_changed.emit(mode)
 
 
@@ -172,6 +177,7 @@ func _set_active(active: bool) -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	var started := Time.get_ticks_usec() if trace_enabled else 0
 	if course.water_world.generation != _generation or rig.car.water.world != course.water_world:
 		error = "Water world rebuilt; select a wave mode again"
 		course.water_world.clear_waves()
@@ -179,9 +185,13 @@ func _physics_process(_delta: float) -> void:
 		_set_active(false)
 		reset_history()
 		mode_changed.emit(mode)
+		if trace_enabled:
+			trace_usec = Time.get_ticks_usec() - started
 		return
 	if rig.car.water.reset_serial != _reset_serial:
 		reset_history()
+	if trace_enabled:
+		trace_usec = Time.get_ticks_usec() - started
 
 
 func _discard() -> void:

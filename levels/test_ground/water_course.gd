@@ -43,6 +43,9 @@ var pool_water_faces := PackedVector3Array()
 var pool_water_colors := PackedColorArray()
 var shallow_floor_faces := PackedVector3Array()
 var geometry_primitives := 0
+## Opt-in acceptance instrumentation; does not change geometry or animation.
+var trace_enabled := false
+var trace_usec := 0
 
 var _materials: Array[StandardMaterial3D] = []
 var _currents: Array[Vector3] = []
@@ -57,8 +60,11 @@ func _exit_tree() -> void:
 
 
 func _process(delta: float) -> void:
+	var started := Time.get_ticks_usec() if trace_enabled else 0
 	for i: int in _materials.size():
 		WaterAppearance.advance(_materials[i], _currents[i], delta)
+	if trace_enabled:
+		trace_usec = Time.get_ticks_usec() - started
 
 
 func build() -> void:

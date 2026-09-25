@@ -1,6 +1,16 @@
 # Ridge — notes for coding agents
 
-**Latest scope/status (2026-09-25): diagnostic only.** Owner supplied Claude's
+**Latest owner approval (2026-09-25): finish M6W implementation.** Correct the
+measurement protocol/coverage first, then measured performance hardening and
+remaining behaviour/lifecycle verification. Preserve the approved ambient and
+vehicle-wave feel, exact drawn-height queries, car tuning and geometry. Keep
+focused commits and retained evidence for Claude's whole-milestone review.
+See `docs/notes/m6w-completion-plan-2026-09-25.md`. This supersedes the earlier
+diagnostic-only/step-by-step implementation stops, not the 4/5 ms total-water
+ceilings or owner/reviewer acceptance. Test Ground only; no Coastal Highway,
+timed-level rollout, merge or push. The historical M6A hitch remains separate.
+
+**Preceding diagnosis (2026-09-25):** Owner supplied Claude's
 phone report and asked to measure the suspected ambient-wave cost before any
 optimization. See `docs/notes/m6w-ambient-cost-diagnosis-2026-09-25.md` and retained
 raw evidence. The slow late Full case reproduces, but reversing mode order makes
