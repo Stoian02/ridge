@@ -20,9 +20,17 @@ const WATER_FILE := "user://water_benchmark"
 const WATER_SCENE := "res://debug/water_benchmark.tscn"
 const WATER_ACCEPTANCE_FILE := "user://water_acceptance"
 const WATER_ACCEPTANCE_SCENE := "res://debug/water_acceptance.tscn"
+## The wave playcheck needs a real renderer, so on Android it runs from a flag
+## file like the others: adb shell run-as com.ridge.game touch files/wave_playcheck
+const WAVE_CHECK_FILE := "user://wave_playcheck"
+const WAVE_CHECK_SCENE := "res://debug/water_wave_pc_playcheck.tscn"
 
 
 func _ready() -> void:
+	if OS.is_debug_build() and FileAccess.file_exists(WAVE_CHECK_FILE):
+		DirAccess.remove_absolute(WAVE_CHECK_FILE)
+		get_tree().change_scene_to_file.call_deferred(WAVE_CHECK_SCENE)
+		return
 	if OS.is_debug_build() and FileAccess.file_exists(WATER_ACCEPTANCE_FILE):
 		# The acceptance scene reads and consumes the optional JSON configuration.
 		get_tree().change_scene_to_file.call_deferred(WATER_ACCEPTANCE_SCENE)
