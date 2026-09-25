@@ -37,7 +37,8 @@ def validate_case(directory, result):
     require(len({row["physics_tick"] for row in ticks}) == len(ticks), name + ": duplicate tick")
     for rows, key in [(frames, "process_frame"), (ticks, "physics_tick")]:
         require(all(b[key] == a[key] + 1 for a, b in zip(rows, rows[1:])), name + ": missing/reordered " + key)
-        require(all(math.isfinite(value) and value >= 0 for row in rows for value in row.values()), name + ": invalid number")
+        signed = {"x", "y", "z", "velocity_x", "velocity_y", "velocity_z"}
+        require(all(math.isfinite(value) and (value >= 0 or key in signed) for row in rows for key, value in row.items()), name + ": invalid number")
     groups = defaultdict(list)
     for row in ticks:
         groups[row["process_frame"]].append(row)
@@ -77,7 +78,7 @@ def main():
     metadata = json.loads((args.directory / "metadata.json").read_text())
     results = json.loads((args.directory / "summary.json").read_text())
     options = metadata["options"]
-    expected = int(options["rounds"]) * 3 * (3 if options["car"] == "all" else 1)
+    expected = int(options["rounds"]) * len(str(options.get("modes", "0,1,2")).split(",")) * (3 if options["car"] == "all" else 1)
     require(len(results) == expected, "incomplete case matrix")
     require(len({result["case"] for result in results}) == expected, "duplicate cases")
     for result in results:

@@ -1,5 +1,15 @@
 # M6W — water waves implementation plan (isolated start approved)
 
+## Completion authorized (2026-09-25; current scope)
+
+Owner approved the measurement correction and finishing M6W for a whole review,
+with focused commits and documentation. Claude's intervening wake/splash work
+(`135c33f`) and phone launcher (`de50ab5`) are delivered; earlier step-only stops
+below are historical. See `../../notes/m6w-completion-plan-2026-09-25.md` for the
+current sequence. Preserve wave feel and the total-water ceilings. Test Ground
+only; no merge, push, timed-level rollout or Coastal Highway. Implementation
+completion is not a claim of owner/reviewer or phone acceptance.
+
 ## Bow-only follow-up (2026-09-24; latest scope)
 
 Owner accepted improved entry visibility and chose **step 1 only** from the

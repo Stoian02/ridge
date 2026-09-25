@@ -5,7 +5,7 @@ extends Node
 ## effects/audio callbacks + water HUD. Nested queries are attribution ONLY.
 ## Engine renderer/physics/audio worker cost is represented by frame/GPU timing.
 
-const TICK_HEADER := "process_frame,physics_tick,controller_usec,runtime_usec,emitter_usec,coordinator_usec,wave_query_usec,immersion,flooding,stalled,vertices,packets"
+const TICK_HEADER := "process_frame,physics_tick,controller_usec,runtime_usec,emitter_usec,coordinator_usec,wave_query_usec,immersion,flooding,stalled,vertices,packets,x,y,z,velocity_x,velocity_y,velocity_z"
 const FRAME_HEADER := "process_frame,frame_usec,physics_ticks,controller_usec,runtime_usec,emitter_usec,coordinator_usec,effects_upper_usec,audio_upper_usec,hud_usec,flat_usec,total_upper_usec,wave_query_usec,gpu_ms,render_cpu_ms,draws,primitives"
 var rig: DrivingRig
 var waves: WaterWaveTestGround
@@ -60,7 +60,9 @@ func _physics_process(_delta: float) -> void:
 		waves.emitter.step_usec if enabled else 0, waves.trace_usec if enabled else 0,
 		query - _previous_query, rig.car.water.state.body_immersion,
 		rig.car.water.state.flooding, int(rig.car.water.state.stalled),
-		vertices - _previous_vertices, waves.runtime.field.active_count() if enabled else 0]))
+		vertices - _previous_vertices, waves.runtime.field.active_count() if enabled else 0,
+		rig.car.global_position.x, rig.car.global_position.y, rig.car.global_position.z,
+		rig.car.linear_velocity.x, rig.car.linear_velocity.y, rig.car.linear_velocity.z]))
 	_previous_query = query
 	_previous_vertices = vertices
 

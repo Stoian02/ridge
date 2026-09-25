@@ -10,7 +10,7 @@ var _status: Label
 
 func _ready() -> void:
 	add_theme_constant_override("separation", 8)
-	add_child(UiKit.label("Water waves — PC prototype", 28))
+	add_child(UiKit.label("Water waves — Test Ground", 28))
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 8)

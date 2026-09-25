@@ -1,5 +1,12 @@
 # M6W — gentle waves and vehicle-generated water motion
 
+**Current completion approval (2026-09-25):** the owner authorized correcting
+the measurement harness and finishing M6W for a whole-milestone review, with
+focused commits/evidence. See `../../notes/m6w-completion-plan-2026-09-25.md`.
+The older step-only stops below are historical; accepted ambient/vehicle wave
+feel and all budgets remain unchanged. Test Ground only, no timed-level rollout,
+Coastal Highway, merge or push. Historical M6A hitch acceptance remains separate.
+
 **Bow-only iteration approved (2026-09-24):** the owner likes the entry and
 selected step 1 of the proposed next pass: refine the leading bow crest around
 the car's sides, including reverse, on the Test Ground before phone tests.
