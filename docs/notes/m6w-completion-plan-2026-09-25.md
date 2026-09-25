@@ -32,6 +32,12 @@ rollout, car/surface tuning or geometry changes are included.
   WaterEffects nor water audio is counted again. Rendering-server/Jolt/audio
   worker execution is outside the script CPU sum and covered by whole-frame
   timings and renderer GPU timings, not mislabelled as script CPU.
+- Recorder v2 additionally times the water-specific effects/audio regions,
+  including shared wet-spray submission and the complete wet/dry tyre-audio mix
+  conservatively. Dry-only wheel-motion/engine/road updates are excluded from
+  that total; the original **whole mixed-callback upper bound remains a separate
+  CSV field** for like-for-like before/after comparisons. This is finer
+  attribution, not an optimization or a changed budget.
 - Frame records include p95/p99, all >33.3 ms tails, separate component values,
   renderer timing validity, draw calls/primitives and case-relative tick phase.
   Export/readback happens outside the measured window. Reject incomplete or

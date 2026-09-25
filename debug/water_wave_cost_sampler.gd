@@ -1,4 +1,7 @@
 class_name WaterWaveCostSampler
+## Historical split-maths diagnostic: deliberately evaluates the full reference
+## maths (including gradients), not the newer optimized height-only sampler.
+## Use WaterTotalMeasurement for current acceptance/performance comparisons.
 extends WaterWaveSampler
 ## Opt-in diagnostic replacement only. Same cache, order and float32 results.
 ## Wall-clock timings include preemption and instrumentation; not acceptance.

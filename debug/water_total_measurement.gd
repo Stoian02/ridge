@@ -2,11 +2,12 @@ class_name WaterTotalMeasurement
 extends Node
 ## Acceptance recorder, not production. Non-overlapping script CPU upper bound:
 ## controller + wave runtime/emitter/coordinator + flat animation + full mixed
-## effects/audio callbacks + water HUD. Nested queries are attribution ONLY.
+## water regions of effects/audio + water HUD. Also retains the whole mixed
+## callback upper bound for comparison; nested queries are attribution ONLY.
 ## Engine renderer/physics/audio worker cost is represented by frame/GPU timing.
 
 const TICK_HEADER := "process_frame,physics_tick,controller_usec,runtime_usec,emitter_usec,coordinator_usec,wave_query_usec,immersion,flooding,stalled,vertices,packets,x,y,z,velocity_x,velocity_y,velocity_z"
-const FRAME_HEADER := "process_frame,frame_usec,physics_ticks,controller_usec,runtime_usec,emitter_usec,coordinator_usec,effects_upper_usec,audio_upper_usec,hud_usec,flat_usec,total_upper_usec,wave_query_usec,gpu_ms,render_cpu_ms,draws,primitives"
+const FRAME_HEADER := "process_frame,frame_usec,physics_ticks,controller_usec,runtime_usec,emitter_usec,coordinator_usec,effects_upper_usec,audio_upper_usec,hud_usec,flat_usec,total_upper_usec,wave_query_usec,gpu_ms,render_cpu_ms,draws,primitives,effects_all_usec,audio_all_usec,total_mixed_upper_usec"
 var rig: DrivingRig
 var waves: WaterWaveTestGround
 var active := false
@@ -73,7 +74,7 @@ func _process(_delta: float) -> void:
 	var now := Time.get_ticks_usec()
 	if _last_usec != 0:
 		var row := PackedFloat64Array()
-		row.resize(17)
+		row.resize(20)
 		row[0] = Engine.get_process_frames()
 		row[1] = now - _last_usec
 		row[2] = _pending.size()
@@ -85,8 +86,8 @@ func _process(_delta: float) -> void:
 			for component in range(2, 6):
 				row[component + 1] += tick[component]
 			row[12] += tick[6]
-		row[7] = rig.effects.trace_usec
-		row[8] = rig.audio.trace_usec
+		row[7] = rig.effects.trace_water_usec
+		row[8] = rig.audio.trace_water_usec
 		row[9] = rig.water_status.trace_usec
 		row[10] = waves.course.trace_usec if waves.course.is_processing() else 0
 		for component in range(3, 11):
@@ -96,6 +97,9 @@ func _process(_delta: float) -> void:
 		row[14] = RenderingServer.viewport_get_measured_render_time_cpu(viewport)
 		row[15] = RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)
 		row[16] = RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)
+		row[17] = rig.effects.trace_usec
+		row[18] = rig.audio.trace_usec
+		row[19] = row[11] - row[7] - row[8] + row[17] + row[18]
 		frames.append(row)
 	_last_usec = now
 	_pending.clear()
@@ -123,7 +127,7 @@ static func write_csv(path: String, header: String, rows: Array[PackedFloat64Arr
 
 
 static func summarize(rows: Array[PackedFloat64Array]) -> Dictionary:
-	var result := {"frames": rows.size(), "cpu_scope": "total_script_upper_bound_including_mixed_dry_feedback"}
+	var result := {"frames": rows.size(), "cpu_scope": "water_script_regions_including_shared_wet_spray_and_mixed_tyre_audio"}
 	var frame_sum := 0.0
 	var tails := 0
 	var gpu_valid := not rows.is_empty()
@@ -136,10 +140,19 @@ static func summarize(rows: Array[PackedFloat64Array]) -> Dictionary:
 	result["gpu_valid"] = gpu_valid
 	var names := {1: "frame", 3: "controller", 4: "runtime", 5: "emitter", 6: "coordinator",
 		7: "effects_upper", 8: "audio_upper", 9: "hud", 10: "flat", 11: "total_upper", 12: "wave_query", 13: "gpu", 14: "render_cpu"}
+	var wave_work := PackedFloat64Array()
+	for row: PackedFloat64Array in rows:
+		wave_work.append((row[4] + row[5] + row[6] + row[12]) / 1000.0)
+	result["wave_work_p95_ms"] = WaterMeasurement.percentile(wave_work, 0.95)
+	result["wave_work_p99_ms"] = WaterMeasurement.percentile(wave_work, 0.99)
+	if not rows.is_empty() and rows[0].size() > 19:
+		names[17] = "effects_all"
+		names[18] = "audio_all"
+		names[19] = "total_mixed_upper"
 	for column: int in names:
 		var values := PackedFloat64Array()
 		for row: PackedFloat64Array in rows:
-			values.append(row[column] / (1.0 if column >= 13 else 1000.0))
+			values.append(row[column] / (1.0 if column in [13, 14] else 1000.0))
 		for fraction: float in [0.95, 0.99, 1.0]:
 			result["%s_p%d_ms" % [names[column], roundi(fraction * 100)]] = WaterMeasurement.percentile(values, fraction)
 	return result

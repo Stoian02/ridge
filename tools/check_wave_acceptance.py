@@ -3,7 +3,8 @@
 
 Usage: python3 tools/check_wave_acceptance.py <exported run directory>
 Exit 1: corrupt/incomplete evidence. Gate failures print FAIL, not parser failure.
-Whole mixed effects/audio callbacks make the script CPU figure an upper bound.
+Recorder v1 includes whole mixed effects/audio; v2 measures water regions with
+shared work conservatively and retains the original mixed upper bound separately.
 """
 import argparse
 import csv
@@ -52,7 +53,13 @@ def validate_case(directory, result):
         require(row["wave_query_usec"] <= row["controller_usec"], name + ": nested query exceeds controller")
         total = sum(row[key + "_usec"] for key in ("controller", "runtime", "emitter", "coordinator", "effects_upper", "audio_upper", "hud", "flat"))
         require(total == row["total_upper_usec"], name + ": overlapping/missing total")
-    for column in ("frame", "controller", "runtime", "emitter", "coordinator", "effects_upper", "audio_upper", "hud", "flat", "total_upper", "wave_query", "gpu", "render_cpu"):
+        if "total_mixed_upper_usec" in row:
+            mixed = total - row["effects_upper_usec"] - row["audio_upper_usec"] + row["effects_all_usec"] + row["audio_all_usec"]
+            require(mixed == row["total_mixed_upper_usec"] and mixed >= total, name + ": inconsistent mixed upper bound")
+    columns = ["frame", "controller", "runtime", "emitter", "coordinator", "effects_upper", "audio_upper", "hud", "flat", "total_upper", "wave_query", "gpu", "render_cpu"]
+    if "total_mixed_upper_usec" in frames[0]:
+        columns += ["effects_all", "audio_all", "total_mixed_upper"]
+    for column in columns:
         unit = "ms" if column in ("gpu", "render_cpu") else "usec"
         values = [row[column + "_" + unit] / (1 if unit == "ms" else 1000) for row in frames]
         for fraction in (.95, .99, 1):
@@ -63,6 +70,10 @@ def validate_case(directory, result):
     tails = sum(row["frame_usec"] > 33300 for row in frames)
     require(tails == result["over_33ms"], name + ": omitted tails")
     require(result["gpu_valid"] == all(row["gpu_ms"] > 0 for row in frames), name + ": GPU validity")
+    if "wave_work_p95_ms" in result:
+        wave_work = [sum(row[key + "_usec"] for key in ("runtime", "emitter", "coordinator", "wave_query")) / 1000 for row in frames]
+        for quantile in (95, 99):
+            require(math.isclose(percentile(wave_work, quantile / 100), result[f"wave_work_p{quantile}_ms"], abs_tol=.000001), name + ": wave work attribution")
     total_pass = result["total_upper_p95_ms"] <= 4 and result["total_upper_p99_ms"] <= 5
     frame_pass = fps >= 59 and result["frame_p95_ms"] <= 18.5 and result["frame_p99_ms"] <= 25
     print(f"{name}: total {result['total_upper_p95_ms']:.3f}/{result['total_upper_p99_ms']:.3f} ms p95/p99 "

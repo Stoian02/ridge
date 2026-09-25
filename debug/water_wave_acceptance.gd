@@ -41,7 +41,8 @@ func _ready() -> void:
 		"os": OS.get_name(), "display": DisplayServer.get_name(), "window": str(DisplayServer.window_get_size()),
 		"adapter": RenderingServer.get_video_adapter_name(), "physics_hz": Engine.physics_ticks_per_second,
 		"max_fps": Engine.max_fps, "start_unix": Time.get_unix_time_from_system(),
-		"feedback_scope": "conservative whole mixed effects/audio callbacks; no nested double counting"}
+		"feedback_scope": "water regions incl. shared wet spray/mixed tyre audio; whole mixed upper bound retained separately",
+		"recorder_version": 2}
 	_store(output + "/metadata.json", metadata)
 	print("WAVE_GATE metadata ", JSON.stringify(metadata))
 	var cars := PackedStringArray([str(options.car)])

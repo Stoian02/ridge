@@ -26,6 +26,9 @@ var players := {}
 var thumps_played := 0
 var trace_enabled := false
 var trace_usec := 0
+## Water reset/stall/mix/wash/entry regions. Includes the complete mixed tyre
+## calculation conservatively; dry engine/road player updates are separate.
+var trace_water_usec := 0
 var trace_loop_starts := 0
 
 ## StringName loop -> current linear volume.
@@ -80,13 +83,19 @@ func _process(delta: float) -> void:
 	if car == null or car.drivetrain == null:
 		return
 	var trace_started := Time.get_ticks_usec() if trace_enabled else 0
+	trace_water_usec = 0
 	if _water_reset_serial != car.water.reset_serial:
 		notify_reset()
+	if trace_enabled:
+		trace_water_usec += Time.get_ticks_usec() - trace_started
 	_impact_wait = maxf(0.0, _impact_wait - delta)
 	var engine := EngineSoundLogic.layers(car.drivetrain.rpm, car.input.throttle, car.drivetrain.is_shifting())
+	var water_started := Time.get_ticks_usec() if trace_enabled else 0
 	if car.water.state.stalled:
 		engine["low_volume"] = 0.0
 		engine["high_volume"] = 0.0
+	if trace_enabled:
+		trace_water_usec += Time.get_ticks_usec() - water_started
 	_set_loop(&"engine_low", engine["low_volume"], engine["low_pitch"], delta)
 	_set_loop(&"engine_high", engine["high_volume"], engine["high_pitch"], delta)
 
@@ -95,7 +104,10 @@ func _process(delta: float) -> void:
 		if wheel.in_contact:
 			var bottomed := ImpactLogic.is_bottomed_out(wheel.compression, wheel.stats.suspension_length)
 			hardest = maxf(hardest, ImpactLogic.strength(wheel.compression_speed, bottomed))
+	water_started = Time.get_ticks_usec() if trace_enabled else 0
 	var tyres := TyreSoundLogic.mix(effects.wheels)
+	if trace_enabled:
+		trace_water_usec += Time.get_ticks_usec() - water_started
 	var roll_pitch := ROLL_PITCH_BASE + ROLL_PITCH_RANGE * clampf(absf(car.forward_speed()) / ROLL_PITCH_SPEED, 0.0, 1.0)
 	_set_loop(&"road", tyres["road"], roll_pitch, delta)
 	_set_loop(&"gravel", tyres["gravel"], roll_pitch, delta)
@@ -103,6 +115,7 @@ func _process(delta: float) -> void:
 	_set_loop(&"snow", tyres["snow"], roll_pitch, delta)
 	_set_loop(&"rock", tyres["rock"], roll_pitch, delta)
 	_set_loop(&"skid", tyres["skid"], 1.0, delta)
+	water_started = Time.get_ticks_usec() if trace_enabled else 0
 	_set_loop(&"water_wash", effects.water_effects.wash_volume, 1.0, delta)
 	if effects.water_effects.entries != _water_entries:
 		_water_entries = effects.water_effects.entries
@@ -110,6 +123,8 @@ func _process(delta: float) -> void:
 			var entry: AudioStreamPlayer = players[&"water_entry"]
 			entry.volume_db = linear_to_db(WaterFeedback.ENTRY_MAX * effects.water_effects.entry_strength)
 			entry.play()
+	if trace_enabled:
+		trace_water_usec += Time.get_ticks_usec() - water_started
 
 	if hardest > 0.0 and _impact_wait <= 0.0:
 		var thump: AudioStreamPlayer = players[&"thump"]

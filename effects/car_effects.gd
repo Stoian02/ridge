@@ -16,6 +16,9 @@ var wheels: Array[Dictionary] = []
 var water_effects: WaterEffects
 var trace_enabled := false
 var trace_usec := 0
+## Water regions, including shared wet/dry spray submission; excludes dry-only
+## WheelMotion/surface-feel work. Whole callback remains available as an upper bound.
+var trace_water_usec := 0
 var _water_reset_serial := -1
 
 
@@ -37,9 +40,12 @@ func _process(delta: float) -> void:
 	if car == null:
 		return
 	var trace_started := Time.get_ticks_usec() if trace_enabled else 0
+	trace_water_usec = 0
 	if _water_reset_serial != car.water.reset_serial:
 		notify_reset()
 		_water_reset_serial = car.water.reset_serial
+	if trace_enabled:
+		trace_water_usec += Time.get_ticks_usec() - trace_started
 	var largest_slip := 0.0
 	for i in car.wheels.size():
 		var wheel := car.wheels[i]
@@ -55,6 +61,7 @@ func _process(delta: float) -> void:
 			var sliding: bool = motion["sliding"]
 			strength = SprayLogic.intensity(feel.spray, ground_speed, slip_speed, sliding)
 			sprays[i].global_transform = Transform3D(car.global_basis, wheel.contact_point + wheel.contact_normal * LIFT)
+		var water_started := Time.get_ticks_usec() if trace_enabled else 0
 		var wetness: float = car.water.wheel_wetness[i]
 		motion["water_wetness"] = wetness
 		largest_slip = maxf(largest_slip, absf(motion["slip_speed"]))
@@ -74,10 +81,16 @@ func _process(delta: float) -> void:
 			var position := Vector3(center.x, sample.surface_y + LIFT, center.z)
 			sprays[i].global_transform = Transform3D(car.global_basis, position)
 			sprays[i].update_water(feel, dry_strength, sample.color, splash, wetness, delta)
+			if trace_enabled:
+				trace_water_usec += Time.get_ticks_usec() - water_started
 		else:
+			if trace_enabled:
+				trace_water_usec += Time.get_ticks_usec() - water_started
 			sprays[i].update(feel, strength, delta)
+	var feedback_started := Time.get_ticks_usec() if trace_enabled else 0
 	water_effects.update(delta, largest_slip)
 	if trace_enabled:
+		trace_water_usec += Time.get_ticks_usec() - feedback_started
 		trace_usec = Time.get_ticks_usec() - trace_started
 
 

@@ -15,6 +15,11 @@ func before_each() -> void:
 func after_each() -> void:
 	Engine.physics_ticks_per_second = _rate
 	get_tree().paused = false
+	# Allow the audio thread's next mix block after the last stopped car. This
+	# is wall time, unlike the accelerated physics clock used by this suite.
+	var audio_deadline := Time.get_ticks_msec() + 200
+	while Time.get_ticks_msec() < audio_deadline:
+		await get_tree().process_frame
 	SaveSandbox.leave()
 
 
