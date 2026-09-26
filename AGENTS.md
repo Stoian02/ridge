@@ -1,5 +1,22 @@
 # Ridge — notes for coding agents
 
+**Latest owner design approval (2026-09-26): Coastal Highway, documentation only.**
+The owner deferred the phone hitch captures and explicitly continued with the
+Coastal Highway brainstorm, approving its route and design section by section.
+Read `docs/superpowers/specs/2026-09-26-m6b-coastal-highway-design.md`.
+The written spec is **awaiting owner review**; new numeric tuning, jump
+dimensions and the Coastal water allocation are proposals, not tested results.
+It is on **`m6b-coastal-design`**, a docs-only branch from `m6-hitch` at
+`c84bc29`. This is not the implementation branch or a merge of either water
+milestone. The design-only exception supersedes the earlier prohibition on
+starting Part B only for brainstorming/specification. No gameplay files or
+protected fixtures changed, and no game/phone tests ran for this document.
+Next: owner reviews the written spec, then write the implementation plan when
+authorized. Building the level, timed-level waves, M6A/M6W acceptance and the
+eventual `m6b-coastal-highway` branch from owner-merged master retain their
+separate approvals. Phone hitch work remains deferred, not closed; no budget
+waiver, merge or push. Shortcuts are reserved on paper only for a later pass.
+
 **Latest hitch investigation (2026-09-26):** owner requested the narrow
 `docs/notes/handover-codex-2026-09-26-hitch.md` investigation. Work is on
 **`m6-hitch`**, from committed handover `7a9fd64`; no merge/push. Read
