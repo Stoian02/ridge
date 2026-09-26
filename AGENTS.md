@@ -1,5 +1,22 @@
 # Ridge — notes for coding agents
 
+**Latest hitch investigation (2026-09-26):** owner requested the narrow
+`docs/notes/handover-codex-2026-09-26-hitch.md` investigation. Work is on
+**`m6-hitch`**, from committed handover `7a9fd64`; no merge/push. Read
+`docs/notes/codex-report-hitch.md`. This first pass is **offline re-analysis,
+not a fresh phone reproduction or hitch closure**; the phone was not detected
+and the owner was asked to reconnect it with Ridge closed. All 36 archived
+stall/sinking/full-flood transitions have frames <=18.494 ms; ±250 ms windows
+<=19.825 ms. Re-reading the actual September 24 trace confirms runnable-off-CPU
+delays for its specific 33.801/38.603 ms hitches. Those are not the September 25
+soak and do not explain the older untraced tails. Raw M6A CSVs additionally
+separate the 79.459 ms frame (4.181 ms controller) from a **67.294 ms frame
+(39.936 ms controller)**. Keep both; elapsed counters are not on-CPU attribution.
+Only offline tools/docs changed; 42 Python tests pass, no new Godot/phone run.
+Next: targeted waves-Off flooded/stalled reproduction with matched scheduling
+capture, then the specific M6W fixtures as needed. No tuning, wave/geometry
+changes, budget waiver, Coastal Highway or merge is authorized.
+
 **Latest verification handoff (2026-09-25):** the owner requested all remaining
 phone/GPU/lifecycle checks and the final review package. See
 `docs/notes/codex-report-m6w-waves.md` and `docs/notes/m6w-completion-data/README.md`.
