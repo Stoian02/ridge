@@ -484,3 +484,58 @@ absolute Coastal water allocation. The principal risks are all-car jump
 feasibility, long coastal sightline/sea cost, actual wet-line readability and
 new opt-in builders preserving existing geometry. Prototype and measure those
 before polish; exact tuning and star times follow actual driving, not estimates.
+
+---
+
+## 12. Reviewer questions for the owner (Claude, 2026-09-27)
+
+Four decisions worth making **before** an implementation plan, because each one
+is cheap now and expensive to discover at the end of a build. The owner has
+parked them deliberately: finish Milestone 6's outstanding work first, then
+return here. None of them disputes the approved design direction.
+
+### 12.1 The 3 s load budget looks unreachable as written
+
+§9 keeps "level build under 3 s". Rock Canyon is **2.1 km and builds in 3.9 s**
+on the owner's Xiaomi 13 — already after the build-speed refactor inlined the
+sampling path, with only engine-side node and collision creation left. Coastal
+is **3 km** plus a tunnel, stone bridge, gap jump, sea, waves, crossings,
+puddles and roughly 26 surface patches.
+
+So this level would start against a target its closest relative misses by 30% at
+two-thirds the length. Options, in the owner's gift: raise the budget for large
+levels; use the **deferral lever** recorded since Milestone 5 and still untried
+(Rock Canyon builds its 1500 m shelf, stones and boulders — about 1.45 s — before
+the countdown, though the player needs about 90 s to reach them); or make Coastal
+shorter. The spec discusses loading covers, which do not remove cost; deferral is
+a different idea and would help both this level and Rock Canyon.
+
+### 12.2 Four new subsystems in one milestone
+
+A true gap jump (the existing `TrailDef.jumps` are humps), a stone bridge
+builder, `RoadSurfacePatchDef` (which touches road tessellation *and* the
+threaded builder), and coastal water with sea and waves. Each is comparable in
+size to a Rock Canyon feature; together, at 3 km, the review surface at the end
+would be very large. Milestone 6 has already shown what a long unreviewed run
+costs.
+
+Suggested split, along the natural seam: **B1 = route, tunnel, jump, bridge**
+(the driving), **B2 = water, patches, sea** (the wetness). B1 alone is a
+playable level the owner can judge.
+
+### 12.3 Coastal's water ceiling defaults optimistically
+
+§9 correctly declines to assume a figure and asks the owner to set one, but
+suggests planning at 4 ms/5 ms meanwhile. The **flat Test Ground needed 6/7**.
+Coastal carries far more geometry plus open sea. Setting a number that is
+believed now is better than amending it under pressure later, as happened twice
+in M6W.
+
+### 12.4 The branch stack is four deep
+
+`m6b-coastal-design` ← `m6-hitch` ← `m6-water-waves` ← `m6a-water-physics` ←
+`master`, none merged. This design branch is documentation only, so it costs
+nothing; building Coastal on that foundation is the risk, since hitch work could
+still move M6A underneath it. The owner has playtested A and W and Claude has
+reviewed both. Merging them before building B — or consciously deciding not to —
+removes that risk.
