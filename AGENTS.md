@@ -5,14 +5,16 @@ Road, Muddy Valley, Frozen Pass, Rock Canyon) plus the Test Ground as Free
 Drive, three cars, water physics everywhere water appears, and wave prototyping
 on the Test Ground. The full suite is green. Nothing is in flight.
 
-**Next up: Coastal Highway**, the sixth level. Its design is approved in
-principle and written up in
-`docs/superpowers/specs/2026-09-26-m6b-coastal-highway-design.md`. **Read its
-§12 first** — four questions the owner parked for decision before an
-implementation plan: the 3 s load budget that Rock Canyon already misses at
-two-thirds the length, whether to split four new subsystems into two parts,
-Coastal's undecided water CPU ceiling, and how to sequence the work. Building
-starts from `master` on `m6b-coastal-highway` once those are settled.
+**In flight: Coastal Highway Part B1** on `m6b-coastal-highway`, handed to
+Codex in `docs/notes/handover-codex-2026-09-27-coastal-b1.md`. The design is
+`docs/superpowers/specs/2026-09-26-m6b-coastal-highway-design.md`; **read its
+§13 first**, the owner's decisions, which constrain the proposals in the rest of
+it. In short: **B1 is the driving** (route, tunnel, mandatory gap jump, stone
+bridge, surfaces, presentation) and **B2 is the water**, each with its own plan,
+review and phone acceptance; levels over 2 km get a **5 s build budget**, with
+deferral rather than another raise if it is exceeded; and water keeps the
+**6 ms p95 / 7 ms p99** ceiling, where exceeding it cuts features. The jump
+feasibility gate for all three cars comes before any scenery.
 
 ## Milestone 6, as merged
 
