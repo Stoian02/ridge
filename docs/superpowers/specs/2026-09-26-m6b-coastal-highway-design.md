@@ -539,3 +539,58 @@ nothing; building Coastal on that foundation is the risk, since hitch work could
 still move M6A underneath it. The owner has playtested A and W and Claude has
 reviewed both. Merging them before building B — or consciously deciding not to —
 removes that risk.
+
+---
+
+## 13. Owner decisions on §12 (2026-09-27)
+
+§12.4's branch stack is resolved: Milestones 1–6 are merged into `master` at
+`b075946`, the long-frame hitch is closed as platform behaviour, and Coastal
+Highway is built on `m6b-coastal-highway` from that master. The other three
+questions are now decided.
+
+### 13.1 Two parts, split by system
+
+**B1 — the driving:** route and curve, tunnel, the mandatory gap jump, the stone
+bridge, surfaces and shoulders, checkpoints, scatter and presentation. It ends
+as a playable 3 km level that can be driven, judged and phone-checked on its
+own. Surfaces may be authored dry; wet grip values can land with B1 as data
+without the water bodies that use them.
+
+**B2 — the water:** flooded asphalt dip, sandy crossing with current, puddles,
+local surface patches, sea and any wave presence the owner then approves.
+
+Each part gets its own implementation plan, its own review and its own phone
+acceptance. B2 does not begin before B1 is reviewed and merged. The jump
+feasibility gate (§4) belongs to B1 and still gates everything after it.
+
+### 13.2 Load budget: 5 s for levels over 2 km
+
+The 3 s budget stays for existing levels; **levels longer than 2 km get 5 s**,
+and Coastal is measured against that. The owner's reasoning, checked against the
+measured phase split, holds: Rock Canyon's 3.9 s on the phone includes
+**shelf 0.77 s and loose stones 0.51 s — 1.28 s of rock-specific work** that
+Coastal will not have.
+
+The remaining length-proportional phases (field 0.83, road 0.68, road_blend
+0.30, terrain 0.29, scatter 0.22 = 2.32 s at 2.1 km) scale to roughly **3.3 s at
+3 km**, before Coastal's own water bodies, sea, tunnel, bridge and jump. So 5 s
+is a real constraint rather than a blank cheque, and the estimate should be
+re-derived from the greybox rather than trusted.
+
+**If Coastal exceeds 5 s, the answer is deferral, not another raise.** Building
+only what the player can reach soon and the rest after the countdown remains
+untried, is recorded in `docs/notes/performance-m5.md`, and suits a linear 3 km
+coastal route better than any level so far.
+
+### 13.3 Water ceiling: 6 ms p95 / 7 ms p99
+
+Coastal adopts the figure proven achievable on the Test Ground, covering total
+water CPU per rendered frame — baseline water, waves if present, queries,
+emitters, uniform uploads and water-attributable feedback, summed across all
+physics ticks in the frame.
+
+**If Coastal exceeds it, water features get cut; the number is not raised a
+third time.** It has already moved from 4/5 to 6/7 once. The matched GPU
+increment limit of +0.50 ms p95 stands unless the owner amends it explicitly,
+and M6's existing unmet gates are not spare headroom for this level.
