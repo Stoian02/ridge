@@ -1,9 +1,10 @@
 # Ridge — notes for coding agents
 
-**State:** Milestones 1–6 are merged into `master`. Five timed levels (Rally
+**State:** Milestones 1–6 are merged into `master`. Four timed levels (Rally
 Road, Muddy Valley, Frozen Pass, Rock Canyon) plus the Test Ground as Free
 Drive, three cars, water physics everywhere water appears, and wave prototyping
-on the Test Ground. The full suite is green. Nothing is in flight.
+on the Test Ground. The merged suite was verified at 799 passing, one inherited
+pending, no `SCRIPT ERROR`; this is not a fresh Coastal test result.
 
 **In flight: Coastal Highway Part B1** on `m6b-coastal-highway`, handed to
 Codex in `docs/notes/handover-codex-2026-09-27-coastal-b1.md`. The design is
@@ -15,6 +16,15 @@ review and phone acceptance; levels over 2 km get a **5 s build budget**, with
 deferral rather than another raise if it is exceeded; and water keeps the
 **6 ms p95 / 7 ms p99** ceiling, where exceeding it cuts features. The jump
 feasibility gate for all three cars comes before any scenery.
+
+**B1 implementation plan (2026-09-27):**
+`docs/superpowers/plans/2026-09-27-m6b1-coastal-highway.md` is written and
+**awaiting owner review before building**. No gameplay changes or new Godot/
+phone runs were made for the plan. Its first delivery is only the dry route
+greybox and true gap: all three cars from the actual reset at 0%, 100% and the
+owner's usual TC, followed by an explicit owner-feel stop before structures or
+scenery. The usual TC percentage has been requested, not assumed. B2's local
+surface patches, water bodies, sea and any timed-level waves stay out of B1.
 
 ## Milestone 6, as merged
 

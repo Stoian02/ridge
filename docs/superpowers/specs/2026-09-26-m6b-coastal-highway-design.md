@@ -2,6 +2,18 @@
 
 2026-09-26. Written by Codex from the owner's section-by-section design approval.
 
+**Current authority (2026-09-27): §13 and the
+[B1 handover](../../notes/handover-codex-2026-09-27-coastal-b1.md) supersede
+the original status and undecided budgets below.** The design is approved;
+Milestone 6 is merged and its hitch closed. B1 is the dry driving level on
+`m6b-coastal-highway`; B2 is water, separately planned after B1 review/merge.
+Coastal has a 5 s phone-build limit and B2 a 6/7 ms total-water CPU ceiling,
+with deferral/feature reduction rather than further budget increases. The
+[B1 implementation plan](../plans/2026-09-27-m6b1-coastal-highway.md) now awaits
+owner review before construction. Sections 1–12 retain the original design and
+review history; their obsolete branch, hitch and acceptance statements are not
+instructions to undo the owner's later decisions.
+
 ## 1. Status and authority
 
 **The design direction is approved; this written spec is awaiting owner review.**
