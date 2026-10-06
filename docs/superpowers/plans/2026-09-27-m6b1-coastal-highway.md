@@ -1,6 +1,16 @@
 # M6B1 — Coastal Highway driving implementation plan
 
-2026-09-27. **Awaiting owner review. No implementation has started.**
+2026-09-27 plan; **owner approved, implementation started 2026-10-06**.
+
+Execution record: [first-delivery jump report](../../notes/m6b1-jump-feasibility.md).
+The owner confirmed 15–20% TC; test both endpoints plus 0% and 100%.
+Tasks 0–2 are implemented; Task 3's mechanical/PC checks passed and it is now
+**stopped for owner feel approval**. Final suite: 813 passing, one inherited
+pending, no script errors. Phone checks remain unmeasured.
+**Tasks 4–8 have not started.** The original task detail
+below remains the reviewed plan, not a claim that every acceptance check is done.
+Geometry iterations are recorded in the report rather than rewriting the
+initial proposals into apparent first-try successes.
 
 ## Authority, scope and delivery stops
 
@@ -462,8 +472,8 @@ only if required. No measured pass is inferred from the earlier 3.3 s estimate.
 
 ## Review checklist for this plan
 
-- [ ] Owner approves the B1 plan before code work.
-- [ ] Owner's usual traction-control percentage confirmed before closing Task 3.
+- [x] Owner approves the B1 plan before code work.
+- [x] Owner's usual traction-control percentage confirmed before closing Task 3.
 - [ ] Initial jump values and landing-width correction accepted as geometry
   prototype values, subject to all-car results, not guarantees.
 - [ ] Dry-preview boundary understood: water, sea and all local wet/soft patches
@@ -471,6 +481,6 @@ only if required. No measured pass is inferred from the earlier 3.3 s estimate.
 - [ ] Jump owner-feel stop, staged PC checks and separate B1 phone acceptance
   remain mandatory. No new budget or tuning exception is being requested.
 
-**Planning verification only:** source/read-only inspection and documentation
-checks. No game was launched, no benchmark/phone install was performed and no
-new test-suite result is claimed by this document.
+**Historical planning verification (2026-09-27):** source/read-only inspection
+only, with no game or phone run. Actual implementation checks from 2026-10-06
+are recorded separately in the first-delivery report linked above.

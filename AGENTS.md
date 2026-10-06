@@ -18,13 +18,22 @@ deferral rather than another raise if it is exceeded; and water keeps the
 feasibility gate for all three cars comes before any scenery.
 
 **B1 implementation plan (2026-09-27):**
-`docs/superpowers/plans/2026-09-27-m6b1-coastal-highway.md` is written and
-**awaiting owner review before building**. No gameplay changes or new Godot/
-phone runs were made for the plan. Its first delivery is only the dry route
-greybox and true gap: all three cars from the actual reset at 0%, 100% and the
-owner's usual TC, followed by an explicit owner-feel stop before structures or
-scenery. The usual TC percentage has been requested, not assumed. B2's local
-surface patches, water bodies, sea and any timed-level waves stay out of B1.
+`docs/superpowers/plans/2026-09-27-m6b1-coastal-highway.md` was approved by the
+owner; implementation started 2026-10-06. The owner confirmed usual TC of
+**15–20%**, so coverage includes **0%, 15%, 20% and 100%** for each car.
+The first delivery is the dry route greybox and true gap, with an explicit
+**owner-feel stop before structures or scenery**. See
+`docs/notes/m6b1-jump-feasibility.md` for current evidence and limitations.
+Launch `debug/coastal_playcheck.tscn` for the uncatalogued jump preview; it starts
+at the 730 m approach checkpoint, not the beginning of the full route.
+B2's local surface patches, water bodies, sea and timed-level waves stay out.
+Do not advance to Task 4 until the owner explicitly approves the jump's feel.
+First-delivery checks: **813 passing, one inherited pending, no script errors**;
+48 all-car jump cases and three normal-speed rendered PC smokes passed. The
+14 m gap has a longer 10° ramp; held-throttle Tuned Rally landing harshness is
+explicitly awaiting owner judgment. PC peak is 130 draws / about 212k primitives.
+The phone was unavailable; no phone budget acceptance is claimed. Implementation
+commits end at `203d2b7`; the report/evidence follow separately. No merge/push.
 
 ## Milestone 6, as merged
 
