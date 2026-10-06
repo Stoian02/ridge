@@ -26,6 +26,7 @@ var road_blend_builder: RoadBlendBuilder
 var rut_water_builder: RutWaterBuilder
 var tunnel_builder: TunnelBuilder
 var bridge_builder: BridgeBuilder
+var gap_builder: GapBuilder
 var rock_step_builder: RockStepBuilder
 var boulder_builder: BoulderBuilder
 var fallen_tree_builder: FallenTreeBuilder
@@ -68,6 +69,18 @@ func build() -> void:
 
 	var road: Path3D = $Road
 	sampler = RoadSampler.new(road.curve, trail.use_curve_banking, trail)
+	var gap_errors := trail.gap_validation_errors(sampler.length)
+	for gap: RoadGapDef in trail.road_gaps:
+		if gap == null:
+			continue
+		if not gap.validation_error(sampler.length).is_empty():
+			continue
+		var alignment := gap.alignment_error(sampler)
+		if not alignment.is_empty():
+			gap_errors.append(alignment)
+	if not gap_errors.is_empty():
+		push_error("Invalid road gaps: %s" % [gap_errors])
+		return
 	profile = RoadProfile.new(trail, sampler.length)
 	sampler.cache_build_samples(true)
 	profile.cache_build_samples(true)
@@ -105,6 +118,13 @@ func build() -> void:
 	generated.add_child(road_blend_builder)
 	road_blend_builder.build(sampler, profile, field, trail)
 	_lap(&"road_blend")
+	gap_builder = null
+	if not trail.road_gaps.is_empty():
+		gap_builder = GapBuilder.new()
+		gap_builder.name = "Gaps"
+		generated.add_child(gap_builder)
+		gap_builder.build(sampler, profile, field, trail)
+		_lap(&"gaps")
 
 	tunnel_builder = TunnelBuilder.new()
 	tunnel_builder.name = "Tunnels"

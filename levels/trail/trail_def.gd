@@ -24,6 +24,8 @@ extends Resource
 @export var road_view_distance: float = 0.0
 ## Opt-in earth join outside the shoulders; 0 keeps existing levels unchanged.
 @export var terrain_blend_width: float = 0.0
+## Actual missing spans with ramps and dry ravine cuts; empty preserves old roads.
+@export var road_gaps: Array[RoadGapDef] = []
 ## Ground-supported road sections which need not be redrawn into shadow maps.
 ## (start, length); receiving shadows and all collision stay enabled.
 @export var shadowless_sections: Array[Vector2] = []
@@ -199,3 +201,57 @@ func casts_shadow(from: float, to: float) -> bool:
 		if from >= section.x - 0.001 and to <= section.x + section.y + 0.001:
 			return false
 	return true
+
+
+func gap_at(distance: float) -> RoadGapDef:
+	for gap: RoadGapDef in road_gaps:
+		if gap.contains(distance):
+			return gap
+	return null
+
+
+## Fail closed before generating a partially supported or overlapping gap.
+func gap_validation_errors(road_length: float) -> PackedStringArray:
+	var errors := PackedStringArray()
+	for i in road_gaps.size():
+		var gap := road_gaps[i]
+		if gap == null:
+			errors.append("Null road gap")
+			continue
+		var problem := gap.validation_error(road_length)
+		if not problem.is_empty():
+			errors.append(problem)
+		if gap.cut_half_width < half_total_width() + terrain_blend_width + 4.0:
+			errors.append("Gap cut must extend beyond the shoulders and earth join")
+		for j in range(i):
+			var other := road_gaps[j]
+			if other != null and gap.takeoff_start < other.recovery_end and gap.recovery_end > other.takeoff_start:
+				errors.append("Road gap profiles overlap")
+		for bridge: BridgeDef in bridges:
+			if bridge.start < gap.recovery_end and bridge.end() + bridge.ramp_length > gap.takeoff_start:
+				errors.append("Road gap overlaps a log bridge")
+		for tunnel: TunnelDef in tunnels:
+			if tunnel.start - tunnel.portal_length < gap.recovery_end and tunnel.end() + tunnel.portal_length > gap.takeoff_start:
+				errors.append("Road gap overlaps a tunnel portal")
+		for stretch: SurfaceStretch in surface_stretches:
+			for at: float in stretch.surface_boundaries():
+				if at > gap.takeoff_start and at < gap.recovery_end:
+					errors.append("Surface transition inside a gap approach/landing")
+		var occupied: Array[Vector2] = []
+		for hump: Vector3 in jumps:
+			occupied.append(Vector2(hump.x - hump.z * 0.5, hump.x + hump.z * 0.5))
+		for ford: FordDef in fords:
+			var reach := ford.channel_width * 0.5 + ford.bank_run
+			occupied.append(Vector2(ford.distance - reach, ford.distance + reach))
+		for step: RockStepDef in rock_steps:
+			occupied.append(Vector2(step.distance - step.face_length, step.distance + step.ramp_length))
+		for rocks: BoulderFieldDef in boulder_fields:
+			occupied.append(Vector2(rocks.start, rocks.end()))
+		for stones: TalusDef in talus:
+			occupied.append(Vector2(stones.start, stones.end()))
+		for tree: FallenTreeDef in fallen_trees:
+			occupied.append(Vector2(tree.distance - tree.length, tree.distance + tree.length))
+		for span: Vector2 in occupied:
+			if span.x < gap.recovery_end and span.y > gap.takeoff_start:
+				errors.append("Road gap overlaps an obstacle or another road profile")
+	return errors

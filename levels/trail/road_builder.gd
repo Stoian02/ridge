@@ -152,7 +152,7 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 	var skip_rows := PackedByteArray()
 	for row in distances.size() - 1:
 		var midpoint := (distances[row] + distances[row + 1]) * 0.5
-		skip_rows.append(1 if profile.on_bridge(midpoint) else 0)
+		skip_rows.append(1 if profile.omits_road(midpoint) else 0)
 		var stretch := profile.stretch_at(midpoint)
 		var road: SurfaceDef = stretch.surface_at(midpoint) if stretch != null else def.base_surface
 		var shoulder: SurfaceDef = stretch.surface_at(midpoint) if stretch != null and stretch.affects_shoulders else def.shoulder_surface
@@ -343,7 +343,7 @@ func _add_chunk(sampler: RoadSampler, profile: RoadProfile, def: TrailDef, stati
 		surfaces.append(def.shoulder_surface)
 	for row in distances.size() - 1:
 		var midpoint := (distances[row] + distances[row + 1]) * 0.5
-		if profile.on_bridge(midpoint):
+		if profile.omits_road(midpoint):
 			row_surfaces.append(null)
 			shoulder_surfaces.append(null)
 			continue

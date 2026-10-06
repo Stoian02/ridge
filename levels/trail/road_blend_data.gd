@@ -98,6 +98,8 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 				normals.append(ups[row].slerp(ground_normal, blend))
 				colors.append(shoulder_colors[row].lerp(ground_color, blend))
 		for row in count - 1:
+			if surface_ids[row] < 0:
+				continue
 			if reaches[row] < 0.001 and reaches[row + 1] < 0.001:
 				continue
 			var collision := faces[surface_ids[row]]

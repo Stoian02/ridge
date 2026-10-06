@@ -10,6 +10,32 @@ const FORD_BANK := 4.0
 const FORD_TAPER := 8.0
 
 
+## Cut the entire grid-corner footprint, not just centre samples: neither
+## heightmap diagonal may create an invisible ledge under the missing road.
+## Gaps require a straight alignment; rotated/graded/banked approaches are OK.
+static func apply_road_gaps(field: TerrainField, sampler: RoadSampler, trail: TrailDef,
+		profile: RoadProfile) -> void:
+	for gap: RoadGapDef in trail.road_gaps:
+		var start := sampler.position(gap.takeoff_end)
+		var end := sampler.position(gap.landing_start)
+		var forward := Vector2(end.x - start.x, end.z - start.z).normalized()
+		var across := Vector2(-forward.y, forward.x)
+		var span := Vector2(end.x - start.x, end.z - start.z).length()
+		var floor_y := gap.floor_height(sampler, profile)
+		var padding := field.spacing * sqrt(2.0) + 0.1
+		var heights := field.heights
+		for row in field.rows:
+			var dz := field.origin.y + row * field.spacing - start.z
+			for column in field.columns:
+				var dx := field.origin.x + column * field.spacing - start.x
+				var along := dx * forward.x + dz * forward.y
+				var lateral := absf(dx * across.x + dz * across.y)
+				if along >= -padding and along <= span + padding and lateral <= gap.cut_half_width + padding:
+					var index := row * field.columns + column
+					heights[index] = minf(heights[index], floor_y)
+		field.heights = heights
+
+
 ## Clear heightmap corners under gravel, plus opt-in grounded shoulder joins.
 ## Smoothed terrain must not poke through either the twisting bank or shoulders.
 ## Both possible heightmap diagonals remain below the visible road. Other road
@@ -19,7 +45,7 @@ static func apply_road_clearance(field: TerrainField, sampler: RoadSampler, trai
 	var has_gravel := false
 	for talus: TalusDef in trail.talus:
 		has_gravel = has_gravel or talus.gravel_bed
-	if not has_gravel and trail.terrain_blend_width <= 0.0:
+	if not has_gravel and trail.terrain_blend_width <= 0.0 and trail.road_gaps.is_empty():
 		return
 	var heights := field.heights
 	var origin := field.origin
@@ -34,18 +60,22 @@ static func apply_road_clearance(field: TerrainField, sampler: RoadSampler, trai
 	for row in rows.size() - 1:
 		var midpoint := (rows[row] + rows[row + 1]) * 0.5
 		var gravel := profile.gravel_at(midpoint)
-		if not gravel and RoadBlendBuilder.width_at(trail, midpoint) <= 0.0:
+		var full_road := gravel
+		for gap: RoadGapDef in trail.road_gaps:
+			if midpoint >= gap.takeoff_start and midpoint <= gap.recovery_end and not gap.contains(midpoint):
+				full_road = true
+		if not full_road and RoadBlendBuilder.width_at(trail, midpoint) <= 0.0:
 			before.clear()
 			continue
 		# Shoulder-only clearance needs four vertices, not the full damaged road.
-		var selected: Array[Vector2] = stations if gravel else shoulders
+		var selected: Array[Vector2] = stations if full_road else shoulders
 		if before.size() != selected.size():
 			before.clear()
 		if before.is_empty():
 			before = _road_row(sampler, profile, selected, rows[row])
 		var after := _road_row(sampler, profile, selected, rows[row + 1])
 		for column in selected.size() - 1:
-			if not gravel and column == 1:
+			if not full_road and column == 1:
 				continue
 			if is_equal_approx(selected[column].x, selected[column + 1].x):
 				continue

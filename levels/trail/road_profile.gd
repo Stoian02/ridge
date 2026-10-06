@@ -86,6 +86,8 @@ func _init(trail_def: TrailDef, length: float) -> void:
 			ranges.append(Vector2(end - stretch.blend_length, end + stretch.blend_length))
 	for bridge: BridgeDef in def.bridges:
 		ranges.append(Vector2(bridge.start, bridge.end() + bridge.ramp_length))
+	for gap: RoadGapDef in def.road_gaps:
+		ranges.append(Vector2(gap.takeoff_start, gap.recovery_end))
 	for roller: Vector3 in def.rollers:
 		ranges.append(Vector2(roller.x - roller.z * 0.5, roller.x + roller.z * 0.5))
 	for step: RockStepDef in def.rock_steps:
@@ -126,6 +128,8 @@ func longitudinal_height(distance: float) -> float:
 		return _longitudinal[distance]
 	var value := undulation(distance) + local_undulation(distance) + jump_height(distance) + bridge_height(distance) \
 			+ roller_height(distance) + ford_height(distance)
+	for gap: RoadGapDef in def.road_gaps:
+		value += gap.height_offset(distance)
 	if _building:
 		_longitudinal[distance] = value
 	return value
@@ -226,6 +230,11 @@ func on_bridge(distance: float) -> bool:
 	return false
 
 
+## Omission is independent of the authored route surface (stone is not logs).
+func omits_road(distance: float) -> bool:
+	return on_bridge(distance) or def.gap_at(distance) != null
+
+
 func undulation(distance: float) -> float:
 	var waves := def.undulation_wavelengths
 	return def.undulation_amplitude * 0.5 * (sin(TAU * distance / waves.x + _phases.x) \
@@ -322,6 +331,10 @@ func step_height(distance: float, lateral: float) -> float:
 ## edge in the road mesh rather than a slope.
 func exact_rows() -> PackedFloat32Array:
 	var rows := surface_boundaries()
+	for gap: RoadGapDef in def.road_gaps:
+		for at: float in gap.boundaries():
+			if at > 0.0 and at < road_length and not rows.has(at):
+				rows.append(at)
 	for field: TalusDef in def.talus:
 		if not field.gravel_bed:
 			continue

@@ -108,10 +108,11 @@ static func generate(sampler: RoadSampler, trail: TrailDef, terrain: TerrainDef,
 	TrailEarthworks.apply_fords(field, sampler, trail, road_profile)
 	TrailEarthworks.apply_road_damage(field, sampler, trail, road_profile)
 	TrailEarthworks.apply_road_clearance(field, sampler, trail, road_profile)
+	TrailEarthworks.apply_road_gaps(field, sampler, trail, road_profile)
 	lap = field._lap(&"earthworks", lap)
 	if not trail.tunnels.is_empty() or not trail.bridges.is_empty() or not trail.fords.is_empty() \
 			or not trail.damage_sections.is_empty() or not trail.cross_ruts.is_empty() or not trail.talus.is_empty() \
-			or trail.terrain_blend_width > 0.0:
+			or trail.terrain_blend_width > 0.0 or not trail.road_gaps.is_empty():
 		field.lowest_height = INF
 		for height: float in field.heights:
 			field.lowest_height = minf(field.lowest_height, height)
