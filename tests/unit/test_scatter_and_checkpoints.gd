@@ -57,10 +57,13 @@ func test_zero_spacing_disables_a_kind_and_rebuild_clears_counts() -> void:
 	scatter.pine_spacing = 0.0
 	scatter.rock_spacing = 0.0
 	scatter.broadleaf_spacing = 0.0
+	scatter.post_spacing = 0.0
 	builder.build(field, sampler, profile, trail, scatter)
 	assert_eq(builder.pine_count, 0)
 	assert_eq(builder.rock_count, 0)
 	assert_eq(builder.broadleaf_count, 0)
+	assert_eq(builder.post_count, 0)
+	assert_true(builder.post_transforms.is_empty())
 	assert_eq(builder.get_node("RockCollision").get_child_count(), 0)
 
 

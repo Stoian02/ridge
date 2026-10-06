@@ -117,6 +117,8 @@ func _scatter(field: TerrainField, def: ScatterDef, spacing: float, scale_range:
 func _posts(field: TerrainField, sampler: RoadSampler, profile: RoadProfile, trail: TrailDef,
 		def: ScatterDef) -> Array[Transform3D]:
 	var transforms: Array[Transform3D] = []
+	if def.post_spacing <= 0.0:
+		return transforms
 	var distance := def.post_spacing * 0.5
 	while distance < sampler.length:
 		if profile.on_bridge(distance) or trail.tunnels.any(func(t: TunnelDef) -> bool: return t.contains(distance)):
