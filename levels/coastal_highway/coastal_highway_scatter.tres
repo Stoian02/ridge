@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ScatterDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://levels/trail/scatter_def.gd" id="1_scatter"]
+
+[resource]
+script = ExtResource("1_scatter")
+pine_spacing = 0.0
+broadleaf_spacing = 0.0
+rock_spacing = 0.0
+post_spacing = 0.0
+seed = 71
