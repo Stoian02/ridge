@@ -31,6 +31,27 @@ func test_preview_preserves_surface_split_and_has_no_water_or_scenery() -> void:
 		assert_eq(stretch.surface.id, &"dirt", "sand is explicitly a placeholder at this gate")
 
 
+func test_owner_bridge_revision_is_longer_and_more_arched_without_changing_defaults() -> void:
+	var bridge: StoneBridgeDef = TRAIL.stone_bridges[0]
+	assert_eq(bridge.start, 2054.0)
+	assert_eq(bridge.length, 20.0)
+	assert_eq(bridge.end(), 2074.0)
+	assert_eq(bridge.start + bridge.length * 0.5, 2064.0, "same channel centre")
+	assert_eq(bridge.clear_width, 7.0)
+	assert_eq(bridge.crest, 0.3)
+	assert_eq(bridge.arch_rise, 4.5)
+	assert_eq(bridge.channel_depth, 6.0)
+	assert_eq(bridge.height_offset(bridge.start), 0.0)
+	assert_eq(bridge.height_offset(bridge.end()), 0.0)
+	assert_almost_eq(bridge.height_offset(2064.0), 0.3, 0.000001)
+	assert_lt(bridge.height_offset(bridge.start + 0.001) / 0.001, 0.0001)
+	assert_lt(bridge.height_offset(bridge.end() - 0.001) / 0.001, 0.0001)
+	var defaults := StoneBridgeDef.new()
+	assert_eq(defaults.length, 18.0, "revision is Coastal data, not a shared default change")
+	assert_eq(defaults.crest, 0.15)
+	assert_eq(defaults.arch_rise, 3.5)
+
+
 func test_gap_reset_runup_landing_width_and_recovery_are_unobstructed() -> void:
 	var sampler := RoadSampler.new(CURVE, false, TRAIL)
 	assert_true(TRAIL.gap_validation_errors(sampler.length).is_empty())

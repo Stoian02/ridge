@@ -93,6 +93,40 @@ func test_all_cars_reach_jump_through_tunnel_from_the_real_course_start() -> voi
 		await wait_process_frames(3)
 
 
+func test_revised_bridge_has_flush_support_at_new_ends_and_an_open_taller_arch() -> void:
+	var level := _level(CARS[0])
+	await wait_physics_frames(2)
+	var sampler := level.trail.sampler
+	var profile := level.trail.profile
+	var bridge: StoneBridgeDef = level.trail.trail.stone_bridges[0]
+	var space := level.get_world_3d().direct_space_state
+	for at: float in [2053.99, 2054.01, 2057.0, 2060.0, 2064.0, 2071.0, 2073.99, 2074.01]:
+		for lateral: float in [-3.0, 0.0, 3.0]:
+			var p := sampler.surface_point(at, lateral, profile)
+			var query := PhysicsRayQueryParameters3D.create(p + Vector3.UP * 0.3, p - Vector3.UP * 0.3)
+			var hit := space.intersect_ray(query)
+			assert_false(hit.is_empty(), "new span support %.2f / %.1f" % [at, lateral])
+			if hit.is_empty():
+				continue
+			assert_lt(hit.position.distance_to(p), 0.002, "visible and physical deck match")
+			assert_eq((hit.collider.get_meta(SurfaceLookup.META_KEY) as SurfaceDef).id, &"asphalt")
+			query.exclude = [hit.rid]
+			assert_true(space.intersect_ray(query).is_empty(), "no duplicate terrain/road support")
+	var centre := sampler.position(bridge.start + bridge.length * 0.5)
+	var across := sampler.right(bridge.start + bridge.length * 0.5)
+	var passage := centre - Vector3.UP * 3.0
+	assert_true(space.intersect_ray(PhysicsRayQueryParameters3D.create(
+		passage - across * 18.0, passage + across * 18.0)).is_empty(), "arch is physically open")
+	var ceiling := space.intersect_ray(PhysicsRayQueryParameters3D.create(passage, centre))
+	assert_false(ceiling.is_empty())
+	if not ceiling.is_empty():
+		assert_almost_eq(ceiling.position.y, centre.y - bridge.crown_thickness, 0.003)
+	var floor_hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(passage, passage - Vector3.UP * 5.0))
+	assert_false(floor_hit.is_empty())
+	if not floor_hit.is_empty():
+		assert_almost_eq(floor_hit.position.y, centre.y - bridge.channel_depth, 0.003)
+
+
 func test_all_cars_cross_the_stone_bridge_slowly_and_at_road_speed() -> void:
 	for car_def: CarDef in CARS:
 		var level := _level(car_def)

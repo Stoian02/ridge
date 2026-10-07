@@ -9,6 +9,11 @@
 
 [sub_resource type="Resource" id="OutletBridge"]
 script = ExtResource("6_stone")
+start = 2054.0
+length = 20.0
+crest = 0.3
+arch_rise = 4.5
+channel_depth = 6.0
 
 [sub_resource type="Resource" id="HeadlandTunnel"]
 script = ExtResource("5_tunnel")
