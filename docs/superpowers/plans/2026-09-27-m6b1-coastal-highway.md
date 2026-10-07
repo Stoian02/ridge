@@ -797,21 +797,21 @@ available. Before installing, build a fresh APK, record source and APK hashes,
 confirm the owner's game is closed, preserve progress and consume only the
 specific debug flag. Never use an old `install` artifact as a fresh build.
 
-- [ ] **Build <5 s on the Xiaomi 13**, with native resource loading, instantiate/
+- [x] **Build <5 s on the Xiaomi 13**, with native resource loading, instantiate/
   ready, `TrailLevel.build_seconds`, each phase, loading-cover duration and
   first interactive frame reported separately. Retain a cold launch and at
   least three repeated loads; do not report only the fastest result or subtract
   expensive phases from the total. No change to old levels' acceptance records.
-- [ ] **<300k submitted primitives, <150 draw calls**, counting shadow passes,
+- [x] **<300k submitted primitives, <150 draw calls**, counting shadow passes,
   at opening, tunnel exit/jump, landing, descent hairpins, cove/bridge and finish.
   Report every worst view; visibility changes cannot hide required road support.
-- [ ] **60 FPS target**, average >=59, whole-frame p95 <=18.5 ms and p99 <=25 ms;
+- [x] **60 FPS target**, average >=59, whole-frame p95 <=18.5 ms and p99 <=25 ms;
   retain maxima and all >33.3 ms intervals with start/warmed classification.
   Use normal-speed, thermally warmed runs, repeated/balanced views, live all-car
   driving and a five-minute warmed scene/drive soak. New repeatable Coastal
   work spikes are investigated; don't reopen M6's closed case merely because
   another measurement-start platform tail exists.
-- [ ] B1's Coastal `WaterWorld` stays empty and no wave runtime is instantiated.
+- [x] B1's Coastal `WaterWorld` stays empty and no wave runtime is instantiated.
   Record any inherited empty-world callback overhead separately. Do not use
   the future water allowance to justify B1 costs, and do not claim B2 will fit
   before it is built/measured. B2's agreed **6/7 ms CPU** and **+0.50 ms GPU**
@@ -847,7 +847,7 @@ only if required. No measured pass is inferred from the earlier 3.3 s estimate.
 
 ## Task 8 — whole-track playtest, scoring and final review package
 
-- [ ] Complete all three cars through the entire B1 course using normal inputs;
+- [x] Complete all three cars through the entire B1 course using normal inputs;
   verify every checkpoint, manual/automatic Reset, restart, car change, finish,
   pause and return-to-menu. Test failed jump bypasses after final scenery.
 - [ ] Let the owner judge technicality/flow and collect actual run times. Leave
@@ -860,7 +860,7 @@ only if required. No measured pass is inferred from the earlier 3.3 s estimate.
   old IDs, stars, unlock rules or owner progress. Add/update catalog-count tests
   explicitly for the new entry, without changing geometry or balance fixtures.
   Note that B2 may require another measured star-time decision.
-- [ ] Run `./run_tests.sh unit`, affected scenarios during development and final
+- [x] Run `./run_tests.sh unit`, affected scenarios during development and final
   `./run_tests.sh all` on the delivered source, no `SCRIPT ERROR`, exit 0.
   Retain any existing pending test with its actual reason; don't add a pending
   mandatory jump test or rerecord protected fixture files. New Coastal fixtures
@@ -868,14 +868,44 @@ only if required. No measured pass is inferred from the earlier 3.3 s estimate.
 - [ ] Verify the tested Android artifact matches source; final B1 phone check
   and owner playtest, saves preserved, no leftover one-shot flags. Stop all
   automation while they drive. Device-unavailable checks stay plainly pending.
-- [ ] Finish `docs/notes/codex-report-m6b1-coastal.md`: per-feature commits,
+- [x] Finish `docs/notes/codex-report-m6b1-coastal.md`: per-feature commits,
   owner checkpoints, jump matrix, before/after layout/tuning, all load phases,
   rendered view/frame distributions, failed attempts, reproducible commands,
   evidence hashes, suite outcome and explicit B2 omissions.
-- [ ] Update AGENTS with delivered status and remaining decisions. Stop for
+- [x] Update AGENTS with delivered status and remaining decisions. Stop for
   Claude/owner review. No B2 work, merge or push, even if all B1 checks pass.
 
 ## Review checklist for this plan
+
+**October 7 owner amendment:** keep Coastal unscored until B2's water is
+implemented and timed. Task 8's permitted no-score preview path is now chosen
+explicitly; catalog admission and star thresholds are not required for B1.
+No old progression or save changes follow from that decision.
+
+**Tasks 7–8 execution:** presentation was approved; the owner connected the
+phone. `fe8848c` adds all-car real start-to-finish input driving and lifecycle
+checks; `caa3d8f` adds explicit load/view/drive/soak phone capture and frame-schema
+tests. The first APK exposed an excluded `tests/scenarios/TrailDriver` dependency:
+load/views produced diagnostics, but full driving could not start and the
+artifact logged script errors. It is retained as a failure, not accepted.
+`b8b182e` relocates the unchanged helper and its UID to `debug/`, adds a packaging
+regression check and passes all 726 unit tests. The initial complete desktop
+suite had 842 passing/one pending. Final source `b8b182e` has **843 passing,
+one inherited pending, 630,382 assertions, 707.095 s, exit 0, no script errors**.
+Complete numerical results, failures, commands and remaining review gates are
+maintained in `docs/notes/codex-report-m6b1-coastal.md`.
+
+Final Xiaomi run on `b8b182e`: four quick loads, two balanced passes of eight
+views, all three complete drives and a five-minute warmed static-scene soak.
+All functional and numerical gates pass; **59,417 rendered frame intervals,
+zero >33.3 ms**, no script/engine errors, save checksum unchanged. Do not quote
+only the quick loads: warm reloads after full drives reached **4.253 s through
+ready / 4.378 s harness cover**. Peak **145 draws / 238,954 primitives**;
+live-drive p95 up to 17.698 ms, p99 up to 18.310 ms. No deferred-build change
+or budget increase. Manual touchscreen/whole-route owner feedback and final
+review remain open; lifecycle routing/reset correctness is automated evidence,
+not a substitute for that feedback. Scoring/catalog tasks above follow the
+explicit B2 deferral. No B2 implementation, merge or push.
 
 - [x] Owner approves the B1 plan before code work.
 - [x] Owner's usual traction-control percentage confirmed before closing Task 3.

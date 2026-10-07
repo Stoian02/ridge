@@ -31,8 +31,9 @@ B2's local surface patches, water bodies, sea and timed-level waves stay out.
 Task 4 (tunnel and independent stone bridge) is implemented and PC-verified.
 Preserve the accepted jump geometry and rerun its gate after
 structure/terrain changes. Task 5 (dry sand and transitions) is owner-approved;
-Task 6 (land/presentation) is PC-verified and awaits owner feedback. Whole-route
-acceptance, scoring and phone gates remain outstanding.
+Task 6 (land/presentation) is owner-approved. Whole-route automated and phone
+gates now pass; final owner phone feedback/review remain. Scoring is explicitly
+deferred to B2; see the report below.
 October 6 first delivery: 813 passing, one inherited pending, no script errors.
 **October 7 revision (`0efa994`):** owner requested more airtime and clarified
 they lift and balance in flight. Gap is now **18 m, landing 2 m below the lip,
@@ -99,7 +100,29 @@ peak 141 draws / 236,996 primitives leaves only nine desktop draw calls of
 margin, not B2 headroom. Full regression on `69f45c7`: **839 passing, one
 inherited pending, no script errors, exit 0** (655.866 s). See the plan's Task 6
 execution record and evidence package. Phone absent over USB; no phone claim.
-Tasks 7–8, owner presentation feedback, scoring and B1 acceptance remain open.
+The owner subsequently approved presentation and connected the phone for
+Tasks 7–8. Current acceptance source is `b8b182e` (`fe8848c` whole-route checks,
+`caa3d8f` recorder, then Android helper packaging correction).
+`debug/coastal_acceptance.tscn` adds save-free loads/views/drive/soak modes with
+a one-shot `user://coastal_acceptance` JSON flag. Historical `coastal_playcheck`
+smoke behavior is unchanged. The new whole-route driver crosses every real
+gate with ordinary controls; initial all-car check passes without resets.
+The first phone artifact produced load/view diagnostics but emitted script
+errors because `TrailDriver` was excluded under tests/. It was not accepted.
+The unchanged helper/UID now lives under debug/. Final full regression on
+`b8b182e`: **843 passing, one inherited pending, no script errors, exit 0**
+(707.095 s); all 726 unit tests also pass separately. Final Xiaomi checks pass:
+all three full drives cross every gate without resets; balanced views and a
+five-minute soak hold 60 fps, with no >33.3 ms frames in 59,417 samples.
+Phone peak **145 draws / 238,954 primitives**. Worst load is the post-drive
+reload, **4.253 s through ready / 4.378 s harness cover**, not just the quicker
+2.6–2.8 s rapid load sequence. No deferral or budget raise. Five draw calls and
+0.747 s build margin are **not promised B2 headroom**. Installed APK matches
+tested source, save hash unchanged, automation flags consumed.
+See `docs/notes/codex-report-m6b1-coastal.md` for
+exact scope, retained failures and evidence. The owner explicitly chose to keep B1
+unscored until B2 on October 7; no catalog entry or invented star times.
+Owner whole-track phone feedback/review remain open; no B2, merge or push.
 
 ## Milestone 6, as merged
 

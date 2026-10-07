@@ -1,8 +1,59 @@
 # Coastal B1 staged implementation evidence
 
-See [the checkpoint report](../m6b1-jump-feasibility.md) for scope, criteria,
-failures and pending owner/phone acceptance. This directory is ignored by the
+See [the final B1 report](../codex-report-m6b1-coastal.md) and
+[the original jump checkpoint report](../m6b1-jump-feasibility.md) for scope,
+criteria, failures and owner acceptance. This directory is ignored by the
 Godot importer; none of its evidence becomes a game asset.
+
+## October 7 — whole-route and phone acceptance (Tasks 7–8)
+
+Final runtime source **`b8b182e`**, after `fe8848c` ordinary-input whole-route
+checks and `caa3d8f` recorder. The owner approved presentation and explicitly
+deferred scoring/catalog admission to B2. Geometry/car/surface tuning is
+unchanged; B2 water, sea and waves remain absent. No merge/push.
+
+`acceptance-2026-10-07.tar.gz` contains `package/`:
+
+- `phone-r2/`: final artifact/source/installed-APK/save hashes and per-mode
+  `results.tar`, process-filtered logs, thermal/battery snapshots. Modes are
+  loads, balanced views, full all-car driving, five-minute soak. Each tar keeps
+  only its own cases/metadata/completion, not duplicate earlier-case files.
+- `phone/`: the initial **failed** Android artifact. The driver was excluded
+  under tests/, causing compile errors and preventing the drive. Numeric load/
+  view diagnostics and logs are retained; redundant initial PNGs are omitted
+  from the package, but remain in the original ignored runs directory.
+- `phone-install-failed*`: transient ADB disconnect before any case in the first
+  corrected-install attempt. It is not a gameplay/performance failure.
+- `pc-drive/`, `pc-loads/`, focused/full logs: desktop verification, including
+  the normal-speed final 4x4 complete route. `full-suite.log` is the initial
+  842-pass result; **`final-full-suite.log`** is the delivered-source result.
+- `analyze.py`, `independent-csv-audit.txt`, `repeat-phone.sh`: independent raw
+  CSV recomputation and the exact phone runner. The runner's local output path
+  should be changed to a fresh directory for a new review run.
+
+Final suite: **843 passing, one inherited pending, 630,382 assertions,
+141 scripts, 707.095 s, exit 0, no SCRIPT ERROR/ERROR**. Unit: 726 passing.
+Final phone: all three cars finish through every gate without resets; 59,417
+frames across views/drives/soak with zero >33.3 ms intervals. Peak **145 draws /
+238,954 primitives**. Live p95 <=17.698 ms; p99 <=18.310 ms. Worst **post-drive**
+load is **4.253 s through ready / 4.378 s cover**, not only the quicker 2.6–2.8 s
+repeat sequence. All measured B1 gates pass; owner final playtest/review remain.
+
+`acceptance-source.sha256` is now the current manifest. Verify historical ones
+only at their recorded commits; the driver relocation changes its old path.
+The final APK's SHA-256 is
+`d413f44239382bb241c6fee3f1de36edfd942121b2e888bbe0e7b51602e5cda5`, matching the
+installed file. Save checksum before/after is identical, flags consumed.
+
+```sh
+sha256sum -c docs/notes/m6b1-jump-data/acceptance-source.sha256
+sha256sum -c docs/notes/m6b1-jump-data/SHA256SUMS
+# Extract into a fresh directory, then from its parent:
+python3 package/analyze.py
+```
+
+The report includes exact phone/desktop repeat commands and every load phase.
+No failed run was converted to a pass by dropping a tail or raising a limit.
 
 ## October 7 — coastal land and presentation (Task 6)
 
@@ -21,7 +72,7 @@ unmatched join colour and a camera-clipped arc; the corrections are included
 in final source, not hidden by deleting the original evidence. The first
 test-file parse failure returned exit 0 from GUT and is **not a pass**.
 
-`presentation-source.sha256` is the **current** source manifest. Earlier
+`presentation-source.sha256` pins the **Task 6** source. Earlier
 manifests below describe their own revisions; verify those only in separate
 worktrees at the stated commits. All car/surface resources and protected tests
 are unchanged from Task 5, including its six already-approved grip additions.
