@@ -16,13 +16,111 @@ stress observations, **not** clean-landing acceptance. Three normal-speed PC
 smokes passed. Fresh full regression: **814 passing, one inherited pending,
 no script errors**, exit 0. Phone checks remain unmeasured. The report preserves
 the changed test scope and rejected geometries.
-**Task 4 is implemented and PC-verified; Tasks 5–8 have not started.**
+**Task 4 is owner-approved; Task 5 is implemented and PC-verified.
+Tasks 6–8 have not started.**
 Initial structure regression: 823 passing, one inherited pending, no script errors.
 The owner's subsequent bridge-only refinement is recorded immediately below.
 The original task detail
 below remains the reviewed plan, not a claim that every acceptance check is done.
 Geometry iterations are recorded in the report rather than rewriting the
 initial proposals into apparent first-try successes.
+
+## Task 5 execution record — 2026-10-07
+
+The owner approved the revised bridge and asked to continue. This pass is the
+approved **dry surfaces** task, not scenery, B2 water or whole-milestone acceptance.
+
+- New `coastal_sand`, `soft_sand`, `wet_asphalt` resources use the approved §5
+  values exactly. Six grip-table pairs are additive; a new regression pins all
+  twenty existing pairs. Existing surface resources and car files are untouched.
+  Sand uses light dust and the existing gravel loop. Wet asphalt has road sound
+  and subdued squeal, no fake splash or extra drag; it and soft sand remain
+  **unplaced data**, not deceptively wet/soft areas on the B1 route.
+- Firm sand replaces both dirt placeholders: **1350–1950 m and 2250–2550 m**,
+  nominally 900 m of the three-km route. Both shoulders share sand physics and
+  use a **0.9 colour tint**. White tint and visible paint remain the defaults
+  for every old stretch. `SurfaceStretch.hide_painted_lines` fades the existing
+  vertex colours over 8 m **before** sand and 8 m after exit; it creates no new
+  mesh, collider or local patch system. Serial and immutable-worker paths agree.
+  The existing colour blend extends 8 m either side of each boundary; physics
+  changes at the exact boundary, not by an undocumented grip interpolation.
+- Ruts are **2.5 / 3 cm** deep, 1 m wide, spaced 2 m apart and faded at ends.
+  Mild local undulation is at most **2.5 cm on asphalt / 3.5 cm on sand**.
+  Six independently seeded damage ranges make sparse potholes with authored
+  depth limits of 2.5–6.5 cm;
+  most miss the centre line. No raised asphalt patches are generated.
+  Tunnel, jump approach/landing/recovery and bridge joints keep their profiles.
+  Ruts add lateral stations to the existing common road cross-section, including
+  outside sand: this increases geometry cost, and is measured rather than free.
+- `start=sand` / `start=climb` preview modes use the real **1330 / 2240 m**
+  checkpoints, including Restart/Reset. The new test-only driver uses normal
+  controls and existing `TrailDriver`; no car force, velocity or player assist.
+  Existing course/jump/bridge start modes remain intact, and saving stays off.
+
+Evidence in `runs/m6b1-surfaces-2026-10-07.Hq7iaF/`:
+`unit-1.log` **13 passing / 5,169 assertions, 19.542 s**, including unchanged
+geometry/details fingerprints and serial/threaded arrays. `drive-1.log` is a
+**retained failure**: all six sand drives succeeded, but two checkpoint assertions
+compared the settled car with the instantaneous reset position (3.8–4.2 cm of
+ordinary settling drift exceeded 3 cm). The probe now records both phases: the
+reset still has the 3 cm check, with settled drift separately bounded at 10 cm.
+No geometry, tuning or driver inputs changed for that correction. `drive-2.log`
+**15 passing / 5,744 assertions, 146.159 s**, exit 0 and no script errors,
+reruns six sand drives, the accepted jump gates and tunnel/bridge coverage.
+Both sand sections completed in all cars with no reset, chassis hit, fully
+airborne tick or wrong surface contact. `focused-final.log` adds direct paint/
+colour-continuity assertions and probes inside **every authored pothole**, not
+just scattered road triangles: **13 passing / 4,911 assertions, 21.415 s**, exit 0,
+no script errors.
+
+Normal-speed 1280×720 PC evidence (Radeon 890M / Vulkan Forward Mobile, isolated
+saves, TC 20%): **all seven runs passed**, with no reset or wrong surface on the
+six sand runs. The seventh is the 4x4 opening/tunnel/jump with the unchanged
+test-only balance controller. All reported an empty water world.
+
+| Drive | Peak draws | Peak primitives | Build seconds |
+| --- | ---: | ---: | ---: |
+| Rally cove | 126 | 160,064 | 0.952 |
+| Rally climb | 107 | 153,968 | 0.955 |
+| Tuned Rally cove | 126 | 160,172 | 0.942 |
+| Tuned Rally climb | 107 | 154,076 | 0.963 |
+| 4x4 cove | 126 | 160,748 | 0.960 |
+| 4x4 climb | 107 | 154,652 | 0.957 |
+| 4x4 opening/tunnel/jump | 133 | 235,332 | 0.952 |
+
+The same opening smoke previously peaked at 209,522 primitives; geometry cost
+has grown by about **25.8k** with road detail. Fixed jump view is now 208,108
+primitives (previous 186,340), with 87 draws. These are bounded desktop samples,
+**not** whole-route, frame-time percentile, phone or spare-headroom acceptance.
+Sand entry/exit/climb screenshots were inspected: faded paint, continuous colour,
+readable darker shoulders, no raised sheet. Terrain/presentation remain greybox.
+
+Review commits: **`ac2ea81`** approved resources/grip/feedback, **`923a5cf`**
+surface authoring and opt-in builder changes, **`441ff5d`** previews/probes and
+physical integration tests. Fresh full regression on **`441ff5d`: 832 passing,
+one inherited pending, 629,413 assertions across 135 scripts, 648.259 s,
+exit 0**, no `SCRIPT ERROR` or `ERROR:`. The inherited held-gas kicker case
+remains the sole pending test. The runner exited normally; no Godot process
+remained afterward. This is the combined suite, not a sum of focused results.
+Protected file hashes pass except the deliberately extended whole grip-table
+file; its twenty pre-existing entries are instead pinned by the additive-data
+test. No protected test, old surface definition, car or existing level data was
+edited. `surfaces-source.sha256` pins all current implementation files; earlier
+archives and source manifests remain historical and unchanged.
+The full evidence directory is retained in
+`docs/notes/m6b1-jump-data/surfaces-2026-10-07.tar.gz`, covered by `SHA256SUMS`.
+
+Manual commands (choose one, not simultaneous game instances):
+
+```sh
+godot --path . res://debug/coastal_playcheck.tscn -- start=sand
+godot --path . res://debug/coastal_playcheck.tscn -- start=climb
+```
+
+Repeat normal-speed checks with `mode=smoke`, an explicit `car` and `tc=0.20`;
+do not use `--fixed-fps` for rendering measurements. The full route remains
+uncatalogued and B1 dry. Task 6 scenery/presentation is next; no B2 water,
+merge, push or phone installation was done.
 
 ## Task 4 owner refinement — 2026-10-07
 

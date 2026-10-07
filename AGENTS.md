@@ -30,7 +30,7 @@ B2's local surface patches, water bodies, sea and timed-level waves stay out.
 **Owner approved the revised jump's feel on October 7 and authorized continuing.**
 Task 4 (tunnel and independent stone bridge) is implemented and PC-verified.
 Preserve the accepted jump geometry and rerun its gate after
-structure/terrain changes. Task 5 (dry sand and transitions) is next; scenery,
+structure/terrain changes. Task 5 (dry sand and transitions) is PC-verified; scenery,
 whole-route acceptance, scoring and phone gates remain outstanding.
 October 6 first delivery: 813 passing, one inherited pending, no script errors.
 **October 7 revision (`0efa994`):** owner requested more airtime and clarified
@@ -67,7 +67,21 @@ Same centre/width, smooth joins; shared defaults, jump and car tuning unchanged.
 14 focused tests and three rendered all-car bridge crossings passed. Fresh full
 regression: **825 passing, one inherited pending, no script errors, exit 0**
 (620.386 s). The earlier 823-pass claim belongs to the initial shape.
-Task 5 remains next; no phone acceptance, merge or push.
+The owner approved this bridge refinement and authorized continuing on October 7.
+No phone acceptance, merge or push.
+
+**Task 5 implemented and PC-verified:** firm coastal sand at 1350–1950 and 2250–2550 m,
+including darker shoulders with the same traction. Opt-in painted-line fading,
+shallow dry ruts, sparse small potholes and mild local undulations; no raised
+asphalt patches. Approved new grip entries are additive; no old value changed.
+`soft_sand` and `wet_asphalt` are data only for B2, not applied to the road.
+Preview `start=sand` at 1330 m or `start=climb` at 2240 m; original starts remain.
+Focused sand, jump/structure and old-fingerprint checks passed. Seven rendered
+PC smokes passed (maximum 133 draws / 235,332 primitives); this is not phone or
+whole-route acceptance. Fresh full regression on `441ff5d`: **832 passing,
+one inherited pending, no script errors, exit 0** (648.259 s). Task 6 (coastal
+land and scenery) has not started. See the plan's Task 5 execution record for
+current evidence. No phone acceptance, merge or push.
 
 ## Milestone 6, as merged
 

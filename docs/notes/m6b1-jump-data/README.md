@@ -4,6 +4,51 @@ See [the checkpoint report](../m6b1-jump-feasibility.md) for scope, criteria,
 failures and pending owner/phone acceptance. This directory is ignored by the
 Godot importer; none of its evidence becomes a game asset.
 
+## October 7 — dry sand and transitions (Task 5)
+
+Final implementation **`441ff5d`**: `ac2ea81` resources/feedback, `923a5cf`
+authoring and opt-in visuals, then previews and integration checks. Both main
+stretches are firm sand with matching darker shoulders, shallow ruts and smooth
+paint/colour transitions. Mild local undulation and sparse small potholes leave
+the accepted structure profiles unchanged. Soft sand/wet asphalt are unplaced
+B2 data. No water, scenery, car retune or existing level-data change.
+
+`surfaces-2026-10-07.tar.gz` preserves `runs/m6b1-surfaces-2026-10-07.Hq7iaF/`:
+focused unit/driving checks, the failed first checkpoint measurement and its
+correction, seven normal-speed PC smokes and trajectories, nine fixed views,
+and the final full suite. `surfaces-source.sha256` is the **current** source
+manifest; historical manifests below intentionally differ. Fresh full regression:
+**832 passing, one inherited pending, 629,413 assertions across 135 scripts,
+648.259 s, exit 0**, no `SCRIPT ERROR` or `ERROR:`. The existing held-gas kicker
+case remains pending. See the plan's Task 5 execution record for limitations.
+
+The original protected hash check excludes only `surfaces/grip_table.tres`,
+whose entire-file hash necessarily changed with six approved additions. The
+new surface test independently pins all twenty old entries. Existing surface
+definitions, cars, protected tests and old-level data remain unchanged.
+
+```sh
+sha256sum -c docs/notes/m6b1-jump-data/surfaces-source.sha256
+sha256sum -c docs/notes/m6b1-jump-data/SHA256SUMS
+```
+
+Manual preview: `start=sand` (1330 m) or `start=climb` (2240 m), with the existing
+course, jump and bridge modes unchanged. For a normal-speed drive, keep other
+Godot sessions closed and omit `--fixed-fps`:
+
+```sh
+XDG_DATA_HOME=/tmp/ridge-coastal-review-data \
+XDG_CONFIG_HOME=/tmp/ridge-coastal-review-config \
+godot --path . --resolution 1280x720 res://debug/coastal_playcheck.tscn -- \
+  mode=smoke start=sand car=rally tc=0.20 capture=/tmp/coastal-sand.png
+```
+
+Physics boundaries are exact despite visual colour blending. The checkpoint
+assertion correction records instantaneous reset separately from subsequent
+settling drift; no driving gate or car tuning was relaxed. Normal-speed PC
+peaks were 133 draws / 235,332 primitives, **not phone acceptance**. Geometry
+cost grew with detail; it is not free headroom for the remaining scenery.
+
 ## October 7 — owner bridge refinement
 
 Implementation **`b845a20`**, based on `c152ab5`: a slightly longer 20 m bridge,
