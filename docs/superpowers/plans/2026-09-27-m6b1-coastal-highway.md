@@ -16,14 +16,117 @@ stress observations, **not** clean-landing acceptance. Three normal-speed PC
 smokes passed. Fresh full regression: **814 passing, one inherited pending,
 no script errors**, exit 0. Phone checks remain unmeasured. The report preserves
 the changed test scope and rejected geometries.
-**Task 4 is owner-approved; Task 5 is implemented and PC-verified.
-Tasks 6–8 have not started.**
+**Tasks 4–5 are owner-approved; Task 6 is implemented and PC-verified.
+Tasks 7–8 have not started.**
 Initial structure regression: 823 passing, one inherited pending, no script errors.
 The owner's subsequent bridge-only refinement is recorded immediately below.
 The original task detail
 below remains the reviewed plan, not a claim that every acceptance check is done.
 Geometry iterations are recorded in the report rather than rewriting the
 initial proposals into apparent first-try successes.
+
+## Task 6 execution record — 2026-10-07
+
+Owner approval: “I like it and approve, keep going.” This is the dry coastal
+land/presentation stage; not B2, scoring or completed B1 acceptance.
+
+- `TerrainDef.coast` is nullable. Coastal's world-Z shore knots describe shore
+  X, plateau height and cliff width, with independent rounded inland hills.
+  It replaces the fitted natural plane **before** existing road/structure
+  earthworks. No nearest-road-derived mountain walls, additional terrain layer,
+  wet-bed construction or water registry. Row workers consume copied value
+  snapshots and produce identical float32 arrays to serial generation. The
+  unconfigured path keeps the original terrain maths and geometry unchanged.
+- Existing near/far terrain meshes carry low sandy ground and pale rock colour;
+  serial and worker earth joins use the identical colour calculation. No new
+  terrain draw layer. The road, gap, tunnel and bridge cut-outs remain the
+  collision authority, including adjacent hairpin legs and potholes.
+- Three east/seaward spans: guardrail **80–250 m**, stone wall **440–570 m**,
+  guardrail **2700–2860 m**. Rails 0.85 m high, wall 0.70 m; all outside the
+  road, with four-metre lowered ends flaring 0.6 m outward. One merged mesh
+  and exact static triangle collider per span, no hidden continuous fence or
+  dynamic stones. Slow technical corners remain open. Bridge parapets unchanged.
+- An opt-in Coastal scatter path merges scrub, grass tufts, static rocks and
+  sparse wind-leaning broadleaf trees into mixed 100 m buckets. No scenery
+  shadows; 180 m visual range, rock collision remains loaded. Fixed world-XZ
+  exclusions protect tunnel/jump sightlines, bridge and candidate shortcut
+  corridors. It does not build shortcuts. Existing scatter RNG/order/defaults
+  are untouched. Rebuild replaces the generated subtree and deterministic
+  placements, rather than accumulating nodes or audio players.
+- Reuse `GoldenHourMood`: 24° sun, warm 1.15 energy, blue/grey clearing sky,
+  0.0025 fog, 80 m shadows. Reuse the existing padded wind loop at 0.18 volume,
+  birds off; no new synth, water sound or weather simulation. One fixed
+  **1,536-triangle**, feathered alpha rainbow, depth tested, no collision,
+  shadow or light, opposite the -25° sun bearing. A Coastal scene-only camera
+  far-plane override (1500 → 4000 m) avoids cutting it in half; rendering
+  distance settings for the actual road, terrain and scenery are not extended.
+
+Retained development evidence in `runs/m6b1-presentation-2026-10-07.NuzqNT/`:
+
+- `import-1.log`: sandbox editor socket errors; not a clean import claim.
+  The outside-sandbox import and subsequent source import completed cleanly.
+- `terrain-1.log`: **11 passing / 9,793 assertions, 104.956 s**, exit 0,
+  no script errors. First terrain/barrier revision, old geometry/build-detail
+  fixtures plus all-car sand and structure checks; before final presentation.
+- `presentation-1.log`: retained failed verification. A new test's inferred
+  `WeakRef` raised a parse error, although GUT reported eight other passes and
+  exit 0. Not accepted. The explicit type was corrected.
+- `views-1`: first screenshots exposed green earth-join colour beside sandy
+  terrain and a far-clipped rainbow. Join colour was mirrored in both paths,
+  and only Coastal's camera far plane extended. `presentation-2.log` records
+  a duplicate local name in the worker correction: a parse error and seven
+  cascading failures, **not** fixture drift. Renamed the local; no fixture
+  changed. `presentation-3.log`: **16 passing / 5,717 assertions, 21.664 s**,
+  exit 0, no script errors, including untouched build-detail fixtures. The
+  same new checks are subsequently split into land/barrier and presentation
+  files so each feature commit carries its relevant tests.
+- `views-2`: 13 normal-speed 1280×720 PC views, including opening, tunnel,
+  jump, both sand transitions, cove, descent, bridge arch and finish. Corrected
+  joins, arc and tunnel exposure inspected. Maximum **104 draws / 214,444 primitives** (different
+  views). Build **1.120 s**. No Coastal water bodies.
+
+Six normal-speed 1280×720 PC drives passed (Radeon 890M, Vulkan Forward Mobile,
+TC 20%, isolated saves, no `--fixed-fps`). Course drives use the unchanged
+test-only pedal balance controller; manual play is unassisted. These are bounded
+section checks, **not whole-route acceptance**. No resets or wrong surface
+contacts on the sand/bridge drives; every case reports zero water bodies.
+
+| Drive | Peak draws | Peak primitives | Build seconds |
+| --- | ---: | ---: | ---: |
+| Rally opening/tunnel/jump | 141 | 236,540 | 1.163 |
+| Tuned Rally opening/tunnel/jump | 141 | 236,524 | 1.089 |
+| 4x4 opening/tunnel/jump | 141 | 236,996 | 1.113 |
+| 4x4 cove | 132 | 166,072 | 1.081 |
+| 4x4 stone bridge | 124 | 161,792 | 1.096 |
+| 4x4 sandy climb | 112 | 156,404 | 1.096 |
+
+Prior Task 5 opening peak was 133 draws / 235,332 primitives; the new observed
+maximum is **141 / 236,996**. Nine draw calls of desktop margin are **not** a
+phone pass or an allowance for B2. The scenery pass is deliberately sparse.
+
+Review commits: **`1ea9e06`** terrain/barriers with land/parity/contact tests;
+**`69f45c7`** scenery/mood/rainbow, preview captures and lifecycle tests.
+Post-split `focused-final.log`: **16 passing / 5,717 assertions across seven
+scripts, 21.278 s, exit 0**, no script errors. Fresh combined regression on
+**`69f45c7`: 839 passing, one inherited pending, 630,255 assertions across
+139 scripts, 655.866 s, exit 0**, no `SCRIPT ERROR` or `ERROR:`. The inherited
+held-gas kicker case remains the only pending test. This reran the accepted
+all-car/all-TC jump, structures and sand driving after terrain/scenery changes.
+The runner closed normally; no Godot process remained. Old car/surface and
+protected fixture hashes pass; no
+geometry/car fixture is re-recorded or relaxed. `presentation-source.sha256`
+pins this revision's code/resources/tests; prior source manifests are historical.
+Evidence is retained in `docs/notes/m6b1-jump-data/presentation-2026-10-07.tar.gz`,
+covered by `SHA256SUMS`. `run-status.json` preserves tool-observed exits for
+early commands which did not write a companion `.exit` file. Source/archives
+and `git diff --check` were verified before handing back the preview.
+
+Limitations: the phone was checked and **absent**; no phone, frame-percentile,
+thermal soak or whole-route acceptance is inferred from desktop counts/build
+times. Sea, pools, puddles, wet patches and waves remain B2. No car or surface
+value, accepted curve/jump/bridge profile, catalog, scoring, master, merge or
+push change. Next owner check is the opening/tunnel/jump in coastal context,
+then the cove/bridge and climb/finish. Tasks 7–8 remain outstanding.
 
 ## Task 5 execution record — 2026-10-07
 

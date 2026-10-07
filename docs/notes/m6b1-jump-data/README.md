@@ -1,8 +1,60 @@
-# Coastal B1 jump and structure evidence
+# Coastal B1 staged implementation evidence
 
 See [the checkpoint report](../m6b1-jump-feasibility.md) for scope, criteria,
 failures and pending owner/phone acceptance. This directory is ignored by the
 Godot importer; none of its evidence becomes a game asset.
+
+## October 7 — coastal land and presentation (Task 6)
+
+Implementation **`69f45c7`**, after terrain/barrier commit **`1ea9e06`**, based
+on owner-approved Task 5 (`4109f29`). New opt-in independent shore/headlands,
+selective static protection, sparse mixed scenery batches, clearing-weather
+mood, existing wind ambience and a fixed depth-tested rainbow. No accepted
+driving-profile, car or surface value change. Sea/channel/cove remain dry B1;
+no water bodies, waves, scoring, catalog entry, merge or push.
+
+`presentation-2026-10-07.tar.gz` retains the complete
+`runs/m6b1-presentation-2026-10-07.NuzqNT/` directory: initial terrain checks,
+failed typed-code iterations, before/after views, six normal-speed PC drives,
+post-split focused tests and full regression. The first view pass exposed
+unmatched join colour and a camera-clipped arc; the corrections are included
+in final source, not hidden by deleting the original evidence. The first
+test-file parse failure returned exit 0 from GUT and is **not a pass**.
+
+`presentation-source.sha256` is the **current** source manifest. Earlier
+manifests below describe their own revisions; verify those only in separate
+worktrees at the stated commits. All car/surface resources and protected tests
+are unchanged from Task 5, including its six already-approved grip additions.
+
+Focused final: **16 passing / 5,717 assertions, 21.278 s**, no script errors.
+Full regression on **`69f45c7`: 839 passing, one inherited pending, 630,255
+assertions across 139 scripts, 655.866 s, exit 0**, no `SCRIPT ERROR` or `ERROR:`.
+The inherited held-gas kicker case is still pending. Six PC drives passed; maximum
+**141 draws / 236,996 primitives**, build **1.081–1.163 s**. Thirteen corrected
+fixed views were captured, with the same scene-only 4000 m camera far plane
+as manual play. See the plan's Task 6 execution record for every case and
+limitations: these are not whole-route, frame-time percentile or phone gates.
+The phone was absent over USB; no Android artifact/install is claimed.
+
+```sh
+sha256sum -c docs/notes/m6b1-jump-data/presentation-source.sha256
+sha256sum -c docs/notes/m6b1-jump-data/SHA256SUMS
+XDG_DATA_HOME=/tmp/ridge-coastal-review-data \
+XDG_CONFIG_HOME=/tmp/ridge-coastal-review-config ./run_tests.sh all
+```
+
+Manual preview from the start (no concurrent tests):
+
+```sh
+godot --path . res://debug/coastal_playcheck.tscn -- start=course
+```
+
+`start=sand`, `start=bridge`, `start=climb` and the default jump reset remain.
+For normal-speed automation use the same isolated XDG paths, resolution
+1280×720 and `mode=smoke start=course car=rally tc=0.20 balance=true`, optionally
+`samples=/tmp/coastal.json capture=/tmp/coastal.png`. Balance is only ordinary
+test-driver pedal input, not an in-game landing assist. `mode=views` captures
+13 fixed views and refuses the headless dummy backend.
 
 ## October 7 — dry sand and transitions (Task 5)
 
@@ -16,8 +68,8 @@ B2 data. No water, scenery, car retune or existing level-data change.
 `surfaces-2026-10-07.tar.gz` preserves `runs/m6b1-surfaces-2026-10-07.Hq7iaF/`:
 focused unit/driving checks, the failed first checkpoint measurement and its
 correction, seven normal-speed PC smokes and trajectories, nine fixed views,
-and the final full suite. `surfaces-source.sha256` is the **current** source
-manifest; historical manifests below intentionally differ. Fresh full regression:
+and the final full suite. `surfaces-source.sha256` pins Task 5's source,
+not the later presentation revision above. Fresh Task 5 full regression:
 **832 passing, one inherited pending, 629,413 assertions across 135 scripts,
 648.259 s, exit 0**, no `SCRIPT ERROR` or `ERROR:`. The existing held-gas kicker
 case remains pending. See the plan's Task 5 execution record for limitations.

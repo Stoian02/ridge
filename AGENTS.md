@@ -30,8 +30,9 @@ B2's local surface patches, water bodies, sea and timed-level waves stay out.
 **Owner approved the revised jump's feel on October 7 and authorized continuing.**
 Task 4 (tunnel and independent stone bridge) is implemented and PC-verified.
 Preserve the accepted jump geometry and rerun its gate after
-structure/terrain changes. Task 5 (dry sand and transitions) is PC-verified; scenery,
-whole-route acceptance, scoring and phone gates remain outstanding.
+structure/terrain changes. Task 5 (dry sand and transitions) is owner-approved;
+Task 6 (land/presentation) is PC-verified and awaits owner feedback. Whole-route
+acceptance, scoring and phone gates remain outstanding.
 October 6 first delivery: 813 passing, one inherited pending, no script errors.
 **October 7 revision (`0efa994`):** owner requested more airtime and clarified
 they lift and balance in flight. Gap is now **18 m, landing 2 m below the lip,
@@ -79,9 +80,26 @@ Preview `start=sand` at 1330 m or `start=climb` at 2240 m; original starts remai
 Focused sand, jump/structure and old-fingerprint checks passed. Seven rendered
 PC smokes passed (maximum 133 draws / 235,332 primitives); this is not phone or
 whole-route acceptance. Fresh full regression on `441ff5d`: **832 passing,
-one inherited pending, no script errors, exit 0** (648.259 s). Task 6 (coastal
-land and scenery) has not started. See the plan's Task 5 execution record for
-current evidence. No phone acceptance, merge or push.
+one inherited pending, no script errors, exit 0** (648.259 s). The owner approved
+this surface pass and authorized Task 6 on October 7. No phone acceptance,
+merge or push.
+
+**Task 6 implemented and PC-verified:** Coastal-only world-space shore/headlands/cove,
+selective seaward guardrails at 80–250 and 2700–2860 m, stone wall at 440–570 m,
+sparse mixed-batch static scenery, clearing-weather mood and a soft depth-tested
+rainbow. Approved route/jump/bridge/driving profiles and all car/surface values
+are unchanged. Land and earth joins share the new altitude/rock palette;
+the null coast/default scatter path retains old geometry. The level-specific
+camera far plane is 4000 m so it does not slice the arc; road/terrain/scenery
+visibility limits stay bounded. Existing padded wind ambience is reused.
+The sea/bay/channel are still **dry B1 terrain**, not decorative fake water.
+Feature commits: `1ea9e06` land/barriers, `69f45c7` scenery/mood/rainbow.
+Six normal-speed PC drives and thirteen fixed views passed verification;
+peak 141 draws / 236,996 primitives leaves only nine desktop draw calls of
+margin, not B2 headroom. Full regression on `69f45c7`: **839 passing, one
+inherited pending, no script errors, exit 0** (655.866 s). See the plan's Task 6
+execution record and evidence package. Phone absent over USB; no phone claim.
+Tasks 7–8, owner presentation feedback, scoring and B1 acceptance remain open.
 
 ## Milestone 6, as merged
 
