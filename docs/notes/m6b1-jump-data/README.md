@@ -1,8 +1,52 @@
-# Coastal B1 jump evidence
+# Coastal B1 jump and structure evidence
 
 See [the checkpoint report](../m6b1-jump-feasibility.md) for scope, criteria,
 failures and pending owner/phone acceptance. This directory is ignored by the
 Godot importer; none of its evidence becomes a game asset.
+
+## October 7 — approved jump, tunnel and stone bridge
+
+Implementation source: **`81f368f`**, after `bd3f57d` (tunnel), `f1e3a45`
+(independent stone bridge and opt-in tunnel join/floor correction), `08ae44b`
+(preview/capture tooling), and the final typed parity-fixture correction.
+The dated Task 4 execution section of the
+[B1 plan](../../superpowers/plans/2026-09-27-m6b1-coastal-highway.md) is this
+stage's report; the whole-milestone final report remains future work.
+
+`structures-2026-10-07.tar.gz` preserves
+`runs/m6b1-structures-2026-10-07.OO7lQK/`: failed and successful tunnel/bridge
+tests, the stopped failing regression, a stalled combined run and its isolated
+Rally Road repeat, the final regression, normal-speed
+all-car drives, sampled trajectories and before/after fixed-view screenshots.
+`structures-source.sha256` pins tested implementation and protected source.
+Neither of the older source manifests describes this later structure revision.
+
+Final combined regression: **823 passing, one inherited pending, 624,470
+assertions, 623.793 s, exit 0**, no script errors. The earlier stalled combined
+run is not accepted evidence; its cause remains unconfirmed and it did not recur
+in the isolated Rally Road repeat or the final full run. Six normal-speed PC
+smokes passed. Phone acceptance and Tasks 5–8 remain outstanding.
+
+```sh
+sha256sum -c docs/notes/m6b1-jump-data/SHA256SUMS
+sha256sum -c docs/notes/m6b1-jump-data/structures-source.sha256
+XDG_DATA_HOME=/tmp/ridge-coastal-review-data \
+XDG_CONFIG_HOME=/tmp/ridge-coastal-review-config ./run_tests.sh all
+```
+
+Manual launch: add `start=course` to include the tunnel from the beginning,
+or `start=bridge` for the real 1970 m checkpoint. Default remains the accepted
+730 m jump reset. No Coastal scoring or progress entry exists yet.
+`mode=smoke start=course balance=true` runs the course-to-jump driver;
+`mode=smoke start=bridge` runs the bridge driver. Explicit car/TC overrides
+are runtime-only. `mode=views capture=/tmp/coastal` saves six fixed views;
+this mode deliberately refuses the headless dummy backend. Use the isolated
+XDG paths and close other Godot/game sessions before checks.
+
+The two course-start-only controller changes are documented, not game assists:
+conservative opening bends until 580 m, then uncapped acceleration, and a 2°
+nose-up landing target bias for the faster arrival. The accepted reset driver
+and gap geometry are unchanged. No phone result or completed B1 is claimed.
 
 ## October 7 — larger-jump revision
 

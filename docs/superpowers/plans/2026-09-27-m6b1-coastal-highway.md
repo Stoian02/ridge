@@ -16,10 +16,164 @@ stress observations, **not** clean-landing acceptance. Three normal-speed PC
 smokes passed. Fresh full regression: **814 passing, one inherited pending,
 no script errors**, exit 0. Phone checks remain unmeasured. The report preserves
 the changed test scope and rejected geometries.
-**Task 4 is in progress; Tasks 5–8 have not started.** The original task detail
+**Task 4 is implemented and PC-verified; Tasks 5–8 have not started.**
+Final structure regression: 823 passing, one inherited pending, no script errors.
+The original task detail
 below remains the reviewed plan, not a claim that every acceptance check is done.
 Geometry iterations are recorded in the report rather than rewriting the
 initial proposals into apparent first-try successes.
+
+## Task 4 execution record — 2026-10-07
+
+Owner authorization: “I approve of this part, we may continue.” The accepted
+18 m gap, 2 m drop, 7% landing, 10° lip and 730 m reset remain unchanged.
+This delivery covers **structures only**, not Tasks 5–8 or completed B1.
+
+- Tunnel at **610–710 m**, 10.5 m inner width, 6 m ceiling, 8 m ground cover,
+  eight batched lamps at 12 m spacing and dry portals. Reuses `TunnelBuilder`;
+  no individual light nodes or new tunnel subsystem. Commit `bd3f57d` authors
+  the tunnel and extends the test driver to traverse it from the actual course
+  start, in addition to the accepted stationary-reset matrix.
+- Stone bridge at **2055–2073 m**, 7 m clear asphalt deck, 0.7 m parapets,
+  0.15 m smooth crest, 12 m clear arch and 3 m solid abutments over a **dry**
+  5.5 m-deep channel. `StoneBridgeDef`/`StoneBridgeBuilder` are independent of
+  logs. The ordinary road, shoulders and earth joins are omitted across the
+  bridge; matching visible collision is supplied by two batched meshes/bodies.
+  Earthworks clear grid-corner/diagonal footprints before terrain commit.
+  The new phase is reported as `stone_bridges`; rebuild discards its old nodes.
+- Rendered inspection caught earth-join strips rising toward the tunnel roof.
+  `TunnelDef.omit_earth_joins` is **false by default**, enabled only for Coastal.
+  Both join paths omit whole cells through its portals; exact boundary rows and
+  colliding floor returns outside the existing shoulders close the opening.
+  Frozen Pass retains its original tunnel/log builders and geometry defaults.
+- No car/surface tuning, curve change, B2 water/bed registry, sea, local wet
+  patches, waves, sand implementation, scenery or scoring was added. No merge
+  or push. The greybox terrain/palette around the structures is not final art.
+
+### Driving evidence and control caveat
+
+The reset driver is unchanged from the owner-approved jump: normal gas/brake
+pitch correction, no force/velocity injection and no player assist. The new
+course-start driver takes the opening bends conservatively (at most 25 m/s),
+then accelerates **without a speed cap from 580 m through the tunnel/run-up**.
+It tests all three cars at 0%, 15%, 20%, 100% TC. Launch speeds are consequently
+higher than Reset: about 117 km/h Rally, 133 km/h Tuned Rally and 93 km/h 4x4.
+
+The first course-start Tuned Rally at 100% TC reached recovery, but its chassis
+strike at about 914 m produced **21.7°/s yaw**, failing the unchanged 20°/s gate.
+A 0.15 s delay before restoring drive torque did not fix it (21.96°/s) and was
+removed. A documented **2° nose-up target bias for course-start tests only**
+passed the complete matrix (`tunnel-3.log`, 14 tests / 1,297 assertions). All
+camera maxima were under 3.03 m above the floor, with zero tunnel chassis hits.
+This is normal pedal control in an automated driver, **not** an automatic game
+feature, a soft-landing guarantee, or renewed owner approval of the faster
+approach. The initial failure logs remain available; car physics and the
+approved jump geometry were not changed to make the test pass.
+
+Bridge tests (`structures-1.log`) cover all three cars at 6 and 20 m/s target
+speed plus two ±2 m offset 4x4 approaches, using the real 1970 m checkpoint.
+All eight kept four wheels in contact, zero chassis contacts, asphalt surface
+IDs, no resets and upright recovery. Rays independently verify flush joints,
+the arch aperture/ceiling/floor and parapets; excluding the first hit confirms
+there is no duplicate near-deck support. Serial/threaded road/join outputs match.
+Rebuild frees the previous bridge mesh. Final focused bridge/preview tests:
+**7 passing / 18,424 assertions**, 0.548 s. The corrected tunnel-return selector
+ran **one test / 74 assertions**, 0.972 s. Both exit 0 with no script errors.
+The final full suite reran this driving after the floor-return correction.
+
+### Retained failures and verification discipline
+
+- `bridge-import.log`: the sandbox blocked editor sockets/ADB; the escalated
+  import retry completed. This was not a game failure or phone measurement.
+- `bridge-unit-1.log`: a missing explicit `WeakRef` type prevented a new test
+  from loading. GUT's green summary for the other tests was **not** a pass.
+- `bridge-unit-2.log`: exact mesh/collider array equality failed because drawn
+  positions are quantized on mesh storage. The measured maximum was
+  **0.000082066 m**; the new test now checks matching vertex counts and a
+  **1 mm geometric tolerance**, alongside independent actual physics rays.
+  This changes only the new bridge test, not any protected fixture.
+- `tunnel-returns.log`: an incorrect GUT selector ran no tests. It is retained
+  as invalid evidence, not counted as a pass; `tunnel-returns-valid.log` uses
+  `-gunit_test_name=tunnel_cover` and verifies that case.
+- `full-suite-failed-aborted.log`: assigning a typed tunnel array through a
+  dictionary's dynamic property failed in the expanded parity fixture. The
+  already-failing run was stopped by terminating only our identified Godot PID;
+  its log and exit 1 are retained. `81f368f` uses an explicit `TrailDef` local;
+  focused parity passed before restarting the full suite. No assertion changed.
+- `full-suite-teardown-aborted.log`: the next combined run stopped producing
+  output after the unchanged Rally Road test printed the 4x4's finish. It stayed
+  there for several minutes with its main thread using a CPU core and no other
+  Godot process running. Only our identified runner was terminated (exit 143).
+  No stack trace was available (`gdb` was not installed), so teardown/audio is
+  **not a confirmed cause**. The isolated unchanged Rally Road test then passed
+  in 18.941 s (`rally-teardown-repeat.log`, exit 0, no script errors). The final
+  combined rerun uses the same source and fresh isolated save/config roots;
+  the stalled run is retained, not counted as passing evidence.
+- Initial `view-*` captures show the tunnel slivers; `final-view-*` show the
+  opt-in correction. Fixed views disable driving, so their draw counts are
+  rendering diagnostics only, not driving/frame-time acceptance.
+
+The phone was checked and **no device was attached**. No APK was built or
+installed, and no phone budget is claimed.
+
+Final rendered PC checks (Radeon 890M / Vulkan Forward Mobile, 1280×720,
+normal speed, isolated saves, TC 20%): **all six drives passed**, three
+course-start-to-jump and three bridge crossings. Course peaks were **133 draws /
+209,042–209,522 primitives**; bridge peaks **116–118 draws / 141,162–143,894
+primitives**. Trail-build times were **0.908–0.937 s**. These short desktop
+smokes do not establish whole-frame percentile, five-minute soak, whole-route,
+phone or B2 headroom gates. All six reported an empty water world.
+
+The corrected fixed-view capture (`pc-views-2.log`) measured:
+
+| View | Draws | Primitives |
+| --- | ---: | ---: |
+| Tunnel entry | 98 | 158,302 |
+| Tunnel interior | 101 | 168,024 |
+| Tunnel exit | 99 | 163,620 |
+| Jump | 87 | 186,796 |
+| Bridge deck | 73 | 136,380 |
+| Bridge arch | 74 | 131,116 |
+
+Review commits: `bd3f57d` tunnel/course-start driver; `f1e3a45` independent
+stone builder/collision/join correction and tests; `08ae44b` manual bridge
+preview and rendered capture tooling; `81f368f` typed parity-fixture correction.
+Final regression on frozen **`81f368f`**: **823 passing, one inherited pending,
+624,470 assertions across 133 scripts, 623.793 s, exit 0**, no `SCRIPT ERROR`
+or `ERROR:`. The inherited pending case is the existing held-gas kicker landing;
+no test was skipped or relaxed for this delivery. The earlier Rally Road stall
+did not recur in either its isolated repeat or this complete run. No Godot
+process remained afterward. Protected hashes and `git diff --check` passed;
+the car files, existing surfaces, protected balance/fingerprint tests and four
+existing level directories have no diff from merged master `b075946`.
+Documentation/evidence follow in a separate commit.
+
+### Preview and repeat commands
+
+```sh
+# Complete opening, tunnel and accepted jump, manual controls:
+godot --path . res://debug/coastal_playcheck.tscn -- start=course
+# Direct bridge preview from the real 1970 m checkpoint:
+godot --path . res://debug/coastal_playcheck.tscn -- start=bridge
+# Original jump Reset preview remains the default:
+godot --path . res://debug/coastal_playcheck.tscn
+```
+
+For automated checks, isolate saves/settings, keep the owner's game closed,
+and omit `--fixed-fps` for rendered measurements:
+
+```sh
+XDG_DATA_HOME=/tmp/ridge-coastal-review-data \
+XDG_CONFIG_HOME=/tmp/ridge-coastal-review-config \
+godot --path . --resolution 1280x720 res://debug/coastal_playcheck.tscn -- \
+  mode=smoke start=course car=rally_tuned tc=0.20 balance=true
+# Substitute start=bridge for its ordinary-input crossing smoke.
+# mode=views capture=/tmp/coastal saves six fixed views; headless is refused.
+```
+
+Evidence joins the existing `docs/notes/m6b1-jump-data/` package as
+`structures-2026-10-07.tar.gz` and `structures-source.sha256`. The older jump
+archives/manifests remain immutable. See that directory's README for verification.
 
 ## Authority, scope and delivery stops
 

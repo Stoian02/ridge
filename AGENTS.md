@@ -28,8 +28,10 @@ Launch `debug/coastal_playcheck.tscn` for the uncatalogued jump preview; it star
 at the 730 m approach checkpoint, not the beginning of the full route.
 B2's local surface patches, water bodies, sea and timed-level waves stay out.
 **Owner approved the revised jump's feel on October 7 and authorized continuing.**
-Task 4 (tunnel and independent stone bridge) is now in progress. Preserve the
-accepted jump geometry and rerun its gate after structure/terrain changes.
+Task 4 (tunnel and independent stone bridge) is implemented and PC-verified.
+Preserve the accepted jump geometry and rerun its gate after
+structure/terrain changes. Task 5 (dry sand and transitions) is next; scenery,
+whole-route acceptance, scoring and phone gates remain outstanding.
 October 6 first delivery: 813 passing, one inherited pending, no script errors.
 **October 7 revision (`0efa994`):** owner requested more airtime and clarified
 they lift and balance in flight. Gap is now **18 m, landing 2 m below the lip,
@@ -39,8 +41,24 @@ pedal pitch corrections **in the test driver only**; manual play is unassisted.
 and uncorrected coasts are separate stress observations, not clean-landing passes;
 their harsher results and rejected shapes are retained in the report. Three
 normal-speed PC smokes passed (131 draws / about 210k primitives maximum).
-Fresh full regression: **814 passing, one inherited pending, no script errors**.
+Jump-delivery full regression: **814 passing, one inherited pending, no script errors**.
 Jump feel is approved; no phone budget acceptance is claimed. No merge/push.
+
+**Structure implementation:** `bd3f57d` tunnel, `f1e3a45` independent stone bridge
+and opt-in tunnel floor/join correction, `08ae44b` preview/capture tools. Tunnel
+610–710 m; bridge 2055–2073 m with asphalt contact, not logs. Manual preview:
+`start=course` includes the opening/tunnel; `start=bridge` resets at 1970 m;
+default stays at the jump. Six normal-speed PC smokes passed at TC 20%, peaks
+133 draws / 209,522 primitives. This is not whole-route or phone acceptance.
+The phone was checked and absent. See the implementation plan's dated Task 4
+execution record for failed iterations, control strategy and verification.
+`81f368f` fixes a typed-array assignment in the new parity fixture; the first
+full structure-suite run was stopped after that error and retained, not counted
+as a pass. A later runner stall after Rally Road did not reproduce in an isolated
+repeat or the final combined run; its cause is unconfirmed and its log retained.
+Final source **`81f368f`: 823 passing, one inherited pending, no script errors,
+exit 0** (623.793 s). Evidence and reproducible commands are in
+`docs/notes/m6b1-jump-data/README.md`.
 
 ## Milestone 6, as merged
 

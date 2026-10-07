@@ -1,5 +1,12 @@
 # Coastal B1: jump-feel checkpoint
 
+**Status update, 2026-10-07:** the owner explicitly approved the larger jump and
+authorized continuing. The geometry below is now the accepted baseline. Task 4
+adds the tunnel and independent stone bridge; its execution evidence is recorded
+in the [B1 plan](../superpowers/plans/2026-09-27-m6b1-coastal-highway.md).
+The dated reports below retain their original pending-at-delivery status;
+this approval supersedes the owner-feel stop, not the outstanding phone gates.
+
 ## 2026-10-07 revision — larger gap and longer flight
 
 Implementation: `0efa994`, based on delivery `b8655b4`.
