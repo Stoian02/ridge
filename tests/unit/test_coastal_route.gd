@@ -23,6 +23,7 @@ func test_preview_preserves_surface_split_and_has_no_water_or_scenery() -> void:
 	assert_false(TRAIL.has_creek())
 	assert_eq(TRAIL.tunnels.size(), 1, "approved structure stage")
 	assert_true(TRAIL.bridges.is_empty())
+	assert_eq(TRAIL.stone_bridges.size(), 1)
 	assert_true(TRAIL.talus.is_empty())
 	assert_eq(SCATTER.pine_spacing + SCATTER.rock_spacing + SCATTER.post_spacing + SCATTER.broadleaf_spacing, 0.0)
 	for stretch: SurfaceStretch in TRAIL.surface_stretches:
@@ -33,6 +34,8 @@ func test_preview_preserves_surface_split_and_has_no_water_or_scenery() -> void:
 func test_gap_reset_runup_landing_width_and_recovery_are_unobstructed() -> void:
 	var sampler := RoadSampler.new(CURVE, false, TRAIL)
 	assert_true(TRAIL.gap_validation_errors(sampler.length).is_empty())
+	assert_true(TRAIL.stone_bridge_validation_errors(sampler.length).is_empty())
+	assert_eq(TRAIL.stone_bridges[0].alignment_error(sampler), "")
 	assert_eq(TRAIL.checkpoint_distances[0], 730.0)
 	assert_eq(TRAIL.checkpoint_distances[1], 980.0)
 	assert_eq(TRAIL.road_gaps.size(), 1)

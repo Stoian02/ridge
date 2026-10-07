@@ -123,6 +123,8 @@ extends Resource
 @export_group("Structures")
 @export var tunnels: Array[TunnelDef] = []
 @export var bridges: Array[BridgeDef] = []
+## Separate asphalt-deck masonry structures; empty leaves old builders untouched.
+@export var stone_bridges: Array[StoneBridgeDef] = []
 @export var rock_steps: Array[RockStepDef] = []
 @export var boulder_fields: Array[BoulderFieldDef] = []
 @export var fallen_trees: Array[FallenTreeDef] = []
@@ -210,6 +212,76 @@ func gap_at(distance: float) -> RoadGapDef:
 	return null
 
 
+func stone_bridge_at(distance: float) -> StoneBridgeDef:
+	for bridge: StoneBridgeDef in stone_bridges:
+		if bridge.contains(distance):
+			return bridge
+	return null
+
+
+## Whole join-cell omission; collapsing endpoint widths alone leaves slivers.
+func omits_earth_join(distance: float) -> bool:
+	if gap_at(distance) != null or stone_bridge_at(distance) != null:
+		return true
+	for tunnel: TunnelDef in tunnels:
+		if tunnel.omit_earth_joins and distance >= tunnel.start - tunnel.portal_length \
+				and distance <= tunnel.end() + tunnel.portal_length:
+			return true
+	return false
+
+
+## Independent validation keeps log bridges and established level defaults intact.
+func stone_bridge_validation_errors(road_length: float) -> PackedStringArray:
+	var errors := PackedStringArray()
+	for i in stone_bridges.size():
+		var bridge := stone_bridges[i]
+		if bridge == null:
+			errors.append("Null stone bridge")
+			continue
+		var error := bridge.validation_error(road_length)
+		if not error.is_empty():
+			errors.append(error)
+			continue
+		for at: float in [bridge.start, bridge.end()]:
+			if not is_equal_approx(road_width_at(at), bridge.clear_width):
+				errors.append("Stone deck must join the full approach road width")
+		if base_surface == null or base_surface.id != &"asphalt":
+			errors.append("Stone bridge requires a dry asphalt reservation")
+		var occupied: Array[Vector2] = []
+		for j in range(i):
+			var other := stone_bridges[j]
+			if other != null:
+				occupied.append(Vector2(other.start, other.end()))
+		for other: BridgeDef in bridges:
+			occupied.append(Vector2(other.start, other.end() + other.ramp_length))
+		for tunnel: TunnelDef in tunnels:
+			occupied.append(Vector2(tunnel.start - tunnel.portal_length, tunnel.end() + tunnel.portal_length))
+		for gap: RoadGapDef in road_gaps:
+			if gap != null:
+				occupied.append(Vector2(gap.takeoff_start, gap.recovery_end))
+		for stretch: SurfaceStretch in surface_stretches:
+			occupied.append(Vector2(stretch.start - stretch.blend_length, stretch.end() + stretch.blend_length))
+		for section: Vector3 in rough_sections:
+			occupied.append(Vector2(section.x, section.x + section.y))
+		for section: RoadDamageDef in damage_sections:
+			occupied.append(Vector2(section.start, section.start + section.length))
+		for rut: CrossRutDef in cross_ruts:
+			occupied.append(rut.bounds())
+		for hump: Vector3 in jumps:
+			occupied.append(Vector2(hump.x - hump.z * 0.5, hump.x + hump.z * 0.5))
+		for roller: Vector3 in rollers:
+			occupied.append(Vector2(roller.x - roller.z * 0.5, roller.x + roller.z * 0.5))
+		for step: RockStepDef in rock_steps:
+			occupied.append(Vector2(step.distance - step.face_length, step.distance + step.ramp_length))
+		for ford: FordDef in fords:
+			occupied.append(Vector2(ford.distance - ford.half_width() - ford.bank_run,
+				ford.distance + ford.half_width() + ford.bank_run))
+		for span: Vector2 in occupied:
+			if span.x < bridge.end() and span.y > bridge.start:
+				errors.append("Stone bridge overlaps another structure, surface or road profile")
+	return errors
+
+
 ## Fail closed before generating a partially supported or overlapping gap.
 func gap_validation_errors(road_length: float) -> PackedStringArray:
 	var errors := PackedStringArray()
@@ -230,6 +302,9 @@ func gap_validation_errors(road_length: float) -> PackedStringArray:
 		for bridge: BridgeDef in bridges:
 			if bridge.start < gap.recovery_end and bridge.end() + bridge.ramp_length > gap.takeoff_start:
 				errors.append("Road gap overlaps a log bridge")
+		for bridge: StoneBridgeDef in stone_bridges:
+			if bridge != null and bridge.start < gap.recovery_end and bridge.end() > gap.takeoff_start:
+				errors.append("Road gap overlaps a stone bridge")
 		for tunnel: TunnelDef in tunnels:
 			if tunnel.start - tunnel.portal_length < gap.recovery_end and tunnel.end() + tunnel.portal_length > gap.takeoff_start:
 				errors.append("Road gap overlaps a tunnel portal")

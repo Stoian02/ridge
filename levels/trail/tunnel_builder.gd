@@ -51,6 +51,8 @@ func _build_tunnel(sampler: RoadSampler, field: TerrainField, trail: TrailDef, t
 	shell.add_to(self, "Shell", ROCK)
 	for end: float in [tunnel.start, tunnel.end()]:
 		_add_portal(sampler, field, trail, tunnel, end, section)
+	if tunnel.omit_earth_joins:
+		_add_floor_returns(sampler, trail, tunnel)
 	var transforms: Array[Transform3D] = []
 	var distance := tunnel.start + tunnel.lamp_spacing * 0.5
 	while distance < tunnel.end():
@@ -74,6 +76,29 @@ func _build_tunnel(sampler: RoadSampler, field: TerrainField, trail: TrailDef, t
 	instance.multimesh = lamps
 	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(instance)
+
+
+## Fill only outside the existing road/shoulder faces, never a duplicate deck.
+## Original tunnels retain their old geometry unless explicitly opted in.
+func _add_floor_returns(sampler: RoadSampler, trail: TrailDef, tunnel: TunnelDef) -> void:
+	var floor_mesh := StructureMesh.new()
+	var profile := RoadProfile.new(trail, sampler.length)
+	var rows := RoadBuilder.row_distances(sampler.length, profile, trail)
+	var outer := maxf(tunnel.inner_width * 0.5, trail.half_total_width())
+	for i in rows.size() - 1:
+		var a := rows[i]
+		var b := rows[i + 1]
+		if (a + b) * 0.5 < tunnel.start - tunnel.portal_length or (a + b) * 0.5 > tunnel.end() + tunnel.portal_length:
+			continue
+		for side: float in [-1.0, 1.0]:
+			var inner_a := sampler.surface_point(a, side * trail.half_total_width_at(a), profile)
+			var inner_b := sampler.surface_point(b, side * trail.half_total_width_at(b), profile)
+			var outer_a := sampler.surface_point(a, side * outer, profile)
+			var outer_b := sampler.surface_point(b, side * outer, profile)
+			floor_mesh.quad(inner_a, inner_b, outer_b, outer_a, trail.shoulder_color)
+	var instance := floor_mesh.add_to(self, "FloorReturns", trail.shoulder_surface, false)
+	if instance != null:
+		instance.visibility_range_end = trail.road_view_distance
 
 
 func _add_portal(sampler: RoadSampler, field: TerrainField, trail: TrailDef, tunnel: TunnelDef,

@@ -26,6 +26,7 @@ var road_blend_builder: RoadBlendBuilder
 var rut_water_builder: RutWaterBuilder
 var tunnel_builder: TunnelBuilder
 var bridge_builder: BridgeBuilder
+var stone_bridge_builder: StoneBridgeBuilder
 var gap_builder: GapBuilder
 var rock_step_builder: RockStepBuilder
 var boulder_builder: BoulderBuilder
@@ -80,6 +81,15 @@ func build() -> void:
 			gap_errors.append(alignment)
 	if not gap_errors.is_empty():
 		push_error("Invalid road gaps: %s" % [gap_errors])
+		return
+	var stone_errors := trail.stone_bridge_validation_errors(sampler.length)
+	for bridge: StoneBridgeDef in trail.stone_bridges:
+		if bridge != null and bridge.validation_error(sampler.length).is_empty():
+			var alignment := bridge.alignment_error(sampler)
+			if not alignment.is_empty():
+				stone_errors.append(alignment)
+	if not stone_errors.is_empty():
+		push_error("Invalid stone bridges: %s" % [stone_errors])
 		return
 	profile = RoadProfile.new(trail, sampler.length)
 	sampler.cache_build_samples(true)
@@ -137,6 +147,13 @@ func build() -> void:
 	generated.add_child(bridge_builder)
 	bridge_builder.build(sampler, profile, field, trail)
 	_lap(&"bridges")
+	stone_bridge_builder = null
+	if not trail.stone_bridges.is_empty():
+		stone_bridge_builder = StoneBridgeBuilder.new()
+		stone_bridge_builder.name = "StoneBridges"
+		generated.add_child(stone_bridge_builder)
+		stone_bridge_builder.build(sampler, profile, field, trail)
+		_lap(&"stone_bridges")
 
 	rock_step_builder = RockStepBuilder.new()
 	rock_step_builder.name = "RockSteps"

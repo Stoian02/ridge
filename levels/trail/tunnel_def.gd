@@ -12,6 +12,9 @@ extends Resource
 @export var wall_color: Color = Color(0.23, 0.27, 0.31)
 @export var lamp_color: Color = Color(1.0, 0.88, 0.63)
 @export var seed: int = 19
+## Opt-in for trails with earth joins: keep the roof out of the driving cut,
+## replacing those joins with flat colliding floor returns beside the shoulders.
+@export var omit_earth_joins: bool = false
 
 
 func end() -> float:

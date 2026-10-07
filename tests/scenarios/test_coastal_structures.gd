@@ -32,6 +32,7 @@ func test_tunnel_cover_portals_floor_and_lamps_leave_the_open_runup_unchanged() 
 	assert_eq(tunnel.inner_width, 10.5)
 	assert_eq(tunnel.height, 6.0)
 	assert_eq(trail.tunnel_builder.lamp_distances.size(), 8)
+	assert_true(tunnel.omit_earth_joins)
 	assert_true(trail.tunnel_builder.find_children("*", "Light3D", true, false).is_empty())
 	var space := level.get_world_3d().direct_space_state
 	for at: float in [598.0, 610.0, 620.0, 660.0, 700.0, 710.0, 722.0, 730.0]:
@@ -51,6 +52,12 @@ func test_tunnel_cover_portals_floor_and_lamps_leave_the_open_runup_unchanged() 
 			assert_true(space.intersect_ray(PhysicsRayQueryParameters3D.create(p - direction * 15, p + direction * 15)).is_empty(),
 				"opening is not blocked by roof terrain, portal or earth joins")
 	var ceiling := trail.sampler.position(660.0)
+	for side: float in [-1.0, 1.0]:
+		var floor_point := ceiling + trail.sampler.right(660.0) * side * 5.0
+		var return_hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(floor_point + Vector3.UP, floor_point - Vector3.UP))
+		assert_false(return_hit.is_empty(), "floor return supports the space between shoulder and wall")
+		if not return_hit.is_empty():
+			assert_almost_eq(return_hit.position.y, floor_point.y, 0.01)
 	var roof_hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(ceiling + Vector3.UP, ceiling + Vector3.UP * 8))
 	assert_false(roof_hit.is_empty())
 	if not roof_hit.is_empty():
@@ -84,3 +91,41 @@ func test_all_cars_reach_jump_through_tunnel_from_the_real_course_start() -> voi
 			assert_lt(result.peak_landing_yaw, 20.0)
 		level.queue_free()
 		await wait_process_frames(3)
+
+
+func test_all_cars_cross_the_stone_bridge_slowly_and_at_road_speed() -> void:
+	for car_def: CarDef in CARS:
+		var level := _level(car_def)
+		assert_true(level.trail.build_phases.has(&"stone_bridges"))
+		for speed: float in [6.0, 20.0]:
+			var result := await CoastalBridgeProbe.new().attempt(level, 0.20, speed)
+			_assert_bridge(result)
+		level.queue_free()
+		await wait_process_frames(3)
+
+
+func test_bridge_off_centre_approaches_and_preview_reset_use_the_real_checkpoint() -> void:
+	var level := _level(CARS[2])
+	for side: float in [-2.0, 2.0]:
+		_assert_bridge(await CoastalBridgeProbe.new().attempt(level, 0.20, 20.0, side))
+	level.resets.reset_car(&"button")
+	assert_almost_eq(level.trail.sampler.closest_distance(level.rig.car.position), 1970.0, 0.02)
+	assert_lt(level.rig.car.linear_velocity.length(), 0.01)
+	assert_true(level.trail.water_world.bodies.is_empty())
+	assert_eq(level.trail.water_world.wave_binding_count(), 0)
+
+
+func _assert_bridge(result: Dictionary) -> void:
+	var label := "%s bridge at %.1f m/s, lateral %.1f" % [result.car, result.wanted_speed, result.lateral_start]
+	assert_almost_eq(result.start_distance, 1970.0, 1.0, label + " actual reset")
+	assert_lt(result.start_speed, 0.5)
+	assert_true(result.reached, label + " completes crossing and recovery")
+	assert_true(result.upright)
+	assert_eq(result.resets, 0)
+	assert_gt(result.crossing_ticks, 100)
+	assert_gte(result.min_wheels, 2, label + " no forced mid-bridge jump")
+	assert_gt(result.min_up, 0.95)
+	assert_lt(result.max_lateral, absf(result.lateral_start) + 0.5)
+	assert_gt(result.min_speed, result.wanted_speed - 2.0)
+	assert_eq(result.chassis_ticks, 0, label + " no snag at either joint")
+	assert_eq(result.wrong_surface_ticks, 0, label + " asphalt, not logs or hidden terrain")

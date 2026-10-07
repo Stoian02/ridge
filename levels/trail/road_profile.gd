@@ -130,6 +130,8 @@ func longitudinal_height(distance: float) -> float:
 			+ roller_height(distance) + ford_height(distance)
 	for gap: RoadGapDef in def.road_gaps:
 		value += gap.height_offset(distance)
+	for bridge: StoneBridgeDef in def.stone_bridges:
+		value += bridge.height_offset(distance)
 	if _building:
 		_longitudinal[distance] = value
 	return value
@@ -232,7 +234,7 @@ func on_bridge(distance: float) -> bool:
 
 ## Omission is independent of the authored route surface (stone is not logs).
 func omits_road(distance: float) -> bool:
-	return on_bridge(distance) or def.gap_at(distance) != null
+	return on_bridge(distance) or def.gap_at(distance) != null or def.stone_bridge_at(distance) != null
 
 
 func undulation(distance: float) -> float:
@@ -314,6 +316,8 @@ func stretch_at(distance: float) -> SurfaceStretch:
 func surface_at(distance: float) -> SurfaceDef:
 	if on_bridge(distance):
 		return preload("res://surfaces/logs.tres")
+	if def.stone_bridge_at(distance) != null:
+		return preload("res://surfaces/asphalt.tres")
 	var stretch := stretch_at(distance)
 	return stretch.surface_at(distance) if stretch != null else def.base_surface
 
@@ -331,6 +335,15 @@ func step_height(distance: float, lateral: float) -> float:
 ## edge in the road mesh rather than a slope.
 func exact_rows() -> PackedFloat32Array:
 	var rows := surface_boundaries()
+	for tunnel: TunnelDef in def.tunnels:
+		if tunnel.omit_earth_joins:
+			for at: float in [tunnel.start - tunnel.portal_length, tunnel.end() + tunnel.portal_length]:
+				if at > 0.0 and at < road_length and not rows.has(at):
+					rows.append(at)
+	for bridge: StoneBridgeDef in def.stone_bridges:
+		for at: float in [bridge.start, bridge.end()]:
+			if at > 0.0 and at < road_length and not rows.has(at):
+				rows.append(at)
 	for gap: RoadGapDef in def.road_gaps:
 		for at: float in gap.boundaries():
 			if at > 0.0 and at < road_length and not rows.has(at):

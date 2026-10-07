@@ -10,6 +10,36 @@ const FORD_BANK := 4.0
 const FORD_TAPER := 8.0
 
 
+## Dry channel beneath the independent arch. Clear every grid-corner footprint
+## under the aperture, including diagonal/rotated cells; abutments close the cut.
+static func apply_stone_bridges(field: TerrainField, sampler: RoadSampler, trail: TrailDef,
+		profile: RoadProfile) -> void:
+	for bridge: StoneBridgeDef in trail.stone_bridges:
+		var start := sampler.position(bridge.arch_start())
+		var end := sampler.position(bridge.arch_end())
+		var forward := Vector2(end.x - start.x, end.z - start.z).normalized()
+		var across := Vector2(-forward.y, forward.x)
+		var span := Vector2(end.x - start.x, end.z - start.z).length()
+		var floor_y := minf(sampler.surface_point(bridge.start, 0.0, profile).y,
+			sampler.surface_point(bridge.end(), 0.0, profile).y) - bridge.channel_depth
+		var padding := field.spacing * sqrt(2.0) + 0.1
+		var heights := field.heights
+		for row in field.rows:
+			var dz := field.origin.y + row * field.spacing - start.z
+			for column in field.columns:
+				var dx := field.origin.x + column * field.spacing - start.x
+				var along := dx * forward.x + dz * forward.y
+				var lateral := absf(dx * across.x + dz * across.y)
+				var beyond := maxf(-along, along - span)
+				if beyond > padding + bridge.abutment_length or lateral > bridge.channel_half_width + bridge.channel_blend:
+					continue
+				var weight := (1.0 - smoothstep(padding, padding + bridge.abutment_length, beyond)) \
+					* (1.0 - smoothstep(bridge.channel_half_width, bridge.channel_half_width + bridge.channel_blend, lateral))
+				var index := row * field.columns + column
+				heights[index] = minf(heights[index], lerpf(heights[index], floor_y, weight))
+		field.heights = heights
+
+
 ## Cut the entire grid-corner footprint, not just centre samples: neither
 ## heightmap diagonal may create an invisible ledge under the missing road.
 ## Gaps require a straight alignment; rotated/graded/banked approaches are OK.

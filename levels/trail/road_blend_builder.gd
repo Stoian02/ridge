@@ -75,7 +75,7 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, field: TerrainField,
 	var surfaces: Array[SurfaceDef] = []
 	var surface_ids := PackedInt32Array()
 	for row in rows.size() - 1:
-		if trail.gap_at((rows[row] + rows[row + 1]) * 0.5) != null:
+		if trail.omits_earth_join((rows[row] + rows[row + 1]) * 0.5):
 			surface_ids.append(-1)
 			continue
 		if reaches[row] < 0.001 and reaches[row + 1] < 0.001:
@@ -99,7 +99,7 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, field: TerrainField,
 
 ## Keep the technical shelf's width and the ford's open water/rock banks.
 static func width_at(trail: TrailDef, distance: float) -> float:
-	if trail.gap_at(distance) != null:
+	if trail.omits_earth_join(distance):
 		return 0.0
 	var weight := 1.0
 	for section: Vector4 in trail.shelf_walls:
@@ -130,7 +130,7 @@ func _chunk(sampler: RoadSampler, profile: RoadProfile, field: TerrainField,
 			normals.append_array(ring["normals"])
 			colors.append_array(ring["colors"])
 		for row in rows.size() - 1:
-			if trail.gap_at((rows[row] + rows[row + 1]) * 0.5) != null:
+			if trail.omits_earth_join((rows[row] + rows[row + 1]) * 0.5):
 				continue
 			if width_at(trail, rows[row]) < 0.001 and width_at(trail, rows[row + 1]) < 0.001:
 				continue
