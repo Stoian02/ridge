@@ -4,6 +4,36 @@ See [the checkpoint report](../m6b1-jump-feasibility.md) for scope, criteria,
 failures and pending owner/phone acceptance. This directory is ignored by the
 Godot importer; none of its evidence becomes a game asset.
 
+## October 7 — owner bridge refinement
+
+Implementation **`b845a20`**, based on `c152ab5`: a slightly longer 20 m bridge,
+0.30 m deck crest and taller masonry arch, authored only in Coastal's resource.
+The centre, smooth joins, shared defaults, car tuning and jump are unchanged.
+See the plan's **Task 4 owner refinement** record for dimensions and limitations.
+
+`bridge-refinement-2026-10-07.tar.gz` preserves
+`runs/m6b1-bridge-refinement-2026-10-07.E9BMuW/`: focused checks, three normal-speed
+all-car bridge drives, six fixed views and the full regression log/exit status.
+`bridge-refinement-source.sha256` pins this revision's source; the older
+`structures-source.sha256` still describes `81f368f`, not this revision.
+Verify historical source manifests only in separate worktrees at their recorded
+commits; their intentional differences from today's bridge are not corruption.
+
+Focused: **14 passing / 18,941 assertions**, exit 0, no script errors. All eight
+low/normal/off-centre crossings passed, as did three rendered PC smokes. The
+stock rally briefly unloaded one wheel at road speed; no full-car hop or chassis
+strike was recorded. Fresh full regression: **825 passing, one inherited pending,
+624,587 assertions, 620.386 s, exit 0**, no script errors. Protected source hashes
+also pass. No phone acceptance claim.
+
+Verify from the project root. Manual preview is unchanged:
+
+```sh
+sha256sum -c docs/notes/m6b1-jump-data/bridge-refinement-source.sha256
+sha256sum -c docs/notes/m6b1-jump-data/SHA256SUMS
+godot --path . res://debug/coastal_playcheck.tscn -- start=bridge
+```
+
 ## October 7 — approved jump, tunnel and stone bridge
 
 Implementation source: **`81f368f`**, after `bd3f57d` (tunnel), `f1e3a45`

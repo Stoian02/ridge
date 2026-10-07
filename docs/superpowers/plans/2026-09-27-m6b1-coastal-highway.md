@@ -17,13 +17,54 @@ smokes passed. Fresh full regression: **814 passing, one inherited pending,
 no script errors**, exit 0. Phone checks remain unmeasured. The report preserves
 the changed test scope and rejected geometries.
 **Task 4 is implemented and PC-verified; Tasks 5–8 have not started.**
-Final structure regression: 823 passing, one inherited pending, no script errors.
+Initial structure regression: 823 passing, one inherited pending, no script errors.
+The owner's subsequent bridge-only refinement is recorded immediately below.
 The original task detail
 below remains the reviewed plan, not a claim that every acceptance check is done.
 Geometry iterations are recorded in the report rather than rewriting the
 initial proposals into apparent first-try successes.
 
-## Task 4 execution record — 2026-10-07
+## Task 4 owner refinement — 2026-10-07
+
+After driving the structures, the owner was happy with them and requested only
+a slightly longer bridge with more arch. This is a **Coastal resource-only**
+shape change: start/end **2054–2074 m** (20 m, previously 18 m), with the centre
+still at 2064 m. Deck crest **0.15 → 0.30 m**, masonry arch rise **3.5 → 4.5 m**,
+clear aperture **12 → 14 m**. The dry channel is **6.0 m** deep (previously 5.5 m)
+to leave clearance below the taller arch's springing. The 7 m clear roadway,
+0.7 m parapets, 3 m abutments and smooth zero-slope joins are unchanged.
+
+No shared bridge defaults/builder, tunnel, jump, curve, car, surface, water or
+driver changes. Two new regression cases pin the authored dimensions and check
+actual tyre-ray support at the new ends, single asphalt support, the open
+aperture and its ceiling/floor. Existing assertions are unchanged.
+
+Implementation **`b845a20`**, based on `c152ab5`. Focused checks: **14 passing /
+18,941 assertions, 51.525 s**, exit 0 and no script errors, including all-car
+tunnel-to-jump coverage and eight low/normal/off-centre bridge crossings. All
+eight recovered upright with no resets, chassis strikes or wrong surfaces.
+The stock rally's road-speed crossing briefly had **three** wheels in contact;
+the other seven retained four. The original no-forced-jump gate remains intact;
+this is not a claim of continuous four-wheel contact for every car.
+
+Three normal-speed rendered PC crossings at TC 20% passed (1280×720, Radeon
+890M / Vulkan Forward Mobile). Peaks: Rally **118 draws / 141,146 primitives**,
+Tuned Rally **118 / 141,254**, 4x4 **116 / 143,878**; build **0.898–0.969 s**.
+Fixed arch/deck screenshots were visually inspected; all six capture views
+reported an empty water world. These are desktop observations, not phone budget
+acceptance or new performance headroom. No phone test was performed.
+
+Fresh full regression on **`b845a20`: 825 passing, one inherited pending,
+624,587 assertions across 133 scripts, 620.386 s, exit 0**, no `SCRIPT ERROR`
+or `ERROR:`. The existing held-gas kicker landing is still the sole pending
+case. This also reran the accepted reset-jump matrix after the geometry change.
+Protected hashes and `git diff --check` passed. No Godot process remained after
+the run. The earlier runner stall did not recur; no claims about its cause change.
+The prior 823-pass result below belongs to the earlier shape, not this revision.
+Evidence is retained as `docs/notes/m6b1-jump-data/bridge-refinement-2026-10-07.tar.gz`,
+with a new source manifest. Older archives and their hashes remain immutable.
+
+## Task 4 initial execution record — 2026-10-07
 
 Owner authorization: “I approve of this part, we may continue.” The accepted
 18 m gap, 2 m drop, 7% landing, 10° lip and 730 m reset remain unchanged.

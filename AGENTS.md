@@ -46,7 +46,7 @@ Jump feel is approved; no phone budget acceptance is claimed. No merge/push.
 
 **Structure implementation:** `bd3f57d` tunnel, `f1e3a45` independent stone bridge
 and opt-in tunnel floor/join correction, `08ae44b` preview/capture tools. Tunnel
-610–710 m; bridge 2055–2073 m with asphalt contact, not logs. Manual preview:
+610–710 m; initial bridge 2055–2073 m with asphalt contact, not logs. Manual preview:
 `start=course` includes the opening/tunnel; `start=bridge` resets at 1970 m;
 default stays at the jump. Six normal-speed PC smokes passed at TC 20%, peaks
 133 draws / 209,522 primitives. This is not whole-route or phone acceptance.
@@ -56,9 +56,18 @@ execution record for failed iterations, control strategy and verification.
 full structure-suite run was stopped after that error and retained, not counted
 as a pass. A later runner stall after Rally Road did not reproduce in an isolated
 repeat or the final combined run; its cause is unconfirmed and its log retained.
-Final source **`81f368f`: 823 passing, one inherited pending, no script errors,
+Initial structure source **`81f368f`: 823 passing, one inherited pending, no script errors,
 exit 0** (623.793 s). Evidence and reproducible commands are in
 `docs/notes/m6b1-jump-data/README.md`.
+
+**Owner bridge refinement (`b845a20`):** happy with the structures; requested
+a slightly longer, more arched bridge only. Coastal now spans **2054–2074 m**,
+with a **0.30 m deck crest**, **4.5 m masonry arch rise** and 6 m dry channel.
+Same centre/width, smooth joins; shared defaults, jump and car tuning unchanged.
+14 focused tests and three rendered all-car bridge crossings passed. Fresh full
+regression: **825 passing, one inherited pending, no script errors, exit 0**
+(620.386 s). The earlier 823-pass claim belongs to the initial shape.
+Task 5 remains next; no phone acceptance, merge or push.
 
 ## Milestone 6, as merged
 
