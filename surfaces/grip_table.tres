@@ -24,5 +24,11 @@ multipliers = {
 "offroad/scree": 1.2,
 "rally/scree": 0.95,
 "offroad/wet_rock": 1.1,
-"rally/wet_rock": 1.0
+"rally/wet_rock": 1.0,
+"rally/coastal_sand": 1.05,
+"offroad/coastal_sand": 1.1,
+"rally/soft_sand": 1.05,
+"offroad/soft_sand": 1.1,
+"rally/wet_asphalt": 1.1,
+"offroad/wet_asphalt": 0.95
 }
