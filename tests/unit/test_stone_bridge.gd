@@ -187,7 +187,8 @@ func test_serial_and_threaded_road_and_earth_omissions_match() -> void:
 	tunnel.start = 115.0
 	tunnel.length = 40.0
 	tunnel.omit_earth_joins = true
-	f.trail.tunnels = [tunnel]
+	var trail: TrailDef = f.trail
+	trail.tunnels = [tunnel]
 	for kind in 2:
 		var pair: Array[Node3D] = []
 		for threaded: bool in [false, true]:
