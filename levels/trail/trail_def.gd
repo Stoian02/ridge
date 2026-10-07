@@ -29,6 +29,8 @@ extends Resource
 ## Ground-supported road sections which need not be redrawn into shadow maps.
 ## (start, length); receiving shadows and all collision stay enabled.
 @export var shadowless_sections: Array[Vector2] = []
+## Opt-in static roadside protection, separate from bridge parapets.
+@export var barriers: Array[RoadBarrierDef] = []
 
 @export_group("Width profile")
 ## Stretches where the road changes width, as Vector4(start, length, road width,

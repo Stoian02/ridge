@@ -22,6 +22,7 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 	var rock_color: Color = input["rock_color"]
 	var wear_color: Color = input["wear_color"]
 	var rock_slope: float = input["rock_slope"]
+	var coastal: bool = input["coastal"]
 	var count := ups.size()
 	var width := RoadBlendBuilder.COLUMNS
 	var vertices := PackedVector3Array()
@@ -73,6 +74,12 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 						var rockiness := smoothstep(rock_slope - TerrainBuilder.COLOR_BLEND_DEG,
 								rock_slope + TerrainBuilder.COLOR_BLEND_DEG, slope)
 						var color := dirt_color.lerp(rock_color, rockiness)
+						if coastal:
+							var coastal_point := Vector3(origin.x + corner.x * spacing, heights[index], origin.y + corner.y * spacing)
+							var beach := 1.0 - smoothstep(3.0, 8.0, coastal_point.y)
+							color = color.lerp(Color(0.67, 0.62, 0.48), beach * (1.0 - rockiness))
+							var layer := 0.97 + 0.03 * sin(coastal_point.y * 0.7 + coastal_point.z * 0.008)
+							color *= Color(layer, layer, layer, 1.0)
 						if not strata.is_empty() and strata[index] > 0.0:
 							var position := Vector3(origin.x + corner.x * spacing, heights[index], origin.y + corner.y * spacing)
 							var layer := position.y + sin(position.x * 0.025) * 1.5 + sin(position.z * 0.018)

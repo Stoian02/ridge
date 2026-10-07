@@ -94,7 +94,8 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, field: TerrainField,
 		"rows": rows, "heights": field.heights, "strata": field.wall_strata, "wear": field.wear,
 		"origin": field.origin, "spacing": field.spacing, "columns": field.columns, "field_rows": field.rows,
 		"dirt_color": field.def.dirt_color, "rock_color": field.def.rock_color,
-		"wear_color": field.wear_color, "rock_slope": field.def.rock_slope_deg}
+		"wear_color": field.wear_color, "rock_slope": field.def.rock_slope_deg,
+		"coastal": field.def.coast != null}
 
 
 ## Keep the technical shelf's width and the ford's open water/rock banks.
@@ -253,6 +254,12 @@ func _ground_vertex(field: TerrainField, corner: Vector2i) -> Dictionary:
 		field.def.rock_slope_deg + TerrainBuilder.COLOR_BLEND_DEG, slope)
 	var color := field.def.dirt_color.lerp(field.def.rock_color, rockiness)
 	var index := field.index(corner.x, corner.y)
+	if field.def.coast != null:
+		var point := field.sample_position(corner.x, corner.y)
+		var beach := 1.0 - smoothstep(3.0, 8.0, point.y)
+		color = color.lerp(Color(0.67, 0.62, 0.48), beach * (1.0 - rockiness))
+		var layer := 0.97 + 0.03 * sin(point.y * 0.7 + point.z * 0.008)
+		color *= Color(layer, layer, layer, 1.0)
 	if not field.wall_strata.is_empty() and field.wall_strata[index] > 0.0:
 		var point := field.sample_position(corner.x, corner.y)
 		var layer := point.y + sin(point.x * 0.025) * 1.5 + sin(point.z * 0.018)

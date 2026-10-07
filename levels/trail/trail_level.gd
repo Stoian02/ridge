@@ -27,6 +27,7 @@ var rut_water_builder: RutWaterBuilder
 var tunnel_builder: TunnelBuilder
 var bridge_builder: BridgeBuilder
 var stone_bridge_builder: StoneBridgeBuilder
+var barrier_builder: RoadBarrierBuilder
 var gap_builder: GapBuilder
 var rock_step_builder: RockStepBuilder
 var boulder_builder: BoulderBuilder
@@ -154,6 +155,13 @@ func build() -> void:
 		generated.add_child(stone_bridge_builder)
 		stone_bridge_builder.build(sampler, profile, field, trail)
 		_lap(&"stone_bridges")
+	barrier_builder = null
+	if not trail.barriers.is_empty():
+		barrier_builder = RoadBarrierBuilder.new()
+		barrier_builder.name = "Barriers"
+		generated.add_child(barrier_builder)
+		barrier_builder.build(sampler, profile, trail)
+		_lap(&"barriers")
 
 	rock_step_builder = RockStepBuilder.new()
 	rock_step_builder.name = "RockSteps"

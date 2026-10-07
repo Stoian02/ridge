@@ -149,6 +149,7 @@ func _mesh_arrays(field: TerrainField, first_column: int, first_row: int, size: 
 	var rock_deg := field.def.rock_slope_deg
 	var dirt_color := field.def.dirt_color
 	var rock_color := field.def.rock_color
+	var coastal := field.def.coast != null
 	var wear_color := field.wear_color
 	var mesh_size := (size - 1) / step + 1
 	var vertices := PackedVector3Array()
@@ -176,6 +177,12 @@ func _mesh_arrays(field: TerrainField, first_column: int, first_row: int, size: 
 			var slope_deg := rad_to_deg(acos(clampf(normal.y, -1.0, 1.0)))
 			var rockiness := smoothstep(rock_deg - COLOR_BLEND_DEG, rock_deg + COLOR_BLEND_DEG, slope_deg)
 			var color := dirt_color.lerp(rock_color, rockiness)
+			if coastal:
+				var height := vertices[out].y
+				var beach := 1.0 - smoothstep(3.0, 8.0, height)
+				color = color.lerp(Color(0.67, 0.62, 0.48), beach * (1.0 - rockiness))
+				var layer := 0.97 + 0.03 * sin(height * 0.7 + vertices[out].z * 0.008)
+				color *= Color(layer, layer, layer, 1.0)
 			if has_strata and strata[row_offset + center] > 0.0:
 				var point := vertices[out]
 				var layer := point.y + sin(point.x * 0.025) * 1.5 + sin(point.z * 0.018)

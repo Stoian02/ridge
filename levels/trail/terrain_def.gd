@@ -33,6 +33,8 @@ extends Resource
 @export var dirt_color: Color = Color(0.62, 0.47, 0.3)
 @export var rock_color: Color = Color(0.55, 0.45, 0.38)
 @export var seed: int = 7
+## Null keeps the original fitted-plane/noise path byte-for-byte.
+@export var coast: CoastalTerrainDef
 
 @export_group("Canyon walls")
 ## Sections where the ground beyond the corridor blend is raised into a wall

@@ -213,6 +213,9 @@ func _size_grid(stamps: Array[Vector3], margin: float) -> void:
 
 ## Natural ground: a plane fitted to the road's elevations, plus fractal noise.
 func _fill_natural(stamps: Array[Vector3], terrain: TerrainDef, threaded: bool = true) -> void:
+	if terrain.coast != null:
+		CoastalEarthworks.fill(self, terrain.coast, threaded)
+		return
 	var centre := Vector3.ZERO
 	for stamp in stamps:
 		centre += stamp
