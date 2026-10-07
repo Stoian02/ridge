@@ -4,7 +4,8 @@
 
 Execution record: [first-delivery jump report](../../notes/m6b1-jump-feasibility.md).
 The owner confirmed 15–20% TC; test both endpoints plus 0% and 100%.
-Tasks 0–2 are implemented; Task 3 remains **stopped for owner feel approval**.
+Tasks 0–2 are implemented; **the owner approved the revised Task 3 jump on
+October 7 and authorized continuing**. Its geometry is now the accepted baseline.
 October 6 delivery: 813 passing, one inherited pending, no script errors.
 October 7 owner feedback requested more airtime and clarified lift-and-balance
 driving. Revision `0efa994` increases the gap to 18 m and landing drop to 2 m;
@@ -15,7 +16,7 @@ stress observations, **not** clean-landing acceptance. Three normal-speed PC
 smokes passed. Fresh full regression: **814 passing, one inherited pending,
 no script errors**, exit 0. Phone checks remain unmeasured. The report preserves
 the changed test scope and rejected geometries.
-**Tasks 4–8 have not started.** The original task detail
+**Task 4 is in progress; Tasks 5–8 have not started.** The original task detail
 below remains the reviewed plan, not a claim that every acceptance check is done.
 Geometry iterations are recorded in the report rather than rewriting the
 initial proposals into apparent first-try successes.

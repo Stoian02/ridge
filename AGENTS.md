@@ -27,7 +27,9 @@ The first delivery is the dry route greybox and true gap, with an explicit
 Launch `debug/coastal_playcheck.tscn` for the uncatalogued jump preview; it starts
 at the 730 m approach checkpoint, not the beginning of the full route.
 B2's local surface patches, water bodies, sea and timed-level waves stay out.
-Do not advance to Task 4 until the owner explicitly approves the jump's feel.
+**Owner approved the revised jump's feel on October 7 and authorized continuing.**
+Task 4 (tunnel and independent stone bridge) is now in progress. Preserve the
+accepted jump geometry and rerun its gate after structure/terrain changes.
 October 6 first delivery: 813 passing, one inherited pending, no script errors.
 **October 7 revision (`0efa994`):** owner requested more airtime and clarified
 they lift and balance in flight. Gap is now **18 m, landing 2 m below the lip,
@@ -38,7 +40,7 @@ and uncorrected coasts are separate stress observations, not clean-landing passe
 their harsher results and rejected shapes are retained in the report. Three
 normal-speed PC smokes passed (131 draws / about 210k primitives maximum).
 Fresh full regression: **814 passing, one inherited pending, no script errors**.
-Owner feel remains pending; no phone budget acceptance is claimed. No merge/push.
+Jump feel is approved; no phone budget acceptance is claimed. No merge/push.
 
 ## Milestone 6, as merged
 

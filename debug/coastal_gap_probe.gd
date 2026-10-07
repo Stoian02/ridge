@@ -8,7 +8,7 @@ var samples: Array[Dictionary] = []
 
 func attempt(level: RunLevel, strength: float, hold_in_air: bool = false,
 		lateral: float = 0.0, throttle: float = 1.0, hold_lane: bool = false,
-		balance_in_air: bool = false) -> Dictionary:
+		balance_in_air: bool = false, from_course_start: bool = false) -> Dictionary:
 	var tree := level.get_tree()
 	var car := level.rig.car
 	var sampler := level.trail.sampler
@@ -26,7 +26,8 @@ func attempt(level: RunLevel, strength: float, hold_in_air: bool = false,
 		push_error("Coastal probe requires a running countdown; refusing a fabricated launch")
 		return {}
 	level.tracker.restart()
-	level.tracker.enter_gate(1)
+	if not from_course_start:
+		level.tracker.enter_gate(1)
 	level.resets.reset_car(&"coastal_probe")
 	car.drivetrain.traction_control_strength = strength
 	if lateral != 0.0:
@@ -42,7 +43,10 @@ func attempt(level: RunLevel, strength: float, hold_in_air: bool = false,
 	car.max_contacts_reported = 8
 	car.contact_monitor = true
 	var result := {"car": String(level.rig.car_def.id), "tc": strength,
-		"held": hold_in_air, "balanced": balance_in_air, "lateral_start": lateral, "throttle": throttle,
+		"held": hold_in_air, "balanced": balance_in_air, "from_course_start": from_course_start,
+		"tunnel_ticks": 0, "tunnel_contacts": 0, "tunnel_camera_height": 0.0,
+		"tunnel_min_up": 1.0, "tunnel_max_lateral": 0.0,
+		"lateral_start": lateral, "throttle": throttle,
 		"balance_ticks": 0, "landing_pitch": 0.0, "landing_wheels": 0,
 		"start_distance": sampler.closest_distance(car.global_position),
 		"start_speed": car.linear_velocity.length(), "lip_speed": 0.0,
@@ -50,6 +54,7 @@ func attempt(level: RunLevel, strength: float, hold_in_air: bool = false,
 		"unsupported_seconds": 0.0, "unsupported_distance": 0.0,
 		"touchdown": 0.0, "touchdown_kind": "none",
 		"min_up": 1.0, "max_lateral": 0.0, "peak_landing_yaw": 0.0,
+		"peak_yaw_distance": 0.0, "peak_yaw_wheels": 0, "peak_yaw_body": 0,
 		"chassis_ticks": 0, "first_chassis_distance": -1.0,
 		"last_chassis_distance": -1.0, "longest_chassis_seconds": 0.0,
 		"landing_contact_distance": 0.0, "min_recovery_speed": INF,
@@ -69,7 +74,7 @@ func attempt(level: RunLevel, strength: float, hold_in_air: bool = false,
 	var longest_contact := 0
 	var peak_yaw := 0.0
 	samples.clear()
-	for tick in roundi(30.0 * Engine.physics_ticks_per_second):
+	for tick in roundi((120.0 if from_course_start else 30.0) * Engine.physics_ticks_per_second):
 		var distance := sampler.closest_distance(car.global_position)
 		var target_point := sampler.position(distance + 12.0)
 		if hold_lane:
@@ -81,17 +86,41 @@ func attempt(level: RunLevel, strength: float, hold_in_air: bool = false,
 		car.input.virtual_steer = clampf(angle / maxf(max_angle, 0.05), -1.0, 1.0)
 		car.input.virtual_brake = 0.0
 		car.input.virtual_throttle = throttle if hold_in_air or distance < gap.takeoff_end or landed else 0.0
+		if from_course_start and distance < 580.0:
+			# Conservative opening bends, then completely uncapped acceleration
+			# through the tunnel/run-up. Ordinary controls, never a launch boost.
+			var wanted := 25.0
+			for ahead: float in [0.0, 5.0, 10.0, 15.0, 20.0, 25.0]:
+				var a := sampler.forward(distance + ahead)
+				var b := sampler.forward(distance + ahead + 5.0)
+				var curvature := absf(Vector2(a.x, a.z).angle_to(Vector2(b.x, b.z))) / 5.0
+				if curvature > 0.0001:
+					wanted = minf(wanted, sqrt(car.stats.tire_grip * 9.8 / curvature) * 0.6)
+			car.input.virtual_throttle = 1.0 if car.forward_speed() < wanted - 1.0 else 0.0
+			car.input.virtual_brake = 1.0 if car.forward_speed() > wanted + 2.0 else 0.0
 		if balance_in_air and took_off and not touched_down and car.air_control.is_active:
 			# Test driver only: ordinary gas/brake taps mimic the owner's airborne
 			# pitch corrections. No forces, rotations or velocity are injected.
 			var pitch := asin(clampf(-car.global_basis.z.y, -1.0, 1.0))
 			var rate := car.angular_velocity.dot(car.global_basis.x)
-			var correction := clampf((atan(gap.landing_grade) - pitch) * 5.0 - rate * 3.0, -1.0, 1.0)
+			# A small nose-up bias gives the suspension room to absorb the faster
+			# course-start arrival, instead of driving the chassis flat into it.
+			var target_pitch := atan(gap.landing_grade) + (deg_to_rad(2.0) if from_course_start else 0.0)
+			var correction := clampf((target_pitch - pitch) * 5.0 - rate * 3.0, -1.0, 1.0)
 			car.input.virtual_throttle = maxf(0.0, correction)
 			car.input.virtual_brake = maxf(0.0, -correction)
 			result.balance_ticks += 1
 		await tree.physics_frame
 		distance = sampler.closest_distance(car.global_position)
+		for tunnel: TunnelDef in level.trail.trail.tunnels:
+			if tunnel.contains(distance):
+				result.tunnel_ticks += 1
+				result.tunnel_contacts += 1 if car.get_contact_count() > 0 else 0
+				result.tunnel_min_up = minf(result.tunnel_min_up, car.global_basis.y.y)
+				result.tunnel_max_lateral = maxf(result.tunnel_max_lateral, absf(sampler.lateral_offset(car.global_position)))
+				var camera_at := sampler.closest_distance(level.rig.camera.global_position)
+				result.tunnel_camera_height = maxf(result.tunnel_camera_height,
+					level.rig.camera.global_position.y - sampler.surface_point(camera_at, 0.0, level.trail.profile).y)
 		var contacts := 0
 		for wheel: Wheel in car.wheels:
 			if wheel.in_contact:
@@ -130,6 +159,10 @@ func attempt(level: RunLevel, strength: float, hold_in_air: bool = false,
 			lowest_up = minf(lowest_up, car.global_basis.y.y)
 			largest_lateral = maxf(largest_lateral, absf(sampler.lateral_offset(car.global_position)))
 			if landed:
+				if absf(rad_to_deg(car.angular_velocity.y)) > peak_yaw:
+					result.peak_yaw_distance = distance
+					result.peak_yaw_wheels = contacts
+					result.peak_yaw_body = car.get_contact_count()
 				peak_yaw = maxf(peak_yaw, absf(rad_to_deg(car.angular_velocity.y)))
 				result.min_recovery_speed = minf(result.min_recovery_speed, car.forward_speed())
 		if car.get_contact_count() > 0:

@@ -39,7 +39,7 @@ func _ready() -> void:
 		run.start_transform = tracker.gate_transforms[1]
 		run.countdown_started.connect(_mark_approach_checkpoint)
 		run.restart()
-	$PreviewLabel/Label.text = "COASTAL B1 — DRY JUMP PREVIEW\nPause: change car / traction control. Reset: full run-up.\nNo scenery, structures, water or final sand yet."
+	$PreviewLabel/Label.text = "COASTAL B1 — DRY STRUCTURE PREVIEW\nPause: change car / traction control. Reset: checkpoint.\nNo scenery, water or final sand yet."
 	if options.mode == "smoke":
 		_smoke.call_deferred()
 
@@ -51,7 +51,7 @@ func _mark_approach_checkpoint() -> void:
 func _smoke() -> void:
 	var probe := CoastalGapProbe.new()
 	var result := await probe.attempt(self, rig.car.drivetrain.traction_control_strength,
-		options.get("held", false), 0.0, 1.0, false, options.get("balance", false))
+		options.get("held", false), 0.0, 1.0, false, options.get("balance", false), options.start == "course")
 	print("COASTAL_PREVIEW ", JSON.stringify({"renderer": DisplayServer.get_name(),
 		"build_seconds": trail.build_seconds, "peak_draws": _peak_draws,
 		"peak_primitives": _peak_primitives, "water_bodies": trail.water_world.bodies.size()}))
