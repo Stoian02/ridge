@@ -14,7 +14,7 @@ func test_route_is_three_km_and_reproduces_from_generator_without_crowding() -> 
 	assert_eq(CURVE.get_point_position(0).y, 24.0)
 
 
-func test_preview_preserves_surface_split_and_has_no_water_or_scenery() -> void:
+func test_preview_preserves_surface_split_and_has_no_water_or_loose_stones() -> void:
 	assert_eq(TRAIL.surface_stretches.size(), 2)
 	assert_eq(TRAIL.surface_stretches[0].start, 1350.0)
 	assert_eq(TRAIL.surface_stretches[1].start, 2250.0)
@@ -25,7 +25,8 @@ func test_preview_preserves_surface_split_and_has_no_water_or_scenery() -> void:
 	assert_true(TRAIL.bridges.is_empty())
 	assert_eq(TRAIL.stone_bridges.size(), 1)
 	assert_true(TRAIL.talus.is_empty())
-	assert_eq(SCATTER.pine_spacing + SCATTER.rock_spacing + SCATTER.post_spacing + SCATTER.broadleaf_spacing, 0.0)
+	assert_true(SCATTER.coastal, "approved dry coastal scenery")
+	assert_eq(SCATTER.pine_spacing + SCATTER.post_spacing, 0.0)
 	for stretch: SurfaceStretch in TRAIL.surface_stretches:
 		assert_eq(stretch.water_rut_depth, 0.0)
 		assert_eq(stretch.surface.id, &"coastal_sand", "approved firm sand on the main road")

@@ -11,35 +11,34 @@
 [ext_resource type="Script" path="res://game/reset_controller.gd" id="9_resets"]
 [ext_resource type="Script" path="res://game/run_controller.gd" id="10_run"]
 [ext_resource type="Script" path="res://ui/run_hud.gd" id="11_hud"]
-
-[sub_resource type="ProceduralSkyMaterial" id="GreySky"]
-sky_top_color = Color(0.44, 0.49, 0.54, 1)
-sky_horizon_color = Color(0.66, 0.68, 0.7, 1)
-ground_horizon_color = Color(0.66, 0.68, 0.7, 1)
-
-[sub_resource type="Sky" id="Sky"]
-sky_material = SubResource("GreySky")
-
-[sub_resource type="Environment" id="NeutralEnvironment"]
-background_mode = 2
-sky = SubResource("Sky")
-ambient_light_source = 3
-ambient_light_color = Color(0.86, 0.88, 0.9, 1)
-ambient_light_energy = 0.65
-tonemap_mode = 3
+[ext_resource type="Script" path="res://levels/shared/golden_hour_mood.gd" id="12_mood"]
+[ext_resource type="Script" path="res://levels/coastal_highway/coastal_rainbow.gd" id="13_rainbow"]
+[ext_resource type="Script" path="res://effects/level_ambience.gd" id="14_wind"]
 
 [node name="CoastalHighwayDryPreview" type="Node3D"]
 script = ExtResource("1_level")
 
-[node name="Environment" type="WorldEnvironment" parent="."]
-environment = SubResource("NeutralEnvironment")
+[node name="ClearingWeather" type="Node3D" parent="."]
+script = ExtResource("12_mood")
+sun_color = Color(1, 0.94, 0.83, 1)
+sun_energy = 1.15
+sun_elevation_deg = 24.0
+sun_azimuth_deg = -25.0
+sky_top = Color(0.4, 0.58, 0.73, 1)
+sky_horizon = Color(0.78, 0.83, 0.84, 1)
+ground_color = Color(0.51, 0.52, 0.41, 1)
+fog_density = 0.0025
+shadow_distance = 80.0
 
-[node name="Light" type="DirectionalLight3D" parent="."]
-rotation_degrees = Vector3(-45, -35, 0)
-light_energy = 1.0
-shadow_enabled = true
-directional_shadow_max_distance = 80.0
-directional_shadow_mode = 1
+[node name="Rainbow" type="MeshInstance3D" parent="."]
+position = Vector3(-542, -330, -3002)
+script = ExtResource("13_rainbow")
+
+[node name="Ambience" type="Node" parent="."]
+script = ExtResource("14_wind")
+wind_volume = 0.18
+birds = false
+seed = 79
 
 [node name="Trail" type="Node3D" parent="."]
 script = ExtResource("2_trail")
@@ -51,6 +50,9 @@ scatter = ExtResource("5_scatter_def")
 curve = ExtResource("6_curve")
 
 [node name="DrivingRig" parent="." instance=ExtResource("7_rig")]
+
+[node name="ChaseCamera" parent="DrivingRig" index="1"]
+far = 4000.0
 
 [node name="CheckpointTracker" type="Node" parent="."]
 script = ExtResource("8_tracker")
@@ -70,4 +72,6 @@ script = ExtResource("11_hud")
 offset_left = 20.0
 offset_top = 90.0
 theme_override_font_sizes/font_size = 22
-text = "COASTAL B1 — DRY GREYBOX\nDirt stands in for sand. Structures and water come later."
+text = "COASTAL B1 — DRY COAST PREVIEW\nWater and sea are planned for B2; no stars or saving yet."
+
+[editable path="DrivingRig"]

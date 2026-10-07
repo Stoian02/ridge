@@ -34,3 +34,8 @@ extends Resource
 @export var post_color: Color = Color(0.93, 0.92, 0.88)
 @export var reflector_color: Color = Color(0.95, 0.45, 0.1)
 @export var seed: int = 11
+## Opt-in mixed coastal batches; defaults retain the existing scatter/RNG path.
+@export var coastal: bool = false
+@export var scrub_spacing: float = 20.0
+## World-XZ reservations for structures, sightlines and future (unbuilt) cuts.
+@export var coastal_exclusions: Array[Rect2] = []

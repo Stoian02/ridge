@@ -43,7 +43,7 @@ func _ready() -> void:
 		run.start_transform = tracker.gate_transforms[index]
 		run.countdown_started.connect(_mark_approach_checkpoint)
 		run.restart()
-	$PreviewLabel/Label.text = "COASTAL B1 — DRY ROAD PREVIEW\nPause: change car / traction control. Reset: checkpoint.\nFirm sand and structures; scenery and water still to come."
+	$PreviewLabel/Label.text = "COASTAL B1 — DRY COAST PREVIEW\nPause: change car / traction control. Reset: checkpoint.\nWater and sea are planned for B2; no stars or saving yet."
 	if options.mode == "smoke":
 		_smoke.call_deferred()
 	elif options.mode == "views":
@@ -104,7 +104,9 @@ func _views() -> void:
 	var camera := Camera3D.new()
 	add_child(camera)
 	camera.current = true
+	camera.far = rig.camera.far
 	var views := [
+		["opening", 180.0, Vector3(0, 3, -10), Vector3(0, 1, 40)],
 		["tunnel_entry", 602.0, Vector3(0, 3, -8), Vector3(0, 2, 18)],
 		["tunnel_inside", 660.0, Vector3(0, 2.5, -7), Vector3(0, 2, 25)],
 		["tunnel_exit", 710.0, Vector3(0, 3, -8), Vector3(0, 1, 30)],
@@ -114,6 +116,9 @@ func _views() -> void:
 		["sand_entry", 1350.0, Vector3(0, 4, -14), Vector3(0, 0, 18)],
 		["sand_exit", 1950.0, Vector3(0, 4, -14), Vector3(0, 0, 18)],
 		["sand_climb", 2380.0, Vector3(0, 4, -14), Vector3(0, 0, 18)],
+		["descent", 1130.0, Vector3(0, 5, -10), Vector3(0, 0, 35)],
+		["cove", 1700.0, Vector3(0, 4, -14), Vector3(10, 0, 45)],
+		["finish", 2960.0, Vector3(0, 3, -10), Vector3(0, 30, 100)],
 	]
 	for view: Array in views:
 		var at: float = view[1]

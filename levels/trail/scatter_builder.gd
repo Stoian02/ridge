@@ -32,6 +32,11 @@ func build(field: TerrainField, sampler: RoadSampler, profile: RoadProfile, trai
 	post_count = 0
 	broadleaf_count = 0
 	post_transforms.clear()
+	if def.coastal:
+		var counts := CoastalScatter.build(self, field, def)
+		rock_count = counts.rocks
+		broadleaf_count = counts.trees
+		return
 	var rng := RandomNumberGenerator.new()
 	rng.seed = def.seed
 	var material := StandardMaterial3D.new()
