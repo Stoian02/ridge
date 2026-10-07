@@ -29,9 +29,14 @@ const WAVE_ACCEPTANCE_SCENE := "res://debug/water_wave_acceptance.tscn"
 ## Dry jump preview only; the scene reads and consumes optional JSON options.
 const COASTAL_CHECK_FILE := "user://coastal_playcheck"
 const COASTAL_CHECK_SCENE := "res://debug/coastal_playcheck.tscn"
+const COASTAL_ACCEPTANCE_FILE := "user://coastal_acceptance"
+const COASTAL_ACCEPTANCE_SCENE := "res://debug/coastal_acceptance.tscn"
 
 
 func _ready() -> void:
+	if OS.is_debug_build() and FileAccess.file_exists(COASTAL_ACCEPTANCE_FILE):
+		get_tree().change_scene_to_file.call_deferred(COASTAL_ACCEPTANCE_SCENE)
+		return
 	if OS.is_debug_build() and FileAccess.file_exists(COASTAL_CHECK_FILE):
 		get_tree().change_scene_to_file.call_deferred(COASTAL_CHECK_SCENE)
 		return
