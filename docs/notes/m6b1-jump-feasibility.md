@@ -1,4 +1,106 @@
-# Coastal B1: first-delivery jump checkpoint
+# Coastal B1: jump-feel checkpoint
+
+## 2026-10-07 revision — larger gap and longer flight
+
+Implementation: `0efa994`, based on delivery `b8655b4`.
+The owner requested a bigger gap/drop and clarified that their normal technique
+is to lift off and balance the car in the air, not hold full throttle. This is
+another **jump-only greybox revision**, still stopped before Task 4 for owner
+feel approval. No car, surface, generic gap builder, route curve or protected
+fixture changed. The October 6 report below is historical, not the current shape.
+
+| Parameter | October 6 | October 7 |
+| --- | ---: | ---: |
+| Missing span | 14 m (853–867) | **18 m (853–871)** |
+| Landing below lip | 1 m | **2 m** |
+| Landing downslope | 6% | **7%** |
+| Reset / ramp start / lip angle | 730 m / 815 m / 10° | unchanged |
+| Full landing width / recovery end | 9 m / 990 m | unchanged |
+
+The widening now reaches its full width at the moved landing edge. No launch
+boost or in-game auto-balancing was introduced. The same manual preview command
+below still starts at the 730 m checkpoint.
+
+### Measuring the requested airtime
+
+`unsupported_seconds` and `unsupported_distance` now end at the **first wheel
+or chassis support**, whichever comes first. Older `air_*` fields remain the
+wheel-unloaded interval and can include a chassis-first strike. Launch speed
+is latched before takeoff, so a later failed recovery/reset cannot overwrite it
+with zero. These are instrumentation corrections, not vehicle changes.
+
+Matched headless, TC 20%, **coast without any airborne correction** on both
+shapes (`before-*.log` versus `final-coast-*.log`):
+
+| Car | Old unsupported flight | New unsupported flight | Increase |
+| --- | ---: | ---: | ---: |
+| Rally | 1.158 s | 1.300 s | 12% |
+| Tuned Rally | 1.325 s | 1.458 s | 10% |
+| 4x4 | 0.817 s | 0.975 s | 19% |
+
+All three reached recovery in this A/B. This compares geometry using the same
+driver strategy, not the benefit of adding pitch corrections. The coast-only
+Rally's landing yaw reached 24.6°/s: recovery is not proof of a clean landing.
+
+### Acceptance strategy and retained stress results
+
+The main matrix now represents the owner's stated technique: **36 attempts**,
+three repeats per car at 0%, 15%, 20%, 100% TC, release at the lip plus ordinary
+gas/brake pitch corrections aimed at the landing slope. The automated driver
+uses the existing air controls; it never injects forces, velocity or pose.
+This feedback controller demonstrates available control authority, **not that
+a human will match it**. Owner feel remains the decisive next gate. Manual play
+never runs this driver; `mode=smoke balance=true` explicitly enables it.
+
+All 36 passed the existing strict landing/recovery limits in the focused run:
+upright at 990 m, no reset, wheel contact at least 2 m beyond the bank, no wedge,
+recovery speed above 8 m/s, yaw below 20°/s, tilt cosine above 0.70. Those
+numerical limits were not relaxed. Minimum wheel margin was **2.99 m** (4x4);
+maximum landing yaw was **7.94°/s**; longest chassis contact was **0.058 s**.
+Both rally cars first contacted on four wheels; the 4x4 on two or four. Actual
+unsupported flight was 1.325–1.333 s Rally, 1.475–1.483 s Tuned Rally and
+1.033–1.050 s 4x4. The two ±2 m off-centre 4x4 cases also passed with correction.
+
+**Changed test scope, explicitly:** yesterday's held-throttle cases were strict
+landing assertions. Following the owner's technique clarification, the twelve
+held-throttle cases and twelve uncorrected coasts are now **stress observations**,
+not controlled-landing acceptance. They assert a stationary real reset, measured
+unsupported flight and support beyond the far bank; recovery/tilt/yaw are still
+logged. All 24 reached recovery in the focused final run, but uncorrected
+coasting peaked at **25.2°/s yaw**, held throttle at **188.1°/s**. Do not describe
+these as 60 clean landings or hide the harsher held-throttle behaviour behind a
+green suite. The deliberately too-slow approach still fails honestly.
+
+Retained unsuccessful iterations:
+
+- **18 m / 2.5 m drop / 6% downslope** (`matrix-1.log`): uncorrected Tuned Rally
+  at TC off flipped/reset; several other landings failed yaw/tilt checks.
+- **18 m / 2 m / 8%** (`matrix-2.log`): uncorrected and held attempts still
+  failed strict checks. With pitch correction (`balanced-1.log`), Tuned Rally
+  at TC 100% reached 21.97°/s yaw, narrowly failing the unchanged 20°/s limit.
+- **18 m / 2 m / 7%**, the current geometry: `balanced-2.log` passed all twelve
+  corrected combinations; `combined-1.log` passed all fifteen focused tests,
+  1,102 assertions, including the repeated matrix, stress observations, ravine
+  support, reset/lifecycle and serial/threaded gap checks. No script errors.
+
+Three **normal-speed rendered** PC smokes at TC 20% with correction also reached
+990 m upright without resets, all with four wheels on first wheel landing.
+Their peaks were **130–131 draws / 209,078–209,534 primitives**, trail-build
+**0.705–0.736 s**, on the same Radeon 890M / Vulkan Forward Mobile desktop at
+1280×720. These are short jump-preview checks, not a whole-route or phone gate.
+Screenshots and sampled trajectories are retained in `pc-*` files.
+
+Fresh `./run_tests.sh all` on the final code: **814 passing, one inherited
+pending**, 131 scripts / 815 tests / 605,685 assertions, **593.410 s, exit 0,
+no `SCRIPT ERROR`**. All 36 controlled crossings and both off-centre cases passed
+again; maximum controlled landing yaw was 8.43°/s in this run. All 24 stress
+cases reached recovery again, but their harder impacts remain observations,
+not clean-landing passes. The unchanged Test Ground kicker pending case still
+reports 61° tilt / 13.1°/s yaw. Protected car/surface and fixture hashes passed.
+No new phone measurement or acceptance is claimed. Evidence is separate from
+the immutable October 6 archive; see [the evidence index](m6b1-jump-data/README.md).
+
+## Historical first delivery — 2026-10-06
 
 2026-10-06. Branch `m6b-coastal-highway`, starting from `84cd2a6`;
 delivered implementation source `203d2b7`.

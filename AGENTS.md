@@ -28,12 +28,17 @@ Launch `debug/coastal_playcheck.tscn` for the uncatalogued jump preview; it star
 at the 730 m approach checkpoint, not the beginning of the full route.
 B2's local surface patches, water bodies, sea and timed-level waves stay out.
 Do not advance to Task 4 until the owner explicitly approves the jump's feel.
-First-delivery checks: **813 passing, one inherited pending, no script errors**;
-48 all-car jump cases and three normal-speed rendered PC smokes passed. The
-14 m gap has a longer 10° ramp; held-throttle Tuned Rally landing harshness is
-explicitly awaiting owner judgment. PC peak is 130 draws / about 212k primitives.
-The phone was unavailable; no phone budget acceptance is claimed. Implementation
-commits end at `203d2b7`; the report/evidence follow separately. No merge/push.
+October 6 first delivery: 813 passing, one inherited pending, no script errors.
+**October 7 revision (`0efa994`):** owner requested more airtime and clarified
+they lift and balance in flight. Gap is now **18 m, landing 2 m below the lip,
+7% downslope**, with the same 10° ramp and reset. The main gate uses ordinary
+pedal pitch corrections **in the test driver only**; manual play is unassisted.
+36 controlled cases and two off-centre cases passed focused checks. Held-throttle
+and uncorrected coasts are separate stress observations, not clean-landing passes;
+their harsher results and rejected shapes are retained in the report. Three
+normal-speed PC smokes passed (131 draws / about 210k primitives maximum).
+Fresh full regression: **814 passing, one inherited pending, no script errors**.
+Owner feel remains pending; no phone budget acceptance is claimed. No merge/push.
 
 ## Milestone 6, as merged
 
