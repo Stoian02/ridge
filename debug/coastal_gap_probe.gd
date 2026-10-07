@@ -7,7 +7,8 @@ var samples: Array[Dictionary] = []
 
 
 func attempt(level: RunLevel, strength: float, hold_in_air: bool = false,
-		lateral: float = 0.0, throttle: float = 1.0, hold_lane: bool = false) -> Dictionary:
+		lateral: float = 0.0, throttle: float = 1.0, hold_lane: bool = false,
+		balance_in_air: bool = false) -> Dictionary:
 	var tree := level.get_tree()
 	var car := level.rig.car
 	var sampler := level.trail.sampler
@@ -41,10 +42,13 @@ func attempt(level: RunLevel, strength: float, hold_in_air: bool = false,
 	car.max_contacts_reported = 8
 	car.contact_monitor = true
 	var result := {"car": String(level.rig.car_def.id), "tc": strength,
-		"held": hold_in_air, "lateral_start": lateral, "throttle": throttle,
+		"held": hold_in_air, "balanced": balance_in_air, "lateral_start": lateral, "throttle": throttle,
+		"balance_ticks": 0, "landing_pitch": 0.0, "landing_wheels": 0,
 		"start_distance": sampler.closest_distance(car.global_position),
 		"start_speed": car.linear_velocity.length(), "lip_speed": 0.0,
 		"takeoff": 0.0, "landing": 0.0, "air_seconds": 0.0,
+		"unsupported_seconds": 0.0, "unsupported_distance": 0.0,
+		"touchdown": 0.0, "touchdown_kind": "none",
 		"min_up": 1.0, "max_lateral": 0.0, "peak_landing_yaw": 0.0,
 		"chassis_ticks": 0, "first_chassis_distance": -1.0,
 		"last_chassis_distance": -1.0, "longest_chassis_seconds": 0.0,
@@ -56,6 +60,8 @@ func attempt(level: RunLevel, strength: float, hold_in_air: bool = false,
 	var took_off := false
 	var landed := false
 	var air_ticks := 0
+	var flight_ticks := 0
+	var touched_down := false
 	var lowest_up := 1.0
 	var largest_lateral := 0.0
 	var chassis_ticks := 0
@@ -75,23 +81,43 @@ func attempt(level: RunLevel, strength: float, hold_in_air: bool = false,
 		car.input.virtual_steer = clampf(angle / maxf(max_angle, 0.05), -1.0, 1.0)
 		car.input.virtual_brake = 0.0
 		car.input.virtual_throttle = throttle if hold_in_air or distance < gap.takeoff_end or landed else 0.0
+		if balance_in_air and took_off and not touched_down and car.air_control.is_active:
+			# Test driver only: ordinary gas/brake taps mimic the owner's airborne
+			# pitch corrections. No forces, rotations or velocity are injected.
+			var pitch := asin(clampf(-car.global_basis.z.y, -1.0, 1.0))
+			var rate := car.angular_velocity.dot(car.global_basis.x)
+			var correction := clampf((atan(gap.landing_grade) - pitch) * 5.0 - rate * 3.0, -1.0, 1.0)
+			car.input.virtual_throttle = maxf(0.0, correction)
+			car.input.virtual_brake = maxf(0.0, -correction)
+			result.balance_ticks += 1
 		await tree.physics_frame
 		distance = sampler.closest_distance(car.global_position)
 		var contacts := 0
 		for wheel: Wheel in car.wheels:
 			if wheel.in_contact:
 				contacts += 1
-		if distance < gap.takeoff_end:
+		if not took_off and distance < gap.takeoff_end:
 			result["lip_speed"] = car.forward_speed()
-		if distance >= gap.takeoff_end - 4.0 and contacts == 0 and not took_off:
+		if distance >= gap.takeoff_end - 4.0 and contacts == 0 and car.get_contact_count() == 0 and not took_off:
 			took_off = true
 			result["takeoff"] = distance
+		# The legacy air_* fields end at wheel contact. Measure the actual
+		# unsupported interval too: a chassis-first impact ends flight earlier.
+		if took_off and not touched_down:
+			if contacts == 0 and car.get_contact_count() == 0:
+				flight_ticks += 1
+			elif flight_ticks > 6:
+				touched_down = true
+				result.touchdown = distance
+				result.touchdown_kind = "chassis" if car.get_contact_count() > 0 else "wheels"
 		if took_off and not landed:
 			if contacts == 0:
 				air_ticks += 1
 			elif air_ticks > 6:
 				landed = true
 				result["landing"] = distance
+				result.landing_pitch = rad_to_deg(asin(clampf(-car.global_basis.z.y, -1.0, 1.0)))
+				result.landing_wheels = contacts
 				result.landing_contact_distance = INF
 				for wheel: Wheel in car.wheels:
 					if wheel.in_contact:
@@ -125,6 +151,8 @@ func attempt(level: RunLevel, strength: float, hold_in_air: bool = false,
 		if resets[0] > 0 or car.global_position.y < gap.floor_height(sampler, level.trail.profile) + 2.0:
 			break
 	result["air_seconds"] = air_ticks / float(Engine.physics_ticks_per_second)
+	result.unsupported_seconds = flight_ticks / float(Engine.physics_ticks_per_second)
+	result.unsupported_distance = float(result.touchdown) - float(result.takeoff) if touched_down else 0.0
 	result["air_distance"] = float(result["landing"]) - float(result["takeoff"]) if landed else 0.0
 	result["min_up"] = lowest_up
 	result["max_lateral"] = largest_lateral

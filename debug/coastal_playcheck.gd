@@ -51,7 +51,7 @@ func _mark_approach_checkpoint() -> void:
 func _smoke() -> void:
 	var probe := CoastalGapProbe.new()
 	var result := await probe.attempt(self, rig.car.drivetrain.traction_control_strength,
-		options.get("held", false))
+		options.get("held", false), 0.0, 1.0, false, options.get("balance", false))
 	print("COASTAL_PREVIEW ", JSON.stringify({"renderer": DisplayServer.get_name(),
 		"build_seconds": trail.build_seconds, "peak_draws": _peak_draws,
 		"peak_primitives": _peak_primitives, "water_bodies": trail.water_world.bodies.size()}))
@@ -90,6 +90,7 @@ static func read_options(args: PackedStringArray, flag_path: String = "") -> Dic
 		if is_finite(strength) and strength >= 0.0 and strength <= 1.0:
 			parsed.tc = strength
 	parsed.held = str(raw.get("held", "false")) in ["true", "1"]
+	parsed.balance = not parsed.held and str(raw.get("balance", "false")) in ["true", "1"]
 	for key: String in ["capture", "samples"]:
 		if raw.has(key) and not str(raw[key]).is_empty():
 			parsed[key] = str(raw[key])

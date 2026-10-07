@@ -37,9 +37,11 @@ func test_gap_reset_runup_landing_width_and_recovery_are_unobstructed() -> void:
 	assert_eq(TRAIL.checkpoint_distances[1], 980.0)
 	assert_eq(TRAIL.road_gaps.size(), 1)
 	var gap: RoadGapDef = TRAIL.road_gaps[0]
+	assert_eq(gap.landing_start - gap.takeoff_end, 18.0, "owner requested a bigger gap")
+	assert_eq(gap.landing_drop, 2.0, "lower landing gives longer flight")
 	assert_gte(gap.takeoff_end - TRAIL.checkpoint_distances[0], 120.0, "full acceleration run-up retained")
 	assert_almost_eq(TRAIL.road_width_at(gap.landing_start), 9.0, 0.0001)
-	for at: float in [730.0, 800.0, 835.0, 853.0, 869.0, 929.0, 990.0]:
+	for at: float in [730.0, 800.0, gap.takeoff_start, gap.takeoff_end, gap.landing_start, 929.0, 990.0]:
 		assert_gt(sampler.forward(at).dot(sampler.forward(800.0)), 0.9999)
 		assert_eq(TRAIL.base_surface.id, &"asphalt")
 	assert_null(GameState.catalog.find_by_id(&"coastal_highway"), "no invented star times/progress entry")

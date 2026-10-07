@@ -20,6 +20,9 @@ func test_cli_options_are_validated_without_writing_progress() -> void:
 	for value: String in ["nonsense", "1.1", "-0.1", "nan", "inf"]:
 		assert_false(PREVIEW.read_options(["tc=" + value, "car=invalid"]).has("tc"))
 	assert_false(PREVIEW.read_options(["car=invalid"]).has("car"))
+	assert_true(PREVIEW.read_options(["balance=true"]).balance)
+	assert_false(PREVIEW.read_options(["held=true", "balance=true"]).balance,
+		"held throttle and pitch correction are distinct strategies")
 
 
 func test_flag_is_consumed_and_cli_overrides_optional_phone_json() -> void:
