@@ -28,7 +28,8 @@ func test_preview_preserves_surface_split_and_has_no_water_or_scenery() -> void:
 	assert_eq(SCATTER.pine_spacing + SCATTER.rock_spacing + SCATTER.post_spacing + SCATTER.broadleaf_spacing, 0.0)
 	for stretch: SurfaceStretch in TRAIL.surface_stretches:
 		assert_eq(stretch.water_rut_depth, 0.0)
-		assert_eq(stretch.surface.id, &"dirt", "sand is explicitly a placeholder at this gate")
+		assert_eq(stretch.surface.id, &"coastal_sand", "approved firm sand on the main road")
+		assert_true(stretch.affects_shoulders)
 
 
 func test_owner_bridge_revision_is_longer_and_more_arched_without_changing_defaults() -> void:

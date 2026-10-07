@@ -180,7 +180,7 @@ func gravel_weight(distance: float) -> float:
 func surface_color(distance: float, base: Color, shoulder: bool = false) -> Color:
 	if def.surface_color_blend <= 0.0:
 		var stretch := stretch_at(distance)
-		return base.lerp(stretch.color, stretch.weight(distance)) \
+		return base.lerp(stretch.color_for(shoulder), stretch.weight(distance)) \
 			if stretch != null and (not shoulder or stretch.affects_shoulders) else base
 	var cache := _shoulder_color_weights if shoulder else _road_color_weights
 	if _building and cache.has(distance):
@@ -198,11 +198,25 @@ func surface_color(distance: float, base: Color, shoulder: bool = false) -> Colo
 			continue
 		var entry := smoothstep(stretch.start - blend, stretch.start + blend, distance) if stretch.start > 0.0 else 1.0
 		var weight := minf(entry, 1.0 - smoothstep(stretch.end() - blend, stretch.end() + blend, distance))
-		sum += stretch.color * weight
+		sum += stretch.color_for(shoulder) * weight
 		total += weight
 	if _building:
 		cache[distance] = {"sum": sum, "total": total}
 	return (sum + base * maxf(0.0, 1.0 - total)) / maxf(1.0, total)
+
+
+## Paint fades on the asphalt side of a sand boundary and is absent inside it.
+## Purely visual: the same triangles retain the authored collision surface.
+func painted_line_weight(distance: float) -> float:
+	var weight := 1.0
+	for stretch: SurfaceStretch in def.surface_stretches:
+		if not stretch.hide_painted_lines:
+			continue
+		var fade := maxf(maxf(def.surface_color_blend, stretch.blend_length), 0.001)
+		var hidden := minf(smoothstep(stretch.start - fade, stretch.start, distance),
+			1.0 - smoothstep(stretch.end(), stretch.end() + fade, distance))
+		weight = minf(weight, 1.0 - hidden)
+	return weight
 
 
 func local_undulation(distance: float) -> float:

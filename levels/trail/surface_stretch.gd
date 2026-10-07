@@ -14,6 +14,10 @@ extends Resource
 ## Total physical transition length at each end (m).
 @export var transition_length: float = 0.0
 @export var color: Color = Color(0.27, 0.2, 0.14)
+## Opt-in visual tint only; shoulders still share this stretch's physics.
+@export var shoulder_tint: Color = Color.WHITE
+## Fade the existing paint before entry; never an overlaid mesh or surface patch.
+@export var hide_painted_lines: bool = false
 ## Material roughness (ice is glossy); collision remains defined by surface.
 @export_range(0.0, 1.0) var roughness: float = 0.9
 ## Depth of the two wheel ruts (m); 0 = no ruts.
@@ -37,6 +41,10 @@ extends Resource
 
 func end() -> float:
 	return start + length
+
+
+func color_for(shoulder: bool) -> Color:
+	return color * shoulder_tint if shoulder and shoulder_tint != Color.WHITE else color
 
 
 func rut_centres(distance: float) -> PackedFloat64Array:

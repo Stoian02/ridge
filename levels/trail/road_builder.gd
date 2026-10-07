@@ -109,6 +109,7 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 	var ups := PackedVector3Array()
 	var heights := PackedFloat64Array()
 	var gravel_weights := PackedFloat64Array()
+	var line_weights := PackedFloat64Array()
 	var ruts: Array[PackedFloat64Array] = []
 	var rut_centres: Array[PackedFloat64Array] = []
 	var road_colors: Array[Color] = []
@@ -123,6 +124,7 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 		ups.append(sampler.up(distance))
 		heights.append(profile.longitudinal_height(distance))
 		gravel_weights.append(profile.gravel_weight(distance))
+		line_weights.append(profile.painted_line_weight(distance))
 		var stretch := profile.stretch_at(distance)
 		var rut := PackedFloat64Array([0.0, 1.0, 0.0, 0.0])
 		var centres_at := PackedFloat64Array()
@@ -180,7 +182,7 @@ func _snapshot(sampler: RoadSampler, profile: RoadProfile, def: TrailDef,
 	return {"stations": stations, "distances": distances, "centres": centres, "rights": rights, "skip_rows": skip_rows,
 			"ups": ups, "heights": heights, "gravel_weights": gravel_weights, "ruts": ruts, "rut_centres": rut_centres, "road_colors": road_colors,
 			"patch_colors": patch_colors, "left_colors": left_colors, "right_colors": right_colors,
-			"line_color": def.line_color, "potholes": potholes, "patches": profile.patches,
+			"line_color": def.line_color, "line_weights": line_weights, "potholes": potholes, "patches": profile.patches,
 			"road_surfaces": road_surfaces, "shoulder_surfaces": shoulder_surfaces,
 			"road_scales": road_scales, "shoulder_scales": shoulder_scales, "half_road": def.road_width * 0.5,
 			"steps": steps, "cross_ruts": cross_ruts, "surfaces": surfaces, "surface_count": surfaces.size()}
@@ -397,13 +399,15 @@ func _color(profile: RoadProfile, def: TrailDef, distance: float, lateral: float
 				shoulder = shoulder.lerp(def.asphalt_color, ShortcutBuilder.junction_weight(def.shortcut, distance))
 			return shoulder
 		Part.LINE:
-			return def.line_color
+			if profile.painted_line_weight(distance) == 1.0:
+				return def.line_color
 	var base: Color = def.patch_color if profile.is_patch(distance, lateral) else def.asphalt_color
 	base = profile.surface_color(distance, base)
 	var dip := profile.pothole_height(distance, lateral) + profile.cross_rut_height(distance, lateral) \
 			+ profile.rut_height(distance, lateral)
 	var shade := clampf(1.0 + dip * SHADE_PER_METRE, 0.5, 1.0)
-	return Color(base.r * shade, base.g * shade, base.b * shade)
+	var shaded := Color(base.r * shade, base.g * shade, base.b * shade)
+	return shaded.lerp(def.line_color, profile.painted_line_weight(distance)) if part == Part.LINE else shaded
 
 
 static func _collision_body(faces: PackedVector3Array, surface: SurfaceDef) -> StaticBody3D:

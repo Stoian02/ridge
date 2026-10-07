@@ -19,6 +19,7 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 	var left_colors: Array[Color] = input["left_colors"]
 	var right_colors: Array[Color] = input["right_colors"]
 	var line_color: Color = input["line_color"]
+	var line_weights: PackedFloat64Array = input["line_weights"]
 	var potholes: Array[Vector4] = input["potholes"]
 	var patches: Array[Rect2] = input["patches"]
 	var road_surfaces: PackedInt32Array = input["road_surfaces"]
@@ -106,12 +107,14 @@ static func compute(input: Dictionary, into: Dictionary) -> void:
 			uvs[i] = Vector2(distance, gravel_weights[row])
 			if int(station.y) == RoadBuilder.Part.SHOULDER:
 				colors[i] = left_colors[row] if lateral < 0.0 else right_colors[row]
-			elif int(station.y) == RoadBuilder.Part.LINE:
+			elif int(station.y) == RoadBuilder.Part.LINE and line_weights[row] == 1.0:
 				colors[i] = line_color
 			else:
 				var base: Color = patch_colors[row] if is_patch else road_colors[row]
 				var shade := clampf(1.0 + (pothole_height + cross_height + rut_height) * RoadBuilder.SHADE_PER_METRE, 0.5, 1.0)
 				colors[i] = Color(base.r * shade, base.g * shade, base.b * shade)
+				if int(station.y) == RoadBuilder.Part.LINE:
+					colors[i] = colors[i].lerp(line_color, line_weights[row])
 	var indices := PackedInt32Array()
 	var faces: Array[PackedVector3Array] = []
 	for surface in surface_count:
