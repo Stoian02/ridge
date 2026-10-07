@@ -22,6 +22,8 @@ func test_cli_options_are_validated_without_writing_progress() -> void:
 	assert_false(PREVIEW.read_options(["car=invalid"]).has("car"))
 	assert_true(PREVIEW.read_options(["balance=true"]).balance)
 	assert_eq(PREVIEW.read_options(["start=bridge"]).start, "bridge")
+	assert_eq(PREVIEW.read_options(["start=sand"]).start, "sand")
+	assert_eq(PREVIEW.read_options(["start=climb"]).start, "climb")
 	assert_eq(PREVIEW.read_options(["mode=views"]).mode, "views")
 	assert_false(PREVIEW.read_options(["held=true", "balance=true"]).balance,
 		"held throttle and pitch correction are distinct strategies")

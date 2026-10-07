@@ -15,6 +15,8 @@ func _process(_delta: float) -> void:
 	_peak_draws = maxi(_peak_draws, RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME))
 	_peak_primitives = maxi(_peak_primitives, RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME))
 	var capture_at := 2064.0 if options.start == "bridge" else 858.0
+	if options.start in ["sand", "climb"]:
+		capture_at = 2300.0 if options.start == "climb" else 1400.0
 	if not _captured and options.has("capture") and trail.sampler.closest_distance(rig.car.position) >= capture_at:
 		_captured = true
 		_capture.call_deferred()
@@ -37,19 +39,25 @@ func _ready() -> void:
 	if options.has("tc"):
 		rig.car.drivetrain.traction_control_strength = options.tc
 	if options.start != "course":
-		var index := CoastalBridgeProbe.checkpoint_index(self) if options.start == "bridge" else 1
+		var index := _preview_checkpoint()
 		run.start_transform = tracker.gate_transforms[index]
 		run.countdown_started.connect(_mark_approach_checkpoint)
 		run.restart()
-	$PreviewLabel/Label.text = "COASTAL B1 — DRY STRUCTURE PREVIEW\nPause: change car / traction control. Reset: checkpoint.\nNo scenery, water or final sand yet."
+	$PreviewLabel/Label.text = "COASTAL B1 — DRY ROAD PREVIEW\nPause: change car / traction control. Reset: checkpoint.\nFirm sand and structures; scenery and water still to come."
 	if options.mode == "smoke":
 		_smoke.call_deferred()
 	elif options.mode == "views":
 		_views.call_deferred()
 
 
+func _preview_checkpoint() -> int:
+	if options.start in ["sand", "climb"]:
+		return CoastalSurfaceProbe.checkpoint_index(self, options.start == "climb")
+	return CoastalBridgeProbe.checkpoint_index(self) if options.start == "bridge" else 1
+
+
 func _mark_approach_checkpoint() -> void:
-	var index := CoastalBridgeProbe.checkpoint_index(self) if options.start == "bridge" else 1
+	var index := _preview_checkpoint()
 	for i in range(1, index + 1):
 		tracker.enter_gate(i)
 
@@ -57,7 +65,11 @@ func _mark_approach_checkpoint() -> void:
 func _smoke() -> void:
 	var result: Dictionary
 	var samples: Array[Dictionary]
-	if options.start == "bridge":
+	if options.start in ["sand", "climb"]:
+		var probe := CoastalSurfaceProbe.new()
+		result = await probe.attempt(self, rig.car.drivetrain.traction_control_strength, options.start == "climb")
+		samples = probe.samples
+	elif options.start == "bridge":
 		var probe := CoastalBridgeProbe.new()
 		result = await probe.attempt(self, rig.car.drivetrain.traction_control_strength)
 		samples = probe.samples
@@ -99,6 +111,9 @@ func _views() -> void:
 		["jump", 850.0, Vector3(0, 7, -12), Vector3(0, 0, 35)],
 		["bridge_deck", 2060.0, Vector3(0, 3, -14), Vector3(0, 0.5, 14)],
 		["bridge_arch", 2064.0, Vector3(20, -1.5, -8), Vector3(0, -2, 0)],
+		["sand_entry", 1350.0, Vector3(0, 4, -14), Vector3(0, 0, 18)],
+		["sand_exit", 1950.0, Vector3(0, 4, -14), Vector3(0, 0, 18)],
+		["sand_climb", 2380.0, Vector3(0, 4, -14), Vector3(0, 0, 18)],
 	]
 	for view: Array in views:
 		var at: float = view[1]
@@ -136,7 +151,7 @@ static func read_options(args: PackedStringArray, flag_path: String = "") -> Dic
 		if pair.size() == 2:
 			raw[pair[0]] = pair[1]
 	var parsed := {"start": "jump", "mode": "manual"}
-	if str(raw.get("start", "")) in ["course", "bridge"]:
+	if str(raw.get("start", "")) in ["course", "bridge", "sand", "climb"]:
 		parsed.start = str(raw.start)
 	if str(raw.get("mode", "")) in ["smoke", "views"]:
 		parsed.mode = str(raw.mode)
