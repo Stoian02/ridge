@@ -1,6 +1,8 @@
 class_name TrailDriver
 extends RefCounted
-## A scripted driver for scenario tests: steers toward a point a little way up
+## A scripted driver for scenario tests and opt-in exported debug probes.
+## Lives outside tests/ because that directory is excluded from Android builds.
+## Steers toward a point a little way up
 ## the road (pure pursuit) and picks a speed from how sharply the road bends
 ## ahead. Not a good driver - just a steady one. Given the road's profile, it also
 ## slows for the grip of the surface ahead (mud, dirt), on straights as in bends,

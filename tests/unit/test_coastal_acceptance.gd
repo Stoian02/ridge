@@ -44,3 +44,16 @@ func test_summary_keeps_tails_counts_ticks_and_uses_wall_time_not_mean_fps() -> 
 	assert_eq(result.tails[0].classification, "start")
 	assert_eq(result.tails[1].classification, "warmed")
 	assert_eq(CoastalFrameMeasurement.summarize([]).fps, 0.0)
+
+
+func test_phone_probes_and_reusable_driver_are_not_excluded_from_export() -> void:
+	var config := ConfigFile.new()
+	assert_eq(config.load("res://export_presets.cfg"), OK)
+	var excluded: String = config.get_value("preset.0", "exclude_filter", "")
+	var driver := TrailDriver.new(null, null)
+	var scripts: Array[Script] = [driver.get_script(), CoastalRouteProbe.new().get_script(),
+		CoastalSurfaceProbe.new().get_script(), HARNESS]
+	for script: Script in scripts:
+		for pattern: String in excluded.split(",", false):
+			assert_false(script.resource_path.trim_prefix("res://").match(pattern),
+				"phone dependency is exported: " + script.resource_path)
